@@ -1,0 +1,1 @@
+../effects/bumpmap-rgb/bumpmap-rgb.c

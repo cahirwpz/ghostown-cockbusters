@@ -13,18 +13,39 @@ else
 OBJECTS += data/$(MODULE).smp.o
 endif
 
+LOADABLES := uvmap-rgb.o bumpmap-rgb.o
+
+STRIP.uvmap-rgb := -K_UVMapRGBEffect
+STRIP.bumpmap-rgb := -K_BumpMapRGBEffect
+
 LIBS := libpt
 
 CLEAN-FILES := data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/loader.c
+CLEAN-FILES += data/skulls_map.c data/light.c data/skulls_128col.c
+CLEAN-FILES += data/texture-rgb.c data/uvmap-rgb.c
 
-SOURCES := main.c load.c empty.c
+SOURCES := main.c load.c empty.c uvmap-rgb.c bumpmap-rgb.c
 MAIN := #
 
 CPPFLAGS += -DDELTA=$(DELTA) -I.
 
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader,2
+PNG2C.skulls_128col := --pixmap skulls,160x128x8 --palette skulls,128
+PNG2C.texture-rgb := --pixmap image,128x128x12
 
 include $(TOPDIR)/build/effect.mk
+
+data/skulls_map.c: data/bumpmap.py data/skulls_map.png
+	@echo "[GEN] $@"
+	$(PYTHON3) $^ bumpmap > $@
+
+data/light.c: data/light.py
+	@echo "[GEN] $@"
+	$(PYTHON3) $^ light > $@
+
+data/uvmap-rgb.c: data/gen-uvmap.py
+	@echo "[GEN] $@"
+	$(PYTHON3) $< uvmap > $@
 
 data/%.trk data/%.smp: data/%.mod
 	$(PYTHON3) $(TOPDIR)/effects/playpt/data/ptsplit.py $^

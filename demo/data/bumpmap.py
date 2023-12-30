@@ -1,0 +1,1 @@
+../../effects/bumpmap-rgb/data/bumpmap.py

@@ -1,0 +1,1 @@
+../../effects/uvmap-rgb/data/gen-uvmap.py
