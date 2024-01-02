@@ -72,69 +72,128 @@ const (
 	NBLCS      StabType = 0xf8
 )
 
-var StabTypeMap map[StabType]string
-
-func init() {
-	StabTypeMap = map[StabType]string{
-		UNDF:       "UNDF",
-		EXT:        "EXT",
-		ABS:        "ABS",
-		TEXT:       "TEXT",
-		DATA:       "DATA",
-		BSS:        "BSS",
-		INDR:       "INDR",
-		SIZE:       "SIZE",
-		COMM:       "COMM",
-		SETA:       "SETA",
-		SETT:       "SETT",
-		SETD:       "SETD",
-		SETB:       "SETB",
-		SETV:       "SETV",
-		WARNING:    "WARNING",
-		FN:         "FN",
-		GSYM:       "GSYM",
-		FNAME:      "FNAME",
-		FUN:        "FUN",
-		STSYM:      "STSYM",
-		LCSYM:      "LCSYM",
-		MAIN:       "MAIN",
-		ROSYM:      "ROSYM",
-		PC:         "PC",
-		NSYMS:      "NSYMS",
-		NOMAP:      "NOMAP",
-		MAC_DEFINE: "MAC_DEFINE",
-		OBJ:        "OBJ",
-		MAC_UNDEF:  "MAC_UNDEF",
-		OPT:        "OPT",
-		RSYM:       "RSYM",
-		SLINE:      "SLINE",
-		DSLINE:     "DSLINE",
-		BSLINE:     "BSLINE",
-		FLINE:      "FLINE",
-		EHDECL:     "EHDECL",
-		CATCH:      "CATCH",
-		SSYM:       "SSYM",
-		ENDM:       "ENDM",
-		SO:         "SO",
-		LSYM:       "LSYM",
-		BINCL:      "BINCL",
-		SOL:        "SOL",
-		PSYM:       "PSYM",
-		EINCL:      "EINCL",
-		ENTRY:      "ENTRY",
-		LBRAC:      "LBRAC",
-		EXCL:       "EXCL",
-		SCOPE:      "SCOPE",
-		RBRAC:      "RBRAC",
-		BCOMM:      "BCOMM",
-		ECOMM:      "ECOMM",
-		ECOML:      "ECOML",
-		WITH:       "WITH",
-		NBTEXT:     "NBTEXT",
-		NBDATA:     "NBDATA",
-		NBBSS:      "NBBSS",
-		NBSTS:      "NBSTS",
-		NBLCS:      "NBLCS",
+func (st StabType) String() string {
+	switch st {
+	case UNDF:
+		return "UNDF"
+	case EXT:
+		return "EXT"
+	case ABS:
+		return "ABS"
+	case TEXT:
+		return "TEXT"
+	case DATA:
+		return "DATA"
+	case BSS:
+		return "BSS"
+	case INDR:
+		return "INDR"
+	case SIZE:
+		return "SIZE"
+	case COMM:
+		return "COMM"
+	case SETA:
+		return "SETA"
+	case SETT:
+		return "SETT"
+	case SETD:
+		return "SETD"
+	case SETB:
+		return "SETB"
+	case SETV:
+		return "SETV"
+	case WARNING:
+		return "WARNING"
+	case FN:
+		return "FN"
+	case GSYM:
+		return "GSYM"
+	case FNAME:
+		return "FNAME"
+	case FUN:
+		return "FUN"
+	case STSYM:
+		return "STSYM"
+	case LCSYM:
+		return "LCSYM"
+	case MAIN:
+		return "MAIN"
+	case ROSYM:
+		return "ROSYM"
+	case PC:
+		return "PC"
+	case NSYMS:
+		return "NSYMS"
+	case NOMAP:
+		return "NOMAP"
+	case MAC_DEFINE:
+		return "MAC_DEFINE"
+	case OBJ:
+		return "OBJ"
+	case MAC_UNDEF:
+		return "MAC_UNDEF"
+	case OPT:
+		return "OPT"
+	case RSYM:
+		return "RSYM"
+	case SLINE:
+		return "SLINE"
+	case DSLINE:
+		return "DSLINE"
+	case BSLINE:
+		return "BSLINE"
+	case FLINE:
+		return "FLINE"
+	case EHDECL:
+		return "EHDECL"
+	case CATCH:
+		return "CATCH"
+	case SSYM:
+		return "SSYM"
+	case ENDM:
+		return "ENDM"
+	case SO:
+		return "SO"
+	case LSYM:
+		return "LSYM"
+	case BINCL:
+		return "BINCL"
+	case SOL:
+		return "SOL"
+	case PSYM:
+		return "PSYM"
+	case EINCL:
+		return "EINCL"
+	case ENTRY:
+		return "ENTRY"
+	case LBRAC:
+		return "LBRAC"
+	case EXCL:
+		return "EXCL"
+	case SCOPE:
+		return "SCOPE"
+	case RBRAC:
+		return "RBRAC"
+	case BCOMM:
+		return "BCOMM"
+	case ECOMM:
+		return "ECOMM"
+	case ECOML:
+		return "ECOML"
+	case WITH:
+		return "WITH"
+	case NBTEXT:
+		return "NBTEXT"
+	case NBDATA:
+		return "NBDATA"
+	case NBBSS:
+		return "NBBSS"
+	case NBSTS:
+		return "NBSTS"
+	case NBLCS:
+		return "NBLCS"
+	default:
+		panic("unknown stab type")
 	}
 }
 
@@ -202,9 +261,9 @@ func (s Stab) String(strtab map[int]string) string {
 
 	if strtab != nil {
 		return fmt.Sprintf("%08x %c %6s %04x %02x %s", s.Value, visibility,
-			StabTypeMap[s.Type()], s.Other, s.Desc, strtab[int(s.StrOff)])
+			s.Type().String(), s.Other, s.Desc, strtab[int(s.StrOff)])
 	} else {
 		return fmt.Sprintf("%08x %c %6s %04x %02x %d", s.Value, visibility,
-			StabTypeMap[s.Type()], s.Other, s.Desc, s.StrOff)
+			s.Type().String(), s.Other, s.Desc, s.StrOff)
 	}
 }
