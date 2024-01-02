@@ -7,31 +7,31 @@ import (
 	"strings"
 )
 
-type SymbolDef struct {
+type Symbol struct {
 	Name  string
 	Value uint32
 }
 
 type HunkSymbol struct {
-	Symbol []SymbolDef
+	Symbols []Symbol
 }
 
 func readHunkSymbol(r io.Reader) HunkSymbol {
-	var symbols []SymbolDef
+	var symbols []Symbol
 	for {
 		name := readString(r)
 		if name == "" {
 			break
 		}
 		value := readLong(r)
-		symbols = append(symbols, SymbolDef{name, value})
+		symbols = append(symbols, Symbol{name, value})
 	}
 	return HunkSymbol{symbols}
 }
 
 func (h HunkSymbol) Sort() {
-	sort.Slice(h.Symbol, func(i, j int) bool {
-		return h.Symbol[i].Value < h.Symbol[j].Value
+	sort.Slice(h.Symbols, func(i, j int) bool {
+		return h.Symbols[i].Value < h.Symbols[j].Value
 	})
 }
 
@@ -41,7 +41,7 @@ func (h HunkSymbol) Type() HunkType {
 
 func (h HunkSymbol) Write(w io.Writer) {
 	writeLong(w, uint32(HUNK_SYMBOL))
-	for _, s := range h.Symbol {
+	for _, s := range h.Symbols {
 		writeStringWithSize(w, s.Name)
 		writeLong(w, s.Value)
 	}
@@ -51,7 +51,7 @@ func (h HunkSymbol) Write(w io.Writer) {
 func (h HunkSymbol) String() string {
 	var sb strings.Builder
 	sb.WriteString("HUNK_SYMBOL\n")
-	for _, s := range h.Symbol {
+	for _, s := range h.Symbols {
 		fmt.Fprintf(&sb, "  0x%08x %s\n", s.Value, s.Name)
 	}
 	return sb.String()

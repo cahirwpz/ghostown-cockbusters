@@ -15,7 +15,7 @@ type Extern struct {
 }
 
 type HunkExt struct {
-	Ext []Extern
+	Externs []Extern
 }
 
 func readHunkExt(r io.Reader) HunkExt {
@@ -45,11 +45,11 @@ func readHunkExt(r io.Reader) HunkExt {
 }
 
 func (h HunkExt) Sort() {
-	sort.Slice(h.Ext, func(i, j int) bool {
-		if h.Ext[i].Type == h.Ext[j].Type {
-			return h.Ext[i].Name < h.Ext[j].Name
+	sort.Slice(h.Externs, func(i, j int) bool {
+		if h.Externs[i].Type == h.Externs[j].Type {
+			return h.Externs[i].Name < h.Externs[j].Name
 		}
-		return h.Ext[i].Type < h.Ext[j].Type
+		return h.Externs[i].Type < h.Externs[j].Type
 	})
 }
 
@@ -59,7 +59,7 @@ func (h HunkExt) Type() HunkType {
 
 func (h HunkExt) Write(w io.Writer) {
 	writeLong(w, uint32(HUNK_EXT))
-	for _, ext := range h.Ext {
+	for _, ext := range h.Externs {
 		eh := stringSize(ext.Name) | uint32(ext.Type)<<24
 		writeLong(w, eh)
 		writeString(w, ext.Name)
@@ -82,7 +82,7 @@ func (h HunkExt) String() string {
 	sb.WriteString("HUNK_EXT\n")
 
 	prevExtType := EXT_NONE
-	for _, ext := range h.Ext {
+	for _, ext := range h.Externs {
 		if prevExtType != ext.Type {
 			fmt.Fprintf(&sb, " %s:\n", HunkExtNameMap[ext.Type])
 			prevExtType = ext.Type
