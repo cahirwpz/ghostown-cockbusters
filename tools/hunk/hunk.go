@@ -1,5 +1,7 @@
 package hunk
 
+import "io"
+
 /* Refer to The AmigaDOS Manual (3rd Edition), chapter 10. */
 
 type HunkType uint32
@@ -122,4 +124,5 @@ func init() {
 type Hunk interface {
 	String() string
 	Type() HunkType
+	Write(w io.Writer)
 }

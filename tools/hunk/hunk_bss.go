@@ -17,6 +17,11 @@ func (h HunkBss) Type() HunkType {
 	return HUNK_BSS
 }
 
+func (h HunkBss) Write(w io.Writer) {
+	writeLong(w, HUNK_BSS)
+	writeLong(w, h.Size/4)
+}
+
 func (h HunkBss) String() string {
 	return fmt.Sprintf("%s [%d bytes]\n", HunkNameMap[h.Type()], h.Size)
 }

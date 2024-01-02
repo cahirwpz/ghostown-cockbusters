@@ -35,6 +35,18 @@ func (h HunkReloc32) Type() HunkType {
 	return HUNK_RELOC32
 }
 
+func (h HunkReloc32) Write(w io.Writer) {
+	writeLong(w, HUNK_RELOC32)
+	for _, rs := range h.Reloc {
+		writeLong(w, uint32(len(rs.Offsets)))
+		writeLong(w, rs.HunkRef)
+		for _, off := range rs.Offsets {
+			writeLong(w, off)
+		}
+	}
+	writeLong(w, 0)
+}
+
 func (h HunkReloc32) String() string {
 	var sb strings.Builder
 	sb.WriteString("HUNK_RELOC32\n")

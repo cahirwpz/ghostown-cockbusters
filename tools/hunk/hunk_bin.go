@@ -23,6 +23,11 @@ func (h HunkBin) Type() HunkType {
 	return h.htype
 }
 
+func (h HunkBin) Write(w io.Writer) {
+	writeLong(w, uint32(h.htype))
+	writeData(w, h.Bytes)
+}
+
 func (h HunkBin) String() string {
 	return fmt.Sprintf(
 		"%s [%d bytes]\n%s", HunkNameMap[h.Type()], len(h.Bytes), hex.Dump(h.Bytes))

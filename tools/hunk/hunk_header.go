@@ -31,6 +31,17 @@ func (h HunkHeader) Type() HunkType {
 	return HUNK_HEADER
 }
 
+func (h HunkHeader) Write(w io.Writer) {
+	writeLong(w, HUNK_HEADER)
+	writeArrayOfString(w, h.Residents)
+	writeLong(w, h.Hunks)
+	writeLong(w, h.First)
+	writeLong(w, h.Last)
+	for _, v := range h.Specifiers {
+		writeLong(w, v)
+	}
+}
+
 func (h HunkHeader) String() string {
 	var sb strings.Builder
 	sb.WriteString("HUNK_HEADER\n")

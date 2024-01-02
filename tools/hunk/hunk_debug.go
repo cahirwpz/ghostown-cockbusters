@@ -8,6 +8,7 @@ import (
 )
 
 type HunkDebugGnu struct {
+	Name       string
 	StabTab    []Stab
 	StabStrTab []byte
 }
@@ -66,11 +67,16 @@ func readHunkDebugGnu(r io.Reader, name string) HunkDebugGnu {
 		stabstrSize := readLong(r) * 4
 		stabstrTab = readStrTab(r, stabstrSize)
 	}
-	return HunkDebugGnu{stabTab, stabstrTab}
+	return HunkDebugGnu{name, stabTab, stabstrTab}
 }
 
 func (h HunkDebugGnu) Type() HunkType {
 	return HUNK_DEBUG
+}
+
+func (h HunkDebugGnu) Write(w io.Writer) {
+	writeLong(w, HUNK_DEBUG)
+	panic("not implemented")
 }
 
 func (h HunkDebugGnu) String() string {

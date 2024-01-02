@@ -41,17 +41,34 @@ func readHunkExt(r io.Reader) HunkExt {
 			panic(fmt.Sprintf("unknown external type: %v", extType))
 		}
 	}
-	sort.Slice(ext, func(i, j int) bool {
-		if ext[i].Type == ext[j].Type {
-			return ext[i].Name < ext[j].Name
-		}
-		return ext[i].Type < ext[j].Type
-	})
 	return HunkExt{ext}
+}
+
+func (h HunkExt) Sort() {
+	sort.Slice(h.Ext, func(i, j int) bool {
+		if h.Ext[i].Type == h.Ext[j].Type {
+			return h.Ext[i].Name < h.Ext[j].Name
+		}
+		return h.Ext[i].Type < h.Ext[j].Type
+	})
 }
 
 func (h HunkExt) Type() HunkType {
 	return HUNK_EXT
+}
+
+func (h HunkExt) Write(w io.Writer) {
+	writeLong(w, HUNK_EXT)
+	for _, ext := range h.Ext {
+		writeLong(w, uint32(ext.Type)<<24)
+		writeString(w, ext.Name)
+		switch ext.Type {
+		case EXT_DEF, EXT_ABS, EXT_RES, EXT_GNU_LOCAL:
+		case EXT_REF32, EXT_REF16, EXT_REF8, EXT_DEXT32, EXT_DEXT16, EXT_DEXT8:
+		case EXT_COMMON:
+		}
+	}
+	panic("not implemented")
 }
 
 func (h HunkExt) String() string {

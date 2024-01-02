@@ -26,14 +26,26 @@ func readHunkSymbol(r io.Reader) HunkSymbol {
 		value := readLong(r)
 		symbols = append(symbols, SymbolDef{name, value})
 	}
-	sort.Slice(symbols, func(i, j int) bool {
-		return symbols[i].Value < symbols[j].Value
-	})
 	return HunkSymbol{symbols}
+}
+
+func (h HunkSymbol) Sort() {
+	sort.Slice(h.Symbol, func(i, j int) bool {
+		return h.Symbol[i].Value < h.Symbol[j].Value
+	})
 }
 
 func (h HunkSymbol) Type() HunkType {
 	return HUNK_SYMBOL
+}
+
+func (h HunkSymbol) Write(w io.Writer) {
+	writeLong(w, HUNK_SYMBOL)
+	for _, s := range h.Symbol {
+		writeString(w, s.Name)
+		writeLong(w, s.Value)
+	}
+	writeLong(w, 0)
 }
 
 func (h HunkSymbol) String() string {

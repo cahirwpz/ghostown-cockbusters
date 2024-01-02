@@ -6,13 +6,6 @@ import (
 	"os"
 )
 
-func readWord(r io.Reader) (x uint16) {
-	if binary.Read(r, binary.BigEndian, &x) != nil {
-		panic("no data")
-	}
-	return
-}
-
 func readLong(r io.Reader) (x uint32) {
 	if binary.Read(r, binary.BigEndian, &x) != nil {
 		panic("no data")
@@ -61,7 +54,7 @@ func readString(r io.Reader) string {
 }
 
 func readArrayOfString(r io.Reader) []string {
-	x := make([]string, 1)
+	var x []string
 	for {
 		s := readString(r)
 		if s == "" {
@@ -99,7 +92,7 @@ func ReadFile(path string) (hunks []Hunk, err error) {
 			hunk = readHunkUnit(file)
 		case HUNK_NAME:
 			hunk = readHunkName(file)
-			hs := hunk.(HunkStr)
+			hs := hunk.(HunkName)
 			name = hs.Name
 		case HUNK_CODE:
 			hunk = readHunkCode(file)
