@@ -6,11 +6,13 @@ import (
 )
 
 type HunkBss struct {
-	Size uint32
+	Memory HunkMemory
+	Size   uint32
 }
 
 func readHunkBss(r io.Reader) HunkBss {
-	return HunkBss{readLong(r) * 4}
+	mem, size := hunkSpec(readLong(r))
+	return HunkBss{mem, size}
 }
 
 func (h HunkBss) Type() HunkType {

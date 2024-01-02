@@ -13,8 +13,8 @@ type HunkBin struct {
 }
 
 func readHunkBin(r io.Reader, htype HunkType) HunkBin {
-	h := readLong(r)
-	return HunkBin{htype, HunkMemory(h & HUNKF_MASK), readData(r, h*4)}
+	mem, size := hunkSpec(readLong(r))
+	return HunkBin{htype, mem, readData(r, size)}
 }
 
 func (h HunkBin) Type() HunkType {

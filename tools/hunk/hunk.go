@@ -67,12 +67,17 @@ const (
 	HUNKB_CHIP     = 30
 	HUNKB_FAST     = 31
 
-	HUNKF_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
-
 	HUNKF_ADVISORY HunkMemory = 1 << HUNKB_ADVISORY
 	HUNKF_CHIP                = 1 << HUNKB_CHIP
 	HUNKF_FAST                = 1 << HUNKB_FAST
+
+	HUNK_MEMORY_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
+	HUNK_SIZE_MASK   = ^HUNK_MEMORY_MASK
 )
+
+func hunkSpec(x uint32) (HunkMemory, uint32) {
+	return HunkMemory(x & HUNK_MEMORY_MASK), (x & HUNK_SIZE_MASK) * 4
+}
 
 var HunkNameMap map[HunkType]string
 var HunkExtNameMap map[ExtType]string
