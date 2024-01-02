@@ -93,10 +93,10 @@ func (h HunkDebugGnu) Write(w io.Writer) {
 	stab := dumpStabTab(h.StabTab)
 	switch h.Name {
 	case "":
-		writeLong(w, 0)
+		writeLong(w, 3+bytesSize(stab)+bytesSize(h.StabStrTab))
 		writeLong(w, uint32(DEBUG_ZMAGIC))
-		writeLong(w, bytesSize(stab))
-		writeLong(w, bytesSize(h.StabStrTab))
+		writeLong(w, uint32(len(stab)))
+		writeLong(w, uint32(len(h.StabStrTab)))
 		writeData(w, stab)
 		writeData(w, h.StabStrTab)
 	case ".stab":
