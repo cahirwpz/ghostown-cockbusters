@@ -60,15 +60,20 @@ func (h HunkExt) Type() HunkType {
 func (h HunkExt) Write(w io.Writer) {
 	writeLong(w, HUNK_EXT)
 	for _, ext := range h.Ext {
-		writeLong(w, uint32(ext.Type)<<24)
+		eh := stringSize(ext.Name) | uint32(ext.Type)<<24
+		writeLong(w, eh)
 		writeString(w, ext.Name)
 		switch ext.Type {
 		case EXT_DEF, EXT_ABS, EXT_RES, EXT_GNU_LOCAL:
+			writeLong(w, ext.Value)
 		case EXT_REF32, EXT_REF16, EXT_REF8, EXT_DEXT32, EXT_DEXT16, EXT_DEXT8:
+			writeArrayOfLong(w, ext.Refs)
 		case EXT_COMMON:
+			writeLong(w, ext.Value)
+			writeArrayOfLong(w, ext.Refs)
 		}
 	}
-	panic("not implemented")
+	writeLong(w, 0)
 }
 
 func (h HunkExt) String() string {

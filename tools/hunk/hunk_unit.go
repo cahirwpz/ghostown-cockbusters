@@ -19,7 +19,7 @@ func (h HunkUnit) Type() HunkType {
 
 func (h HunkUnit) Write(w io.Writer) {
 	writeLong(w, HUNK_UNIT)
-	writeString(w, h.Name)
+	writeStringWithSize(w, h.Name)
 }
 
 func (h HunkUnit) String() string {

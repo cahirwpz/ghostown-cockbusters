@@ -7,16 +7,14 @@ import (
 )
 
 type HunkBin struct {
-	htype HunkType
-	Bytes []byte
+	htype  HunkType
+	Memory HunkMemory
+	Bytes  []byte
 }
 
-func readHunkCode(r io.Reader) HunkBin {
-	return HunkBin{HUNK_CODE, readData(r, readLong(r)*4)}
-}
-
-func readHunkData(r io.Reader) HunkBin {
-	return HunkBin{HUNK_DATA, readData(r, readLong(r)*4)}
+func readHunkBin(r io.Reader, htype HunkType) HunkBin {
+	h := readLong(r)
+	return HunkBin{htype, HunkMemory(h & HUNKF_MASK), readData(r, h*4)}
 }
 
 func (h HunkBin) Type() HunkType {
@@ -25,6 +23,7 @@ func (h HunkBin) Type() HunkType {
 
 func (h HunkBin) Write(w io.Writer) {
 	writeLong(w, uint32(h.htype))
+	writeLong(w, uint32(h.Memory)|bytesSize(h.Bytes))
 	writeData(w, h.Bytes)
 }
 

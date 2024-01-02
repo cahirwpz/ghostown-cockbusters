@@ -55,6 +55,8 @@ const (
 	EXT_ABSREF8           = 139 // 8 bit absolute reference to symbol
 )
 
+type HunkMemory uint32
+
 const (
 	/* Any hunks that have the HUNKB_ADVISORY bit set will be ignored if they
 	 * aren't understood.  When ignored, they're treated like HUNK_DEBUG hunks.
@@ -65,10 +67,11 @@ const (
 	HUNKB_CHIP     = 30
 	HUNKB_FAST     = 31
 
-	HUNKF_ADVISORY = 1 << HUNKB_ADVISORY
-	HUNKF_CHIP     = 1 << HUNKB_CHIP
-	HUNKF_FAST     = 1 << HUNKB_FAST
-	HUNKF_MASK     = HUNKF_ADVISORY | HUNKF_CHIP | HUNKF_FAST
+	HUNKF_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
+
+	HUNKF_ADVISORY HunkMemory = 1 << HUNKB_ADVISORY
+	HUNKF_CHIP                = 1 << HUNKB_CHIP
+	HUNKF_FAST                = 1 << HUNKB_FAST
 )
 
 var HunkNameMap map[HunkType]string
