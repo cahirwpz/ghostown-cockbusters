@@ -84,7 +84,7 @@ func (h HunkExt) String() string {
 	prevExtType := EXT_NONE
 	for _, ext := range h.Externs {
 		if prevExtType != ext.Type {
-			fmt.Fprintf(&sb, " %s:\n", HunkExtNameMap[ext.Type])
+			fmt.Fprintf(&sb, " %s:\n", ext.Type.String())
 			prevExtType = ext.Type
 		}
 		fmt.Fprintf(&sb, "  name: %s", ext.Name)

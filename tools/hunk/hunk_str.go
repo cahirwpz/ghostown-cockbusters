@@ -28,5 +28,5 @@ func (h HunkStr) Write(w io.Writer) {
 }
 
 func (h HunkStr) String() string {
-	return fmt.Sprintf("%s '%s'\n", HunkNameMap[h.Type()], h.Name)
+	return fmt.Sprintf("%s '%s'\n", h.Type().String(), h.Name)
 }

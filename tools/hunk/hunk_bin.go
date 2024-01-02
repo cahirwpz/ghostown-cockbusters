@@ -28,6 +28,6 @@ func (h HunkBin) Write(w io.Writer) {
 }
 
 func (h HunkBin) String() string {
-	return fmt.Sprintf("%s [%s, %d bytes]\n%s", HunkNameMap[h.Type()],
-		HunkFlagMap[h.Flags], len(h.Bytes), hex.Dump(h.Bytes))
+	return fmt.Sprintf("%s [%s, %d bytes]\n%s", h.Type().String(),
+		h.Flags.String(), len(h.Bytes), hex.Dump(h.Bytes))
 }

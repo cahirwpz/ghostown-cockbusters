@@ -26,5 +26,5 @@ func (h HunkBss) Write(w io.Writer) {
 
 func (h HunkBss) String() string {
 	return fmt.Sprintf("%s [%s, %d bytes]\n",
-		HunkNameMap[h.Type()], HunkFlagMap[h.Flags], h.Size)
+		h.Type().String(), h.Flags.String(), h.Size)
 }

@@ -3,6 +3,7 @@ package hunk
 import (
 	"encoding/binary"
 	"io"
+	"log"
 	"os"
 )
 
@@ -110,7 +111,7 @@ func ReadFile(path string) (hunks []Hunk, err error) {
 		case HUNK_END:
 			hunk = HunkEnd{}
 		default:
-			panic(HunkNameMap[hunkId])
+			log.Fatalf("%s hunk not supported", hunkId.String())
 		}
 		hunks = append(hunks, hunk)
 	}

@@ -35,6 +35,59 @@ const (
 	HUNK_ABSRELOC16   HunkType = 1022
 )
 
+func (ht HunkType) String() string {
+	switch ht {
+	case HUNK_UNIT:
+		return "HUNK_UNIT"
+	case HUNK_NAME:
+		return "HUNK_NAME"
+	case HUNK_CODE:
+		return "HUNK_CODE"
+	case HUNK_DATA:
+		return "HUNK_DATA"
+	case HUNK_BSS:
+		return "HUNK_BSS"
+	case HUNK_RELOC32:
+		return "HUNK_RELOC32"
+	case HUNK_RELOC16:
+		return "HUNK_RELOC16"
+	case HUNK_RELOC8:
+		return "HUNK_RELOC8"
+	case HUNK_EXT:
+		return "HUNK_EXT"
+	case HUNK_SYMBOL:
+		return "HUNK_SYMBOL"
+	case HUNK_DEBUG:
+		return "HUNK_DEBUG"
+	case HUNK_END:
+		return "HUNK_END"
+	case HUNK_HEADER:
+		return "HUNK_HEADER"
+	case HUNK_OVERLAY:
+		return "HUNK_OVERLAY"
+	case HUNK_BREAK:
+		return "HUNK_BREAK"
+	case HUNK_DREL32:
+		return "HUNK_DREL32"
+	case HUNK_DREL16:
+		return "HUNK_DREL16"
+	case HUNK_DREL8:
+		return "HUNK_DREL8"
+	case HUNK_LIB:
+		return "HUNK_LIB"
+	case HUNK_INDEX:
+		return "HUNK_INDEX"
+	case HUNK_RELOC32SHORT:
+		return "HUNK_RELOC32SHORT"
+	case HUNK_RELRELOC32:
+		return "HUNK_RELRELOC32"
+	case HUNK_ABSRELOC16:
+		return "HUNK_ABSRELOC16"
+	default:
+		panic("unknown hunk type")
+	}
+}
+
 type ExtType uint8
 
 const (
@@ -57,6 +110,45 @@ const (
 	EXT_ABSREF8   ExtType = 139 // 8 bit absolute reference to symbol
 )
 
+func (et ExtType) String() string {
+	switch et {
+	case EXT_SYMB:
+		return "EXT_SYMB"
+	case EXT_DEF:
+		return "EXT_DEF"
+	case EXT_ABS:
+		return "EXT_ABS"
+	case EXT_RES:
+		return "EXT_RES"
+	case EXT_GNU_LOCAL:
+		return "EXT_GNU_LOCAL"
+	case EXT_REF32:
+		return "EXT_REF32"
+	case EXT_COMMON:
+		return "EXT_COMMON"
+	case EXT_REF16:
+		return "EXT_REF16"
+	case EXT_REF8:
+		return "EXT_REF8"
+	case EXT_DEXT32:
+		return "EXT_DEXT32"
+	case EXT_DEXT16:
+		return "EXT_DEXT16"
+	case EXT_DEXT8:
+		return "EXT_DEXT8"
+	case EXT_RELREF32:
+		return "EXT_RELREF32"
+	case EXT_RELCOMMON:
+		return "EXT_RELCOMMON"
+	case EXT_ABSREF16:
+		return "EXT_ABSREF16"
+	case EXT_ABSREF8:
+		return "EXT_ABSREF8"
+	default:
+		panic("unknown Ext type")
+	}
+}
+
 type HunkFlag uint32
 
 const (
@@ -78,6 +170,21 @@ const (
 	HUNKF_SIZE_MASK   = ^HUNKF_MEMORY_MASK
 )
 
+func (hf HunkFlag) String() string {
+	switch hf {
+	case HUNKF_PUBLIC:
+		return "MEMF_PUBLIC"
+	case HUNKF_FAST:
+		return "MEMF_FAST"
+	case HUNKF_CHIP:
+		return "MEMF_CHIP"
+	case HUNKF_ADVISORY:
+		return "ADVISORY"
+	default:
+		panic("unknown hunk flag")
+	}
+}
+
 func hunkSpec(x uint32) (HunkFlag, uint32) {
 	return HunkFlag(x & HUNKF_MEMORY_MASK), (x & HUNKF_SIZE_MASK) * 4
 }
@@ -93,61 +200,22 @@ const (
 	DEBUG_ZMAGIC DebugType = 267
 )
 
-var HunkNameMap map[HunkType]string
-var HunkExtNameMap map[ExtType]string
-var HunkFlagMap map[HunkFlag]string
-
-func init() {
-	HunkNameMap = map[HunkType]string{
-		HUNK_UNIT:         "HUNK_UNIT",
-		HUNK_NAME:         "HUNK_NAME",
-		HUNK_CODE:         "HUNK_CODE",
-		HUNK_DATA:         "HUNK_DATA",
-		HUNK_BSS:          "HUNK_BSS",
-		HUNK_RELOC32:      "HUNK_RELOC32",
-		HUNK_RELOC16:      "HUNK_RELOC16",
-		HUNK_RELOC8:       "HUNK_RELOC8",
-		HUNK_EXT:          "HUNK_EXT",
-		HUNK_SYMBOL:       "HUNK_SYMBOL",
-		HUNK_DEBUG:        "HUNK_DEBUG",
-		HUNK_END:          "HUNK_END",
-		HUNK_HEADER:       "HUNK_HEADER",
-		HUNK_OVERLAY:      "HUNK_OVERLAY",
-		HUNK_BREAK:        "HUNK_BREAK",
-		HUNK_DREL32:       "HUNK_DREL32",
-		HUNK_DREL16:       "HUNK_DREL16",
-		HUNK_DREL8:        "HUNK_DREL8",
-		HUNK_LIB:          "HUNK_LIB",
-		HUNK_INDEX:        "HUNK_INDEX",
-		HUNK_RELOC32SHORT: "HUNK_RELOC32SHORT",
-		HUNK_RELRELOC32:   "HUNK_RELRELOC32",
-		HUNK_ABSRELOC16:   "HUNK_ABSRELOC16",
-	}
-
-	HunkExtNameMap = map[ExtType]string{
-		EXT_SYMB:      "EXT_SYMB",
-		EXT_DEF:       "EXT_DEF",
-		EXT_ABS:       "EXT_ABS",
-		EXT_RES:       "EXT_RES",
-		EXT_GNU_LOCAL: "EXT_GNU_LOCAL",
-		EXT_REF32:     "EXT_REF32",
-		EXT_COMMON:    "EXT_COMMON",
-		EXT_REF16:     "EXT_REF16",
-		EXT_REF8:      "EXT_REF8",
-		EXT_DEXT32:    "EXT_DEXT32",
-		EXT_DEXT16:    "EXT_DEXT16",
-		EXT_DEXT8:     "EXT_DEXT8",
-		EXT_RELREF32:  "EXT_RELREF32",
-		EXT_RELCOMMON: "EXT_RELCOMMON",
-		EXT_ABSREF16:  "EXT_ABSREF16",
-		EXT_ABSREF8:   "EXT_ABSREF8",
-	}
-
-	HunkFlagMap = map[HunkFlag]string{
-		HUNKF_PUBLIC:   "MEMF_PUBLIC",
-		HUNKF_FAST:     "MEMF_FAST",
-		HUNKF_CHIP:     "MEMF_CHIP",
-		HUNKF_ADVISORY: "ADVISORY",
+func (dt DebugType) String() string {
+	switch dt {
+	case DEBUG_HCLN:
+		return "HCLN"
+	case DEBUG_HEAD:
+		return "HEAD"
+	case DEBUG_LINE:
+		return "LINE"
+	case DEBUG_ODEF:
+		return "ODEF"
+	case DEBUG_OPTS:
+		return "OPTS"
+	case DEBUG_ZMAGIC:
+		return "ZMAGIC"
+	default:
+		panic("unknown debug type")
 	}
 }
 
