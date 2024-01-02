@@ -15,6 +15,48 @@ func init() {
 		"print help message and exit")
 }
 
+func splitExe(hunks []hunk.Hunk) [][]hunk.Hunk {
+	var loadables [][]hunk.Hunk
+
+	header := hunks[0].(*hunk.HunkHeader)
+
+	loadableHunk := 0
+	seenCodeHunk := false
+
+	var hs []hunk.Hunk
+	var hdr *hunk.HunkHeader
+
+	for _, h := range hunks[1:] {
+		ht := h.Type()
+
+		if ht == hunk.HUNK_CODE {
+			if seenCodeHunk {
+				loadables = append(loadables, hs)
+			}
+
+			seenCodeHunk = true
+			hdr = &hunk.HunkHeader{}
+			hs = []hunk.Hunk{hdr}
+		}
+
+		if ht == hunk.HUNK_CODE || ht == hunk.HUNK_DATA || ht == hunk.HUNK_BSS {
+			hs = append(hs, h)
+
+			hdr.Specifiers = append(hdr.Specifiers, header.Specifiers[loadableHunk])
+			hdr.Hunks += 1
+			hdr.Last = hdr.Hunks - 1
+
+			loadableHunk += 1
+		}
+
+		if ht == hunk.HUNK_RELOC32 {
+			hs = append(hs, h)
+		}
+	}
+
+	return append(loadables, hs)
+}
+
 func writeExe(baseName string, num int, hunks []hunk.Hunk) {
 	println(hunks[0].String())
 
@@ -43,40 +85,8 @@ func main() {
 		panic("Not an executable file")
 	}
 
-	var exeHunks []hunk.Hunk
-	var exeHeader *hunk.HunkHeader
-
-	header := hunks[0].(*hunk.HunkHeader)
-	println(header.String())
-	hunkNum := 0
-	exeNum := 0
-
-	for _, h := range hunks[1:] {
-		ht := h.Type()
-		if ht == hunk.HUNK_CODE {
-			if exeNum > 0 {
-				writeExe(flag.Arg(0), exeNum, exeHunks)
-			}
-			exeHeader = &hunk.HunkHeader{}
-			exeHunks = []hunk.Hunk{exeHeader}
-			exeNum += 1
-		}
-
-		if ht == hunk.HUNK_CODE || ht == hunk.HUNK_DATA ||
-			ht == hunk.HUNK_BSS || ht == hunk.HUNK_RELOC32 {
-
-			exeHunks = append(exeHunks, h)
-
-			fmt.Printf("%d: %s\n", exeNum, h.Type().String())
-
-			if ht != hunk.HUNK_RELOC32 {
-				exeHeader.Specifiers = append(exeHeader.Specifiers, header.Specifiers[hunkNum])
-				exeHeader.Hunks += 1
-				exeHeader.Last = exeHeader.Hunks - 1
-				hunkNum += 1
-			}
-		}
+	loadables := splitExe(hunks)
+	for i, loadable := range loadables {
+		writeExe(flag.Arg(0), i, loadable)
 	}
-
-	writeExe(flag.Arg(0), exeNum, exeHunks)
 }
