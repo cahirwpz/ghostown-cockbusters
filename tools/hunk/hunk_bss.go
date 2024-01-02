@@ -6,8 +6,8 @@ import (
 )
 
 type HunkBss struct {
-	Memory MemoryType
-	Size   uint32
+	Flags HunkFlag
+	Size  uint32
 }
 
 func readHunkBss(r io.Reader) HunkBss {
@@ -25,5 +25,6 @@ func (h HunkBss) Write(w io.Writer) {
 }
 
 func (h HunkBss) String() string {
-	return fmt.Sprintf("%s [%d bytes]\n", HunkNameMap[h.Type()], h.Size)
+	return fmt.Sprintf("%s [%s, %d bytes]\n",
+		HunkNameMap[h.Type()], HunkFlagMap[h.Flags], h.Size)
 }

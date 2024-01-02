@@ -1,6 +1,8 @@
 package hunk
 
-import "io"
+import (
+	"io"
+)
 
 /* Refer to The AmigaDOS Manual (3rd Edition), chapter 10. */
 
@@ -55,28 +57,29 @@ const (
 	EXT_ABSREF8   ExtType = 139 // 8 bit absolute reference to symbol
 )
 
-type MemoryType uint32
+type HunkFlag uint32
 
 const (
 	/* Any hunks that have the HUNKB_ADVISORY bit set will be ignored if they
 	 * aren't understood.  When ignored, they're treated like HUNK_DEBUG hunks.
 	 * NOTE: this handling of HUNKB_ADVISORY started as of V39 dos.library!  If
-	 * lading such executables is attempted under <V39 dos, it will fail with a
+	 * loading such executables is attempted under <V39 dos, it will fail with a
 	 * bad hunk type. */
 	HUNKB_ADVISORY = 29
 	HUNKB_CHIP     = 30
 	HUNKB_FAST     = 31
 
-	HUNKF_ADVISORY MemoryType = 1 << HUNKB_ADVISORY
-	HUNKF_CHIP     MemoryType = 1 << HUNKB_CHIP
-	HUNKF_FAST     MemoryType = 1 << HUNKB_FAST
+	HUNKF_PUBLIC   HunkFlag = 0
+	HUNKF_ADVISORY HunkFlag = 1 << HUNKB_ADVISORY
+	HUNKF_CHIP     HunkFlag = 1 << HUNKB_CHIP
+	HUNKF_FAST     HunkFlag = 1 << HUNKB_FAST
 
-	HUNK_MEMORY_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
-	HUNK_SIZE_MASK   = ^HUNK_MEMORY_MASK
+	HUNKF_MEMORY_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
+	HUNKF_SIZE_MASK   = ^HUNKF_MEMORY_MASK
 )
 
-func hunkSpec(x uint32) (MemoryType, uint32) {
-	return MemoryType(x & HUNK_MEMORY_MASK), (x & HUNK_SIZE_MASK) * 4
+func hunkSpec(x uint32) (HunkFlag, uint32) {
+	return HunkFlag(x & HUNKF_MEMORY_MASK), (x & HUNKF_SIZE_MASK) * 4
 }
 
 type DebugType uint32
@@ -92,6 +95,7 @@ const (
 
 var HunkNameMap map[HunkType]string
 var HunkExtNameMap map[ExtType]string
+var HunkFlagMap map[HunkFlag]string
 
 func init() {
 	HunkNameMap = map[HunkType]string{
@@ -137,6 +141,13 @@ func init() {
 		EXT_RELCOMMON: "EXT_RELCOMMON",
 		EXT_ABSREF16:  "EXT_ABSREF16",
 		EXT_ABSREF8:   "EXT_ABSREF8",
+	}
+
+	HunkFlagMap = map[HunkFlag]string{
+		HUNKF_PUBLIC:   "MEMF_PUBLIC",
+		HUNKF_FAST:     "MEMF_FAST",
+		HUNKF_CHIP:     "MEMF_CHIP",
+		HUNKF_ADVISORY: "ADVISORY",
 	}
 }
 

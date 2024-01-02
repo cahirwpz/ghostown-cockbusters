@@ -118,7 +118,7 @@ func (h HunkDebugGnu) String() string {
 		}
 	} else {
 		var index []int
-		for k, _ := range stabstr {
+		for k := range stabstr {
 			index = append(index, k)
 		}
 		sort.Ints(index)
