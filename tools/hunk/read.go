@@ -109,7 +109,7 @@ func ReadFile(path string) (hunks []Hunk, err error) {
 		case HUNK_EXT:
 			hunk = readHunkExt(file)
 		case HUNK_END:
-			hunk = HunkEnd{}
+			hunk = &HunkEnd{}
 		default:
 			log.Fatalf("%s hunk not supported", hunkId.String())
 		}

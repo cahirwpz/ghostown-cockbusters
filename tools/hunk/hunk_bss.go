@@ -10,9 +10,9 @@ type HunkBss struct {
 	Size  uint32
 }
 
-func readHunkBss(r io.Reader) HunkBss {
+func readHunkBss(r io.Reader) *HunkBss {
 	mem, size := hunkSpec(readLong(r))
-	return HunkBss{mem, size}
+	return &HunkBss{mem, size}
 }
 
 func (h HunkBss) Type() HunkType {

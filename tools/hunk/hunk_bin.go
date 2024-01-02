@@ -12,9 +12,9 @@ type HunkBin struct {
 	Bytes []byte
 }
 
-func readHunkBin(r io.Reader, htype HunkType) HunkBin {
+func readHunkBin(r io.Reader, htype HunkType) *HunkBin {
 	flags, size := hunkSpec(readLong(r))
-	return HunkBin{htype, flags, readData(r, size)}
+	return &HunkBin{htype, flags, readData(r, size)}
 }
 
 func (h HunkBin) Type() HunkType {

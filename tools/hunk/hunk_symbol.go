@@ -16,7 +16,7 @@ type HunkSymbol struct {
 	Symbols []Symbol
 }
 
-func readHunkSymbol(r io.Reader) HunkSymbol {
+func readHunkSymbol(r io.Reader) *HunkSymbol {
 	var symbols []Symbol
 	for {
 		name := readString(r)
@@ -26,10 +26,10 @@ func readHunkSymbol(r io.Reader) HunkSymbol {
 		value := readLong(r)
 		symbols = append(symbols, Symbol{name, value})
 	}
-	return HunkSymbol{symbols}
+	return &HunkSymbol{symbols}
 }
 
-func (h HunkSymbol) Sort() {
+func (h *HunkSymbol) Sort() {
 	sort.Slice(h.Symbols, func(i, j int) bool {
 		return h.Symbols[i].Value < h.Symbols[j].Value
 	})

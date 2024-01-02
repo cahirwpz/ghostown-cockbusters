@@ -15,7 +15,8 @@ type HunkReloc32 struct {
 	Relocs []Reloc32
 }
 
-func readHunkReloc32(r io.Reader) (h HunkReloc32) {
+func readHunkReloc32(r io.Reader) *HunkReloc32 {
+	var relocs []Reloc32
 	for {
 		count := readLong(r)
 		if count == 0 {
@@ -26,9 +27,9 @@ func readHunkReloc32(r io.Reader) (h HunkReloc32) {
 		for i := 0; i < int(count); i++ {
 			offsets[i] = readLong(r)
 		}
-		h.Relocs = append(h.Relocs, Reloc32{hunkRef, offsets})
+		relocs = append(relocs, Reloc32{hunkRef, offsets})
 	}
-	return
+	return &HunkReloc32{relocs}
 }
 
 func (h HunkReloc32) Type() HunkType {

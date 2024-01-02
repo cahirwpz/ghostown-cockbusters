@@ -14,17 +14,17 @@ type HunkHeader struct {
 	Specifiers []uint32
 }
 
-func readHunkHeader(r io.Reader) (h HunkHeader) {
-	h.Residents = readArrayOfString(r)
-	h.Hunks = readLong(r)
-	h.First = readLong(r)
-	h.Last = readLong(r)
-	n := h.Last - h.First + 1
-	h.Specifiers = make([]uint32, n)
+func readHunkHeader(r io.Reader) *HunkHeader {
+	residents := readArrayOfString(r)
+	hunks := readLong(r)
+	first := readLong(r)
+	last := readLong(r)
+	n := last - first + 1
+	specifiers := make([]uint32, n)
 	for i := 0; i < int(n); i++ {
-		h.Specifiers[i] = readLong(r)
+		specifiers[i] = readLong(r)
 	}
-	return
+	return &HunkHeader{residents, hunks, first, last, specifiers}
 }
 
 func (h HunkHeader) Type() HunkType {

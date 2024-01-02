@@ -60,7 +60,7 @@ func readStrTab(r io.Reader, size uint32) []byte {
 	return strtab
 }
 
-func readHunkDebugGnu(r io.Reader, name string) HunkDebugGnu {
+func readHunkDebugGnu(r io.Reader, name string) *HunkDebugGnu {
 	var stabTab []Stab
 	var stabstrTab []byte
 	switch name {
@@ -81,7 +81,7 @@ func readHunkDebugGnu(r io.Reader, name string) HunkDebugGnu {
 		stabstrSize := readLong(r) * 4
 		stabstrTab = readStrTab(r, stabstrSize)
 	}
-	return HunkDebugGnu{name, stabTab, stabstrTab}
+	return &HunkDebugGnu{name, stabTab, stabstrTab}
 }
 
 func (h HunkDebugGnu) Type() HunkType {

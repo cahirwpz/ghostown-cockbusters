@@ -18,7 +18,7 @@ type HunkExt struct {
 	Externs []Extern
 }
 
-func readHunkExt(r io.Reader) HunkExt {
+func readHunkExt(r io.Reader) *HunkExt {
 	var ext []Extern
 	for {
 		nlongs := readLong(r)
@@ -41,10 +41,10 @@ func readHunkExt(r io.Reader) HunkExt {
 			panic(fmt.Sprintf("unknown external type: %v", extType))
 		}
 	}
-	return HunkExt{ext}
+	return &HunkExt{ext}
 }
 
-func (h HunkExt) Sort() {
+func (h *HunkExt) Sort() {
 	sort.Slice(h.Externs, func(i, j int) bool {
 		if h.Externs[i].Type == h.Externs[j].Type {
 			return h.Externs[i].Name < h.Externs[j].Name
