@@ -13,10 +13,7 @@ else
 OBJECTS += data/$(MODULE).smp.o
 endif
 
-LOADABLES := uvmap-rgb.o bumpmap-rgb.o
-
-STRIP.uvmap-rgb := -K_UVMapRGBEffect
-STRIP.bumpmap-rgb := -K_BumpMapRGBEffect
+LDSCRIPT := amiga.lds
 
 LIBS := libpt
 
@@ -27,13 +24,16 @@ CLEAN-FILES += data/texture-rgb.c data/uvmap-rgb.c
 SOURCES := main.c load.c empty.c uvmap-rgb.c bumpmap-rgb.c
 MAIN := #
 
-CPPFLAGS += -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO=1 -DDELTA=$(DELTA) -I.
 
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader,2
 PNG2C.skulls_128col := --pixmap skulls,160x128x8 --palette skulls,128
 PNG2C.texture-rgb := --pixmap image,128x128x12
 
 include $(TOPDIR)/build/effect.mk
+
+bumpmap-rgb.o : CFLAGS := $(filter-out -msmall-code, $(CFLAGS))
+uvmap-rgb.o : CFLAGS := $(filter-out -msmall-code, $(CFLAGS))
 
 data/skulls_map.c: data/bumpmap.py data/skulls_map.png
 	@echo "[GEN] $@"

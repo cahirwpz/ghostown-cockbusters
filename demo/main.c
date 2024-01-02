@@ -14,6 +14,9 @@
 #define _SYSTEM
 #include <system/memory.h>
 #include <system/cia.h>
+#include <system/floppy.h>
+#include <system/filesys.h>
+#include <system/file.h>
 
 extern u_char Module[];
 extern u_char Samples[];
@@ -173,6 +176,7 @@ int main(void) {
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
+  InitFileSys(FloppyOpen());
   ResetSprites();
   LoadDemo();
 #if DELTA == 1
@@ -196,6 +200,8 @@ int main(void) {
   PtRemoveCIA();
 
   UnLoadEffects(AllEffects);
+
+  KillFileSys();
 
   return 0;
 }
