@@ -9,7 +9,7 @@ func (h HunkEnd) Type() HunkType {
 }
 
 func (h HunkEnd) Write(w io.Writer) {
-	writeLong(w, HUNK_END)
+	writeLong(w, uint32(HUNK_END))
 }
 
 func (h HunkEnd) String() string {

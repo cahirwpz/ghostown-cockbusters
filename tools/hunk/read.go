@@ -67,11 +67,12 @@ func readArrayOfString(r io.Reader) []string {
 
 func ReadFile(path string) (hunks []Hunk, err error) {
 	file, err := os.Open(path)
-	defer file.Close()
 
 	if err != nil {
-		return
+		return nil, err
 	}
+
+	defer file.Close()
 
 	var hunkId HunkType
 	var name string

@@ -6,7 +6,7 @@ import (
 )
 
 type HunkBss struct {
-	Memory HunkMemory
+	Memory MemoryType
 	Size   uint32
 }
 
@@ -20,7 +20,7 @@ func (h HunkBss) Type() HunkType {
 }
 
 func (h HunkBss) Write(w io.Writer) {
-	writeLong(w, HUNK_BSS)
+	writeLong(w, uint32(HUNK_BSS))
 	writeLong(w, h.Size/4)
 }
 

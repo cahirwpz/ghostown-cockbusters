@@ -18,7 +18,7 @@ func (h HunkUnit) Type() HunkType {
 }
 
 func (h HunkUnit) Write(w io.Writer) {
-	writeLong(w, HUNK_UNIT)
+	writeLong(w, uint32(HUNK_UNIT))
 	writeStringWithSize(w, h.Name)
 }
 

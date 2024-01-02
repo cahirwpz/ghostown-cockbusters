@@ -8,7 +8,7 @@ import (
 
 type HunkBin struct {
 	htype  HunkType
-	Memory HunkMemory
+	Memory MemoryType
 	Bytes  []byte
 }
 

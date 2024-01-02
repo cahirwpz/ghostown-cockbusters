@@ -40,7 +40,7 @@ func (h HunkSymbol) Type() HunkType {
 }
 
 func (h HunkSymbol) Write(w io.Writer) {
-	writeLong(w, HUNK_SYMBOL)
+	writeLong(w, uint32(HUNK_SYMBOL))
 	for _, s := range h.Symbol {
 		writeStringWithSize(w, s.Name)
 		writeLong(w, s.Value)

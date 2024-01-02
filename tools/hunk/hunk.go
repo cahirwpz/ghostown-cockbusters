@@ -8,54 +8,54 @@ type HunkType uint32
 
 const (
 	HUNK_NONE         HunkType = 0
-	HUNK_UNIT                  = 999
-	HUNK_NAME                  = 1000
-	HUNK_CODE                  = 1001
-	HUNK_DATA                  = 1002
-	HUNK_BSS                   = 1003
-	HUNK_RELOC32               = 1004
-	HUNK_RELOC16               = 1005
-	HUNK_RELOC8                = 1006
-	HUNK_EXT                   = 1007
-	HUNK_SYMBOL                = 1008
-	HUNK_DEBUG                 = 1009
-	HUNK_END                   = 1010
-	HUNK_HEADER                = 1011
-	HUNK_OVERLAY               = 1013
-	HUNK_BREAK                 = 1014
-	HUNK_DREL32                = 1015
-	HUNK_DREL16                = 1016
-	HUNK_DREL8                 = 1017
-	HUNK_LIB                   = 1018
-	HUNK_INDEX                 = 1019
-	HUNK_RELOC32SHORT          = 1020
-	HUNK_RELRELOC32            = 1021
-	HUNK_ABSRELOC16            = 1022
+	HUNK_UNIT         HunkType = 999
+	HUNK_NAME         HunkType = 1000
+	HUNK_CODE         HunkType = 1001
+	HUNK_DATA         HunkType = 1002
+	HUNK_BSS          HunkType = 1003
+	HUNK_RELOC32      HunkType = 1004
+	HUNK_RELOC16      HunkType = 1005
+	HUNK_RELOC8       HunkType = 1006
+	HUNK_EXT          HunkType = 1007
+	HUNK_SYMBOL       HunkType = 1008
+	HUNK_DEBUG        HunkType = 1009
+	HUNK_END          HunkType = 1010
+	HUNK_HEADER       HunkType = 1011
+	HUNK_OVERLAY      HunkType = 1013
+	HUNK_BREAK        HunkType = 1014
+	HUNK_DREL32       HunkType = 1015
+	HUNK_DREL16       HunkType = 1016
+	HUNK_DREL8        HunkType = 1017
+	HUNK_LIB          HunkType = 1018
+	HUNK_INDEX        HunkType = 1019
+	HUNK_RELOC32SHORT HunkType = 1020
+	HUNK_RELRELOC32   HunkType = 1021
+	HUNK_ABSRELOC16   HunkType = 1022
 )
 
 type ExtType uint8
 
 const (
 	EXT_NONE      ExtType = 255
-	EXT_SYMB              = 0   // symbol table
-	EXT_DEF               = 1   // relocatable definition
-	EXT_ABS               = 2   // Absolute definition
-	EXT_RES               = 3   // no longer supported
-	EXT_GNU_LOCAL         = 33  // GNU local symbol definition
-	EXT_REF32             = 129 // 32 bit absolute reference to symbol
-	EXT_COMMON            = 130 // 32 bit absolute reference to COMMON block
-	EXT_REF16             = 131 // 16 bit PC-relative reference to symbol
-	EXT_REF8              = 132 // 8  bit PC-relative reference to symbol
-	EXT_DEXT32            = 133 // 32 bit data relative reference
-	EXT_DEXT16            = 134 // 16 bit data relative reference
-	EXT_DEXT8             = 135 // 8  bit data relative reference
-	EXT_RELREF32          = 136 // 32 bit PC-relative reference to symbol
-	EXT_RELCOMMON         = 137 // 32 bit PC-relative reference to COMMON block
-	EXT_ABSREF16          = 138 // 16 bit absolute reference to symbol
-	EXT_ABSREF8           = 139 // 8 bit absolute reference to symbol
+	EXT_SYMB      ExtType = 0   // symbol table
+	EXT_DEF       ExtType = 1   // relocatable definition
+	EXT_ABS       ExtType = 2   // Absolute definition
+	EXT_RES       ExtType = 3   // no longer supported
+	EXT_GNU_LOCAL ExtType = 33  // GNU local symbol definition
+	EXT_REF32     ExtType = 129 // 32 bit absolute reference to symbol
+	EXT_COMMON    ExtType = 130 // 32 bit absolute reference to COMMON block
+	EXT_REF16     ExtType = 131 // 16 bit PC-relative reference to symbol
+	EXT_REF8      ExtType = 132 // 8  bit PC-relative reference to symbol
+	EXT_DEXT32    ExtType = 133 // 32 bit data relative reference
+	EXT_DEXT16    ExtType = 134 // 16 bit data relative reference
+	EXT_DEXT8     ExtType = 135 // 8  bit data relative reference
+	EXT_RELREF32  ExtType = 136 // 32 bit PC-relative reference to symbol
+	EXT_RELCOMMON ExtType = 137 // 32 bit PC-relative reference to COMMON block
+	EXT_ABSREF16  ExtType = 138 // 16 bit absolute reference to symbol
+	EXT_ABSREF8   ExtType = 139 // 8 bit absolute reference to symbol
 )
 
-type HunkMemory uint32
+type MemoryType uint32
 
 const (
 	/* Any hunks that have the HUNKB_ADVISORY bit set will be ignored if they
@@ -67,17 +67,28 @@ const (
 	HUNKB_CHIP     = 30
 	HUNKB_FAST     = 31
 
-	HUNKF_ADVISORY HunkMemory = 1 << HUNKB_ADVISORY
-	HUNKF_CHIP                = 1 << HUNKB_CHIP
-	HUNKF_FAST                = 1 << HUNKB_FAST
+	HUNKF_ADVISORY MemoryType = 1 << HUNKB_ADVISORY
+	HUNKF_CHIP     MemoryType = 1 << HUNKB_CHIP
+	HUNKF_FAST     MemoryType = 1 << HUNKB_FAST
 
 	HUNK_MEMORY_MASK = uint32(HUNKF_ADVISORY) | uint32(HUNKF_CHIP) | uint32(HUNKF_FAST)
 	HUNK_SIZE_MASK   = ^HUNK_MEMORY_MASK
 )
 
-func hunkSpec(x uint32) (HunkMemory, uint32) {
-	return HunkMemory(x & HUNK_MEMORY_MASK), (x & HUNK_SIZE_MASK) * 4
+func hunkSpec(x uint32) (MemoryType, uint32) {
+	return MemoryType(x & HUNK_MEMORY_MASK), (x & HUNK_SIZE_MASK) * 4
 }
+
+type DebugType uint32
+
+const (
+	DEBUG_HCLN   DebugType = 0x48434c4e
+	DEBUG_HEAD   DebugType = 0x48454144
+	DEBUG_LINE   DebugType = 0x4c494e45
+	DEBUG_ODEF   DebugType = 0x4f444546
+	DEBUG_OPTS   DebugType = 0x4f505453
+	DEBUG_ZMAGIC DebugType = 267
+)
 
 var HunkNameMap map[HunkType]string
 var HunkExtNameMap map[ExtType]string

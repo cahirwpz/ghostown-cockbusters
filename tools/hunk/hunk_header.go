@@ -32,7 +32,7 @@ func (h HunkHeader) Type() HunkType {
 }
 
 func (h HunkHeader) Write(w io.Writer) {
-	writeLong(w, HUNK_HEADER)
+	writeLong(w, uint32(HUNK_HEADER))
 	writeArrayOfString(w, h.Residents)
 	writeLong(w, h.Hunks)
 	writeLong(w, h.First)
@@ -46,11 +46,12 @@ func (h HunkHeader) String() string {
 	var sb strings.Builder
 	sb.WriteString("HUNK_HEADER\n")
 	fmt.Fprintf(&sb, "  Residents: %s\n", h.Residents)
-	for i, v := range h.Specifiers {
-		fmt.Fprintf(&sb, "  Hunk %d: %6d bytes", i+int(h.First), v<<2)
-		if v&HUNKF_CHIP != 0 {
+	for i, spec := range h.Specifiers {
+		mem, size := hunkSpec(spec)
+		fmt.Fprintf(&sb, "  Hunk %d: %6d bytes", i+int(h.First), size)
+		if mem == HUNKF_CHIP {
 			sb.WriteString(" [MEMF_CHIP]\n")
-		} else if v&HUNKF_FAST != 0 {
+		} else if mem == HUNKF_FAST {
 			sb.WriteString(" [MEMF_FAST]\n")
 		} else {
 			sb.WriteString(" [MEMF_PUBLIC]\n")

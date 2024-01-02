@@ -12,64 +12,64 @@ type StabType uint8
 
 const (
 	UNDF       StabType = 0x00
-	EXT                 = 0x01
-	ABS                 = 0x02
-	TEXT                = 0x04
-	DATA                = 0x06
-	BSS                 = 0x08
-	INDR                = 0x0a
-	SIZE                = 0x0c
-	COMM                = 0x12
-	SETA                = 0x14
-	SETT                = 0x16
-	SETD                = 0x18
-	SETB                = 0x1a
-	SETV                = 0x1c
-	WARNING             = 0x1e
-	FN                  = 0x1f
-	GSYM                = 0x20
-	FNAME               = 0x22
-	FUN                 = 0x24
-	STSYM               = 0x26
-	LCSYM               = 0x28
-	MAIN                = 0x2a
-	ROSYM               = 0x2c
-	PC                  = 0x30
-	NSYMS               = 0x32
-	NOMAP               = 0x34
-	MAC_DEFINE          = 0x36
-	OBJ                 = 0x38
-	MAC_UNDEF           = 0x3a
-	OPT                 = 0x3c
-	RSYM                = 0x40
-	SLINE               = 0x44
-	DSLINE              = 0x46
-	BSLINE              = 0x48
-	FLINE               = 0x4c
-	EHDECL              = 0x50
-	CATCH               = 0x54
-	SSYM                = 0x60
-	ENDM                = 0x62
-	SO                  = 0x64
-	LSYM                = 0x80
-	BINCL               = 0x82
-	SOL                 = 0x84
-	PSYM                = 0xa0
-	EINCL               = 0xa2
-	ENTRY               = 0xa4
-	LBRAC               = 0xc0
-	EXCL                = 0xc2
-	SCOPE               = 0xc4
-	RBRAC               = 0xe0
-	BCOMM               = 0xe2
-	ECOMM               = 0xe4
-	ECOML               = 0xe8
-	WITH                = 0xea
-	NBTEXT              = 0xf0
-	NBDATA              = 0xf2
-	NBBSS               = 0xf4
-	NBSTS               = 0xf6
-	NBLCS               = 0xf8
+	EXT        StabType = 0x01
+	ABS        StabType = 0x02
+	TEXT       StabType = 0x04
+	DATA       StabType = 0x06
+	BSS        StabType = 0x08
+	INDR       StabType = 0x0a
+	SIZE       StabType = 0x0c
+	COMM       StabType = 0x12
+	SETA       StabType = 0x14
+	SETT       StabType = 0x16
+	SETD       StabType = 0x18
+	SETB       StabType = 0x1a
+	SETV       StabType = 0x1c
+	WARNING    StabType = 0x1e
+	FN         StabType = 0x1f
+	GSYM       StabType = 0x20
+	FNAME      StabType = 0x22
+	FUN        StabType = 0x24
+	STSYM      StabType = 0x26
+	LCSYM      StabType = 0x28
+	MAIN       StabType = 0x2a
+	ROSYM      StabType = 0x2c
+	PC         StabType = 0x30
+	NSYMS      StabType = 0x32
+	NOMAP      StabType = 0x34
+	MAC_DEFINE StabType = 0x36
+	OBJ        StabType = 0x38
+	MAC_UNDEF  StabType = 0x3a
+	OPT        StabType = 0x3c
+	RSYM       StabType = 0x40
+	SLINE      StabType = 0x44
+	DSLINE     StabType = 0x46
+	BSLINE     StabType = 0x48
+	FLINE      StabType = 0x4c
+	EHDECL     StabType = 0x50
+	CATCH      StabType = 0x54
+	SSYM       StabType = 0x60
+	ENDM       StabType = 0x62
+	SO         StabType = 0x64
+	LSYM       StabType = 0x80
+	BINCL      StabType = 0x82
+	SOL        StabType = 0x84
+	PSYM       StabType = 0xa0
+	EINCL      StabType = 0xa2
+	ENTRY      StabType = 0xa4
+	LBRAC      StabType = 0xc0
+	EXCL       StabType = 0xc2
+	SCOPE      StabType = 0xc4
+	RBRAC      StabType = 0xe0
+	BCOMM      StabType = 0xe2
+	ECOMM      StabType = 0xe4
+	ECOML      StabType = 0xe8
+	WITH       StabType = 0xea
+	NBTEXT     StabType = 0xf0
+	NBDATA     StabType = 0xf2
+	NBBSS      StabType = 0xf4
+	NBSTS      StabType = 0xf6
+	NBLCS      StabType = 0xf8
 )
 
 var StabTypeMap map[StabType]string
@@ -171,6 +171,24 @@ func readStab(r io.Reader) (s Stab) {
 		panic("no data")
 	}
 	return
+}
+
+func (s Stab) Write(w io.Writer) {
+	if binary.Write(w, binary.BigEndian, s.StrOff) != nil {
+		panic("failed to write Stab.StrOff")
+	}
+	if binary.Write(w, binary.BigEndian, s.BinType) != nil {
+		panic("failed to write Stab.BinType")
+	}
+	if binary.Write(w, binary.BigEndian, s.Other) != nil {
+		panic("failed to write Stab.Other")
+	}
+	if binary.Write(w, binary.BigEndian, s.Desc) != nil {
+		panic("failed to write Stab.Desc")
+	}
+	if binary.Write(w, binary.BigEndian, s.Value) != nil {
+		panic("failed to write Stab.Value")
+	}
 }
 
 func (s Stab) String(strtab map[int]string) string {

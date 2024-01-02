@@ -58,7 +58,7 @@ func (h HunkExt) Type() HunkType {
 }
 
 func (h HunkExt) Write(w io.Writer) {
-	writeLong(w, HUNK_EXT)
+	writeLong(w, uint32(HUNK_EXT))
 	for _, ext := range h.Ext {
 		eh := stringSize(ext.Name) | uint32(ext.Type)<<24
 		writeLong(w, eh)
