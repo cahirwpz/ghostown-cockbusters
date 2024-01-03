@@ -1,6 +1,6 @@
 module ghostown.pl/splitexe
 
-go 1.17
+go 1.19
 
 replace ghostown.pl/hunk => ../hunk
 

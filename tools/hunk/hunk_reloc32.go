@@ -3,6 +3,7 @@ package hunk
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
@@ -30,6 +31,12 @@ func readHunkReloc32(r io.Reader) *HunkReloc32 {
 		relocs = append(relocs, Reloc32{hunkRef, offsets})
 	}
 	return &HunkReloc32{relocs}
+}
+
+func (h *HunkReloc32) Sort() {
+	sort.Slice(h.Relocs, func(i, j int) bool {
+		return h.Relocs[i].HunkRef < h.Relocs[j].HunkRef
+	})
 }
 
 func (h HunkReloc32) Type() HunkType {

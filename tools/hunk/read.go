@@ -3,7 +3,6 @@ package hunk
 import (
 	"encoding/binary"
 	"io"
-	"log"
 	"os"
 )
 
@@ -86,6 +85,10 @@ func ReadFile(path string) (hunks []Hunk, err error) {
 			}
 			return
 		}
+		/*
+			ret, _ := file.Seek(0, io.SeekCurrent)
+			log.Printf("Hunk %s at 0x%x", hunkId.String(), ret)
+		*/
 		var hunk Hunk
 		switch hunkId {
 		case HUNK_HEADER:
@@ -111,7 +114,7 @@ func ReadFile(path string) (hunks []Hunk, err error) {
 		case HUNK_END:
 			hunk = &HunkEnd{}
 		default:
-			log.Fatalf("%s hunk not supported", hunkId.String())
+			panic("hunk not supported")
 		}
 		hunks = append(hunks, hunk)
 	}

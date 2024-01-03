@@ -84,7 +84,7 @@ func (ht HunkType) String() string {
 	case HUNK_ABSRELOC16:
 		return "HUNK_ABSRELOC16"
 	default:
-		panic("unknown hunk type")
+		return "?"
 	}
 }
 
