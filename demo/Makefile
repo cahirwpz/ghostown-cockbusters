@@ -22,6 +22,7 @@ CLEAN-FILES += data/skulls_map.c data/light.c data/skulls_128col.c
 CLEAN-FILES += data/texture-rgb.c data/uvmap-rgb.c
 
 SOURCES := main.c load.c empty.c uvmap-rgb.c bumpmap-rgb.c
+LOADABLES := spooky-town.exe uvmap-rgb.exe bumpmap-rgb.exe
 MAIN := #
 
 CPPFLAGS += -DINTRO=1 -DDELTA=$(DELTA) -I.
@@ -34,6 +35,10 @@ include $(TOPDIR)/build/effect.mk
 
 bumpmap-rgb.o : CFLAGS := $(filter-out -msmall-code, $(CFLAGS))
 uvmap-rgb.o : CFLAGS := $(filter-out -msmall-code, $(CFLAGS))
+
+$(LOADABLES): demo.exe
+	@echo "[SPLITEXE] $^ -> $(LOADABLES)"
+	$(SPLITEXE) $^ $(LOADABLES)
 
 data/skulls_map.c: data/bumpmap.py data/skulls_map.png
 	@echo "[GEN] $@"

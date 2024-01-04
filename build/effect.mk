@@ -2,6 +2,7 @@ EFFECT := $(notdir $(CURDIR))
 
 ifndef SOURCES
 SOURCES = $(EFFECT).c
+LOADABLES = $(EFFECT).exe
 endif
 
 LIBS += libblit libgfx libmisc libc
@@ -77,7 +78,7 @@ ifeq ($(AMIGAOS), 0)
 EXTRA-FILES += $(EFFECT).img $(EFFECT).rom
 CLEAN-FILES += $(EFFECT).img $(EFFECT).rom
 
-%.img: %.exe $(LOADABLES) $(DATA)
+%.img: $(LOADABLES) $(DATA)
 	@echo "[IMG] $(addprefix $(DIR),$<) -> $(DIR)$@"
 	$(FSUTIL) create $@ $(filter-out %bootloader.bin,$^)
 

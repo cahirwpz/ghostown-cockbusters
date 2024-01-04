@@ -12,10 +12,12 @@
 #include "demo.h"
 
 #define _SYSTEM
+#include <system/boot.h>
 #include <system/memory.h>
 #include <system/cia.h>
 #include <system/floppy.h>
 #include <system/filesys.h>
+#include <system/memfile.h>
 #include <system/file.h>
 
 extern u_char Module[];
@@ -171,12 +173,28 @@ static void DecodeSamples(u_char *smp, int size) {
 
 extern void LoadDemo(void);
 
+#define ROMADDR 0xf80000
+#define ROMSIZE 0x07fff0
+
 int main(void) {
   /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
-  InitFileSys(FloppyOpen());
+  {
+    FileT *dev = NULL;
+
+    if (BootDev == 0) /* floppy */ {
+        dev = FloppyOpen();
+    } else if (BootDev == 1) /* rom/baremetal */ {
+        dev = MemOpen((void *)ROMADDR, ROMSIZE);
+    } else {
+        PANIC();
+    }
+
+    InitFileSys(dev);
+  }
+
   ResetSprites();
   LoadDemo();
 #if DELTA == 1
