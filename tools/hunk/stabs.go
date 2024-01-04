@@ -193,7 +193,7 @@ func (st StabType) String() string {
 	case NBLCS:
 		return "NBLCS"
 	default:
-		panic("unknown stab type")
+		return "?"
 	}
 }
 

@@ -145,7 +145,7 @@ func (et ExtType) String() string {
 	case EXT_ABSREF8:
 		return "EXT_ABSREF8"
 	default:
-		panic("unknown Ext type")
+		return "?"
 	}
 }
 
@@ -181,7 +181,7 @@ func (hf HunkFlag) String() string {
 	case HUNKF_ADVISORY:
 		return "ADVISORY"
 	default:
-		panic("unknown hunk flag")
+		return "?"
 	}
 }
 
@@ -215,7 +215,7 @@ func (dt DebugType) String() string {
 	case DEBUG_ZMAGIC:
 		return "ZMAGIC"
 	default:
-		panic("unknown debug type")
+		return "?"
 	}
 }
 
