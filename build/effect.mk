@@ -2,8 +2,9 @@ EFFECT := $(notdir $(CURDIR))
 
 ifndef SOURCES
 SOURCES = $(EFFECT).c
-LOADABLES = $(EFFECT).exe
 endif
+
+LOADABLES ?= $(EFFECT).exe
 
 LIBS += libblit libgfx libmisc libc
 LDEXTRA = $(TOPDIR)/system/system.a
