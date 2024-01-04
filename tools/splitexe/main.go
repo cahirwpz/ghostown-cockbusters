@@ -66,7 +66,7 @@ func splitExe(hunks []hunk.Hunk) []*Loadable {
 	return append(loadables, &Loadable{hs, is})
 }
 
-func writeExe(baseName string, num int, l *Loadable) {
+func writeExe(exeName string, l *Loadable) {
 	println(l.Hunks[0].String())
 
 	hs := append(l.Hunks, &hunk.HunkEnd{})
@@ -85,8 +85,6 @@ func writeExe(baseName string, num int, l *Loadable) {
 			hr.Sort()
 		}
 	}
-
-	exeName := fmt.Sprintf("%s.%d", baseName, num)
 
 	if err := hunk.WriteFile(exeName, hs); err != nil {
 		panic("failed to write Amiga Hunk file")
@@ -111,7 +109,14 @@ func main() {
 	}
 
 	loadables := splitExe(hunks)
+	n := flag.NArg() - 1
+
+	if len(loadables) != n {
+		fmt.Printf("Please provide %d executable file names!\n", len(loadables))
+		os.Exit(1)
+	}
+
 	for i, loadable := range loadables {
-		writeExe(flag.Arg(0), i, loadable)
+		writeExe(flag.Arg(i+1), loadable)
 	}
 }
