@@ -20,7 +20,7 @@ SECTIONS
   .text :
   {
     __text = .;
-    EXCLUDE_FILE(${excluded}) *(.text)
+    ${excluded} *(.text)
     *(.text.*)
   }
   __text_size = SIZEOF(.text);
@@ -29,26 +29,26 @@ SECTIONS
   {
     __data = .;
     CONSTRUCTORS
-    EXCLUDE_FILE(${excluded}) *(.data)
+    ${excluded} *(.data)
   }
   __data_size = SIZEOF(.data);
   .bss :
   {
     __bss = .;
-    EXCLUDE_FILE(${excluded}) *(.bss)
+    ${excluded} *(.bss)
     *(COMMON)
   }
   __bss_size = SIZEOF(.bss);
   .datachip :
   {
     __data_chip = .;
-    EXCLUDE_FILE(${excluded}) *(.datachip)
+    ${excluded} *(.datachip)
   }
   __data_chip_size = SIZEOF(.datachip);
   .bsschip :
   {
     __bss_chip = .;
-    EXCLUDE_FILE(${excluded}) *(.bsschip)
+    ${excluded} *(.bsschip)
   }
   __bss_chip_size = SIZEOF(.bsschip);
   ${effects}
@@ -97,8 +97,13 @@ if __name__ == '__main__':
         effects.append(PerEffect.substitute(name=k, objects=" ".join(v)))
         objects = objects.union(set(v))
 
+    if objects:
+        excluded = 'EXCLUDE_FILE(%s)' % " ".join(objects)
+    else:
+        excluded = ''
+
     lds = LinkerScript.substitute(effects="".join(effects),
-                                  excluded=" ".join(objects))
+                                  excluded=excluded)
 
     with open(args.output, "w") as f:
         f.write(lds)
