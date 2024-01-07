@@ -170,19 +170,19 @@ const (
 	HUNKF_SIZE_MASK   = ^HUNKF_MEMORY_MASK
 )
 
-func (hf HunkFlag) String() string {
-	switch hf {
-	case HUNKF_PUBLIC:
-		return "MEMF_PUBLIC"
-	case HUNKF_FAST:
-		return "MEMF_FAST"
-	case HUNKF_CHIP:
-		return "MEMF_CHIP"
-	case HUNKF_ADVISORY:
-		return "ADVISORY"
-	default:
-		return "?"
+func (flag HunkFlag) String() string {
+	var ans string
+	if flag&HUNKF_CHIP != 0 {
+		ans = "MEMF_CHIP"
+	} else if flag&HUNKF_FAST != 0 {
+		ans = "MEMF_FAST"
+	} else {
+		ans = "MEMF_PUBLIC"
 	}
+	if flag&HUNKF_ADVISORY != 0 {
+		ans += ", ADVISORY"
+	}
+	return ans
 }
 
 func hunkSpec(x uint32) (HunkFlag, uint32) {

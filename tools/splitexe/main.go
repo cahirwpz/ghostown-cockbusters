@@ -3,15 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"slices"
 
 	"ghostown.pl/hunk"
 )
 
 var printHelp bool
+var compression bool
 
 func init() {
+	flag.BoolVar(&compression, "compression", false,
+		"use ZX0 compression on CODE & DATA hunks")
 	flag.BoolVar(&printHelp, "help", false,
 		"print help message and exit")
 }
@@ -19,6 +24,56 @@ func init() {
 type Loadable struct {
 	Hunks   []hunk.Hunk
 	Indices []uint32
+}
+
+func zx0(path string, data []byte) []byte {
+	var f *os.File
+	var fi os.FileInfo
+	var err error
+	var dir string
+
+	if dir, err = os.Getwd(); err != nil {
+		log.Fatal("Getwd:", err)
+	}
+
+	if f, err = os.CreateTemp(dir, path); err != nil {
+		log.Fatal("CreateTemp:", err)
+	}
+
+	name := f.Name()
+
+	defer os.Remove(name)
+
+	if _, err := f.Write(data); err != nil {
+		log.Fatal("Write:", err)
+	}
+	if err = f.Close(); err != nil {
+		log.Fatal("Close:", err)
+	}
+
+	cmd := exec.Command("salvador", name, name+".zx0")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("%s: %v", cmd.String(), err)
+	}
+
+	if f, err = os.Open(name + ".zx0"); err != nil {
+		log.Fatal("Open:", err)
+	}
+	if fi, err = f.Stat(); err != nil {
+		log.Fatal("Stat:", err)
+	}
+
+	output := make([]byte, fi.Size())
+	if _, err = f.Read(output); err != nil {
+		log.Fatal("Read:", err)
+	}
+	if err = f.Close(); err != nil {
+		log.Fatal("Close:", err)
+	}
+
+	defer os.Remove(name + ".zx0")
+
+	return output
 }
 
 func splitExe(hunks []hunk.Hunk) []*Loadable {
@@ -71,10 +126,25 @@ func splitExe(hunks []hunk.Hunk) []*Loadable {
 }
 
 func writeExe(exeName string, l *Loadable) {
-	println(l.Hunks[0].String())
+	header := l.Hunks[0].(*hunk.HunkHeader)
 
+	loadableNum := 0
 	for _, h := range l.Hunks {
-		if h.Type() == hunk.HUNK_RELOC32 {
+		switch h.Type() {
+		case hunk.HUNK_CODE, hunk.HUNK_DATA:
+			if compression {
+				hd := h.(*hunk.HunkBin)
+				fmt.Printf("Compressing hunk %d: %d", loadableNum, len(hd.Bytes))
+				compressed := zx0(exeName, hd.Bytes)
+				fmt.Printf(" -> %d\n", len(compressed))
+				hd.Bytes = compressed
+				header.Specifiers[loadableNum] |= uint32(hunk.HUNKF_ADVISORY)
+				header.Specifiers[loadableNum] += 1
+			}
+			loadableNum += 1
+		case hunk.HUNK_BSS:
+			loadableNum += 1
+		case hunk.HUNK_RELOC32:
 			hr := h.(*hunk.HunkReloc32)
 			for i, r := range hr.Relocs {
 				newIndex := slices.Index(l.Indices, r.HunkRef)
@@ -87,6 +157,11 @@ func writeExe(exeName string, l *Loadable) {
 			hr.Sort()
 		}
 	}
+
+	if compression {
+		println()
+	}
+	println(header.String())
 
 	if err := hunk.WriteFile(exeName, l.Hunks, 0755); err != nil {
 		panic("failed to write Amiga Hunk file")
