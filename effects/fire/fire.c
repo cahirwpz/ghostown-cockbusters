@@ -412,7 +412,7 @@ static void RandomizeBottom(void) {
 
 static void MainLoop(void) {
   /*
-   * Right now this effect takes 1273-1452-1460 (min-avg-max) raster lines to render.
+   * Right now this effect takes 1237-1415-1424 (min-avg-max) raster lines to render.
    */
   uint32_t aux;
   short i, v;
@@ -429,7 +429,10 @@ static void MainLoop(void) {
 
     aux = getlong(dualtab, v);
     *chunkyPtr++ = aux;
-    *bufPtr++ = aux >> 16;
+    asm("swap %0"
+        : "+d" (aux));
+    asm("movew %1,(%0)+"
+        : "=r" (bufPtr), "+d" (aux));
   }
 }
 
