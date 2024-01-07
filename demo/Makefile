@@ -25,7 +25,7 @@ SOURCES := main.c load.c empty.c uvmap-rgb.c bumpmap-rgb.c
 LOADABLES := spooky-town.exe uvmap-rgb.exe bumpmap-rgb.exe
 MAIN := #
 
-CPPFLAGS += -DINTRO=1 -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DDEMO=1 -DDELTA=$(DELTA) -I.
 
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader,2
 PNG2C.skulls_128col := --pixmap skulls,160x128x8 --palette skulls,128
