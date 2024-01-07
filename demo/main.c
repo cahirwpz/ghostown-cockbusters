@@ -36,6 +36,8 @@ short frameTillEnd;
 static EffectT *AllEffects[] = {
   &EmptyEffect,
   NULL,
+  NULL,
+  NULL,
 };
 
 static void ShowMemStats(void) {
@@ -171,7 +173,7 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
-extern void LoadDemo(void);
+extern void LoadDemo(EffectT **);
 
 #define ROMADDR 0xf80000
 #define ROMSIZE 0x07fff0
@@ -196,7 +198,7 @@ int main(void) {
   }
 
   ResetSprites();
-  LoadDemo();
+  LoadDemo(AllEffects);
 #if DELTA == 1
   Log("[Init] Decoding samples\n");
   DecodeSamples(Samples, (int)SamplesSize);

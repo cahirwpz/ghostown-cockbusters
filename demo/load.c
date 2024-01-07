@@ -4,6 +4,9 @@
 #include <blitter.h>
 #include <gfx.h>
 #include <line.h>
+#include <system/amigahunk.h>
+#include <system/filesys.h>
+#include <system/file.h>
 
 #define _SYSTEM
 #include <system/memory.h>
@@ -30,7 +33,35 @@ static int ProgressBarUpdate(void) {
 
 INTSERVER(ProgressBarInterrupt, 0, (IntFuncT)ProgressBarUpdate, NULL);
 
-static void LoadData(void) {
+typedef struct Loadable {
+  HunkT *hunk;
+  EffectT *effect;
+} LoadableT;
+
+static LoadableT LoadExecutable(const char *path) {
+  FileT *file = OpenFile(path);
+  HunkT *hunk = LoadHunkList(file);
+  HunkT *data = hunk->next;
+  /* Assume data section is second and effect definition is at its end.
+   * That should be the case as the effect definition is always the last in
+   * source file. */
+  EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT)];
+  Log("Effect: %s\n", effect->name);
+  return (LoadableT){hunk, effect};
+}
+
+LoadableT UVMapHandle;
+LoadableT BumpMapHandle;
+
+static void LoadData(EffectT **effects) {
+  UVMapHandle = LoadExecutable("uvmap-rgb.exe");
+  LoadProgress = 64;
+  effects[1] = UVMapHandle.effect;
+
+  BumpMapHandle = LoadExecutable("bumpmap-rgb.exe");
+  LoadProgress = 128;
+  effects[2] = BumpMapHandle.effect;
+
   while (LoadProgress < 256) {
     LoadProgress++;
     WaitVBlank();
@@ -41,7 +72,7 @@ static void LoadData(void) {
 #define HEIGHT 256
 #define DEPTH 1
 
-void LoadDemo(void) {
+void LoadDemo(EffectT **effects) {
   BitmapT *screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   CopListT *cp = NewCopList(40);
 
@@ -67,7 +98,7 @@ void LoadDemo(void) {
   EnableDMA(DMAF_RASTER);
 
   AddIntServer(INTB_VERTB, ProgressBarInterrupt);
-  LoadData();
+  LoadData(effects);
   RemIntServer(INTB_VERTB, ProgressBarInterrupt);
 
   DisableDMA(DMAF_RASTER);
