@@ -13,7 +13,7 @@ else
 OBJECTS += data/$(MODULE).smp.o
 endif
 
-LDSCRIPT := amiga.lds
+LDSCRIPT := demo.lds
 
 LIBS := libpt
 
@@ -56,6 +56,12 @@ data/%.trk data/%.smp: data/%.mod
 	$(PYTHON3) $(TOPDIR)/effects/playpt/data/ptsplit.py $^
 	mv data/$*.mod.trk data/$*.trk
 	mv data/$*.mod.smp data/$*.smp
+
+demo.lds: demo.json
+	@echo "[LDS] $< -> $@"
+	$(PYTHON3) gen-lds.py $< $@
+
+CLEAN-FILES += demo.lds
 
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents
 
