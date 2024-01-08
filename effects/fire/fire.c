@@ -429,31 +429,34 @@ static void RandomizeBottom(void) {
 
 static void MainLoop(void) {
   /*
-   * Right now this effect takes 1127-1311-1318 (min-avg-max) raster lines to render.
+   * Right now this effect takes 947-1130-1138 (min-avg-max) raster lines to render.
    */
+  // register T var asm("rejestr") = val;
   uint32_t aux;
   short i, v;
-  short *bufPtr;
-  short *chunkyPtr;
+  register short *chunkyPtr asm("a0") = chunky;
+  register short *bufPtr1   asm("a1") = buf;
+  register short *bufPtr2   asm("a2") = buf + WIDTH - 1;
+  register short *bufPtr3   asm("a3") = buf + WIDTH + 1;
+  register short *bufPtr4   asm("a4") = buf + WIDTH * 2;
+  register uint32_t *dt     asm("a5") = dualtab;
 
-  bufPtr = buf;
-  chunkyPtr = chunky;
   for (i = 0; i < WIDTH * HEIGHT - 2*WIDTH; ++i) {
-    v  = bufPtr[WIDTH];
-    v += bufPtr[WIDTH-1];
-    v += bufPtr[WIDTH+1];
-    v += bufPtr[WIDTH*2];
+    v  = *bufPtr2++;
+    v += *bufPtr2;
+    v += *bufPtr3++;
+    v += *bufPtr4++;
 
     asm("movel (%2,%1:w),%0"
       : "=r" (aux)
-      : "d" (v), "a" (dualtab));
+      : "d" (v), "a" (dt));
 
     *chunkyPtr++ = aux;
 
     asm("swap %0"
         : "+d" (aux));
-    asm("movew %1,(%0)+"
-        : "=r" (bufPtr), "+d" (aux));
+
+    *bufPtr1++ = aux;
   }
 }
 
