@@ -4,7 +4,7 @@
 #include <pixmap.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
-#include <stdlib.h>
+// #include <stdlib.h>
 #include <common.h>
 
 #define WIDTH 80
@@ -386,6 +386,23 @@ static void Kill(void) {
   DeleteBitmap(screen);
 }
 
+static inline int fastrand(void) {
+  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+
+  int a, b;
+
+  // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
+  asm volatile("move.l (%2)+,%0\n"
+               "move.l (%2),%1\n"
+               "swap   %1\n"
+               "add.l  %0,(%2)\n"
+               "add.l  %1,-(%2)\n"
+               : "=d" (a), "=d" (b)
+               : "a" (m));
+  
+  return a;
+}
+
 static void RandomizeBottom(void) {
   int r;
   short i;
@@ -393,11 +410,11 @@ static void RandomizeBottom(void) {
 
   /*
    * Bottom two lines are randomized every frame and not displayed.
-   * This loop takes 51 raster lines (on average) to execute.
+   * This loop takes 34 raster lines (on average) to execute.
    */
   bufPtr = &(buf[WIDTH*HEIGHT - 1]);
   for (i = 1; i <= WIDTH*2; i+=5) {
-    r = random();
+    r = fastrand();
     *bufPtr-- = (r & 0x3F) * 4;
     r >>= 6;
     *bufPtr-- = (r & 0x3F) * 4;
@@ -412,7 +429,7 @@ static void RandomizeBottom(void) {
 
 static void MainLoop(void) {
   /*
-   * Right now this effect takes 1141-1320-1328 (min-avg-max) raster lines to render.
+   * Right now this effect takes 1127-1311-1318 (min-avg-max) raster lines to render.
    */
   uint32_t aux;
   short i, v;
