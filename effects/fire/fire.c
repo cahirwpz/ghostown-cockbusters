@@ -432,31 +432,43 @@ static void MainLoop(void) {
    * Right now this effect takes 947-1130-1138 (min-avg-max) raster lines to render.
    */
   // register T var asm("rejestr") = val;
-  uint32_t aux;
+  uint32_t aux1, aux2, vl, chdat, bufdat;
+  uint32_t d1, d2, d3;
   short i, v;
-  register short *chunkyPtr asm("a0") = chunky;
-  register short *bufPtr1   asm("a1") = buf;
-  register short *bufPtr2   asm("a2") = buf + WIDTH - 1;
-  register short *bufPtr3   asm("a3") = buf + WIDTH + 1;
-  register short *bufPtr4   asm("a4") = buf + WIDTH * 2;
-  register uint32_t *dt     asm("a5") = dualtab;
+  register uint32_t *chunkyPtr asm("a0") = (uint32_t*)chunky;
+  register uint32_t *bufPtr1   asm("a1") = (uint32_t*)buf;
+  register uint32_t *bufPtr2   asm("a2") = (uint32_t*)(buf + WIDTH - 1);
+  register uint32_t *bufPtr3   asm("a3") = (uint32_t*)(buf + WIDTH + 1);
+  register uint32_t *bufPtr4   asm("a4") = (uint32_t*)(buf + WIDTH * 2);
+  register uint32_t *dt        asm("a5") = dualtab;
 
-  for (i = 0; i < WIDTH * HEIGHT - 2*WIDTH; ++i) {
-    v  = *bufPtr2++;
-    v += *bufPtr2;
-    v += *bufPtr3++;
-    v += *bufPtr4++;
+  for (i = 0; i < (WIDTH * HEIGHT - 2*WIDTH)/2; ++i) {
+    d1 = *bufPtr2++;
+    d2 = *bufPtr3++;
+    d3 = *bufPtr4++;
+
+    vl  = d3;
+    vl += d1;
+    vl += d2;
+    vl += ((d1 & 0x0000FFFF) << 16) | ((d2 & 0xFFFF0000) >> 16);
+
+    v = (short)swap16(vl);
 
     asm("movel (%2,%1:w),%0"
-      : "=r" (aux)
+      : "=r" (aux1)
       : "d" (v), "a" (dt));
 
-    *chunkyPtr++ = aux;
+    v = (short)vl;
 
-    asm("swap %0"
-        : "+d" (aux));
+    asm("movel (%2,%1:w),%0"
+      : "=r" (aux2)
+      : "d" (v), "a" (dt));
 
-    *bufPtr1++ = aux;
+    chdat = (aux1 << 16) | (aux2 & 0x0000FFFF);
+    bufdat = (aux1 & 0xFFFF0000) | (aux2 >> 16);
+
+    *chunkyPtr++ = chdat;
+    *bufPtr1++ = bufdat;
   }
 }
 
