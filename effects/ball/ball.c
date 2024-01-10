@@ -86,7 +86,7 @@ static CopListT *MakeCopperList(int active) {
   CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
 
-  //CopSetupBitplanes(cp, &dragon, S_DEPTH); //XXX dragon is now a pixmap
+  CopSetupBitplanes(cp, screen, S_DEPTH); //XXX dragon is now a pixmap
   for (i = 0; i < 8; i++)
     CopInsSetSprite(&sprptr[i], &sprite[active][i]);
   return CopListFinish(cp);
@@ -118,11 +118,11 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
 
 
 static void Init(void) {
- //segment_bp and segment_p are bitmap and pixmap for the magnified segment
+  //segment_bp and segment_p are bitmap and pixmap for the magnified segment
   //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR | BM_CPUONLY);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
-  screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR | BM_CPUONLY);
+  screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
   
   //vitruvian.c:Init
   PixmapToBitmap(dragon_bp, dragon_width, dragon_height, S_DEPTH,
@@ -130,7 +130,6 @@ static void Init(void) {
   
   memcpy(screen->planes[0], dragon_bp->planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
-  
 
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode();
@@ -164,8 +163,7 @@ static void Init(void) {
 
   //  cp[0] = MakeCopperList(0);
   //cp[1] = MakeCopperList(1);
-  cp = NewCopList(80);
-  MakeCopperList(0);
+  cp = MakeCopperList(0);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
