@@ -20,7 +20,7 @@ static BitmapT *segment_bp;
 static BitmapT *dragon_bp;
 static BitmapT *screen;
 static SprDataT *sprdat;
-static SpriteT sprite[2][8];
+static SpriteT sprite[8];
 
 #include "data/dragon-bg.c"
 #include "data/texture-15.c"
@@ -85,10 +85,10 @@ static CopListT *MakeCopperList(int active) {
   CopListT *cp = NewCopList(80);
   CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
-
+  (int*) active = 0;
   CopSetupBitplanes(cp, screen, S_DEPTH); //XXX dragon is now a pixmap
   for (i = 0; i < 8; i++)
-    CopInsSetSprite(&sprptr[i], &sprite[active][i]);
+    CopInsSetSprite(&sprptr[i], &sprite[i]);
   return CopListFinish(cp);
 }
 
@@ -118,15 +118,19 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
 
 
 static void Init(void) {
+  //u_short i = 0;
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
   //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
-  segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR | BM_CPUONLY);
+  segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
   
   //vitruvian.c:Init
-  PixmapToBitmap(dragon_bp, dragon_width, dragon_height, S_DEPTH,
-		 dragon_pixels);
+  //             bm         width         height         depth
+  PixmapToBitmap(dragon_bp, dragon_width, dragon_height, 4,
+  		 dragon_pixels);
+
+ 
   
   memcpy(screen->planes[0], dragon_bp->planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
@@ -148,13 +152,13 @@ static void Init(void) {
 
   {
     SprDataT *dat = sprdat;
-    short i, j;
+    short j; //i, j;
 
-    for (i = 0; i < 2; i++)
-      for (j = 0; j < 8; j++) {
-        MakeSprite(&dat, 64, j & 1, &sprite[i][j]);
-        EndSprite(&dat);
-      }
+    //for (i = 0; i < 2; i++)
+    for (j = 0; j < 8; j++) {
+      MakeSprite(&dat, 64, j & 1, &sprite[j]);
+      EndSprite(&dat);
+    }
   }
 
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
@@ -187,7 +191,7 @@ static void Kill(void) {
 #if (BLTSIZE / 4) > 1024
 #error "blit size too big!"
 #endif
-#if 0
+#if 1
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   void *planes = output->planes[0];
   void *chunky = input->pixels;
@@ -370,22 +374,28 @@ static void CropPixmap(PixmapT *input, short x0, short y0, short width, short he
 PROFILE(UVMapRender);
 
 static void Render(void) {
-  //short xo = normfx(SIN(frameCount * 16) * 128);
-  //short yo = normfx(COS(frameCount * 16) * 100);
-  //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
-  //u_char *txtHi = textureHi->pixels + offset;
-  //u_char *txtLo = textureLo->pixels + offset;
-
+  short xo = normfx(SIN(frameCount * 16) * 128);
+  short yo = normfx(COS(frameCount * 16) * 100);
+  short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
+  u_char *txtHi = textureHi->pixels + offset;
+  u_char *txtLo = textureLo->pixels + offset;
+  
   ProfilerStart(UVMapRender);
   {
     //CropPixmap(segment_p, 32, 32, WIDTH, HEIGHT, dragon.pixels);
     //PixmapToBitmap(segment_bp, WIDTH, HEIGHT, S_DEPTH, segment_p->pixels);
+
+    
+    
     //memcpy(screen->planes[0], segment_bp->planes[0], WIDTH * HEIGHT * S_DEPTH /8);
-    //(*UVMapRender)(chunky->pixels, txtHi, txtLo);
-    //ChunkyToPlanar(chunky, bitmap);
-    //BitmapToSprite(bitmap, sprite[active]);
-    //PositionSprite(sprite[active], xo / 2, yo / 2);
-    //CopListActivate(cp[active]);
+    //memset(segment_p->pixels, 0x0F, WIDTH*HEIGHT); //8);
+    
+    (*UVMapRender)(segment_p->pixels, txtHi, txtLo);
+    //(*UVMapRender)(dragon_pixels, txtHi, txtLo);
+    ChunkyToPlanar(segment_p, segment_bp);
+    BitmapToSprite(segment_bp, sprite);
+    PositionSprite(sprite, xo / 2, yo / 2);
+    CopListActivate(cp);
   }
   ProfilerStop(UVMapRender);
 
