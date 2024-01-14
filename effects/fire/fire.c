@@ -4,17 +4,16 @@
 #include <pixmap.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
-// #include <stdlib.h>
 #include <common.h>
 
 #define WIDTH 80
 #define HEIGHT 64
 #define DEPTH 4
 
-
 static uint32_t dualtab[256] = {
   0, 0, 0, 0, 0, 262147, 262147, 262147, 262147, 524336, 524336, 524336, 524336, 786483, 786483, 786483, 786483, 1049344, 1049344, 1049344, 1049344, 1311495, 1311495, 1311495, 1311495, 1573684, 1573684, 1573684, 1573684, 1835891, 1835891, 1835891, 1835891, 2109504, 2109504, 2109504, 2109504, 2371652, 2371652, 2371652, 2371652, 2633799, 2633799, 2633799, 2633799, 2896944, 2896944, 2896944, 2896944, 3159091, 3159091, 3159091, 3159091, 3421239, 3421239, 3421239, 3421239, 3684100, 3684100, 3684100, 3684100, 3946304, 3946304, 3946304, 3946304, 3946304, 4208452, 4208452, 4208452, 4208452, 4470599, 4470599, 4470599, 4470599, 4748080, 4748080, 4748080, 4748080, 5010228, 5010228, 5010228, 5010228, 5272375, 5272375, 5272375, 5272375, 5534519, 5534519, 5534519, 5534519, 5796723, 5796723, 5796723, 5796723, 6058867, 6058867, 6058867, 6058867, 6321015, 6321015, 6321015, 6321015, 6583159, 6583159, 6583159, 6583159, 6846259, 6846259, 6846259, 6846259, 7108403, 7108403, 7108403, 7108403, 7370551, 7370551, 7370551, 7370551, 7632695, 7632695, 7632695, 7632695, 7894899, 7894899, 7894899, 7894899, 8157043, 8157043, 8157043, 8157043, 8157043, 8419191, 8419191, 8419191, 8419191, 8681335, 8681335, 8681335, 8681335, 8943476, 8943476, 8943476, 8943476, 9205620, 9205620, 9205620, 9205620, 9467719, 9467719, 9467719, 9467719, 9729863, 9729863, 9729863, 9729863, 9992004, 9992004, 9992004, 9992004, 10254148, 10254148, 10254148, 10254148, 10515575, 10515575, 10515575, 10515575, 10777719, 10777719, 10777719, 10777719, 11039860, 11039860, 11039860, 11039860, 11302004, 11302004, 11302004, 11302004, 11564103, 11564103, 11564103, 11564103, 11826247, 11826247, 11826247, 11826247, 12088388, 12088388, 12088388, 12088388, 12350532, 12350532, 12350532, 12350532, 12350532, 12601207, 12601207, 12601207, 12601207, 12863351, 12863351, 12863351, 12863351, 13125492, 13125492, 13125492, 13125492, 13387636, 13387636, 13387636, 13387636, 13649735, 13649735, 13649735, 13649735, 13911879, 13911879, 13911879, 13911879, 14174020, 14174020, 14174020, 14174020, 14436164, 14436164, 14436164, 14436164, 14697591, 14697591, 14697591, 14697591, 14959735, 14959735, 14959735, 14959735, 15221876, 15221876, 15221876, 15221876, 15484020, 15484020, 15484020, 15484020, 15746119, 15746119, 15746119, 15746119, 16008263, 16008263, 16008263, 16008263, 16270404, 16270404, 16270404, 16270404
 };
+
 /*
  * Precalculed values for int(sum * 63 / 256)
  * Affects fire size
@@ -180,12 +179,12 @@ static short paletteBlue[64] = {
 };
 
 static short *palette = paletteBlue;
-static short *chunky;
-static short *buf;
-static BitmapT *screen;
+static short *chunky[2];
+static short *fire;
+static BitmapT *screen[2];
+static short active = 0;
 static CopListT *cp;
 static CopInsPairT *bplptr;
-
 
 static struct {
   short phase;
@@ -319,7 +318,7 @@ static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(1200);
   short i;
 
-  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+  bplptr = CopSetupBitplanes(cp, screen[0], DEPTH);
   CopLoadColor(cp, 0, 15, 0);
   for (i = 0; i < HEIGHT * 4; i++) {
     CopWaitSafe(cp, Y(i), 0);
@@ -333,10 +332,11 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void ShowColors(void) {
+  short *pixels = chunky[active];
   short i;
 
   for (i = 0; i < WIDTH * 64; ++i) {
-    chunky[i] = palette[i/WIDTH];
+    pixels[i] = palette[i / WIDTH];
   }
 }
 
@@ -347,15 +347,15 @@ static void Init(void) {
   (void)paletteRed;
   (void)paletteBlue;
   (void)ShowColors;
-  screen = NewBitmap(WIDTH * 4, HEIGHT, DEPTH, BM_CLEAR);
-
-  chunky = MemAlloc((WIDTH * 4) * HEIGHT, MEMF_CHIP);
-
-  buf = MemAlloc(WIDTH * HEIGHT * 2, MEMF_CHIP);
+  screen[0] = NewBitmap(WIDTH * 4, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH * 4, HEIGHT, DEPTH, BM_CLEAR);
+  chunky[0] = MemAlloc(WIDTH * 4 * HEIGHT, MEMF_CHIP);
+  chunky[1] = MemAlloc(WIDTH * 4 * HEIGHT, MEMF_CHIP);
+  fire = MemAlloc(WIDTH * HEIGHT * 2, MEMF_CHIP);
 
   EnableDMA(DMAF_BLITTER);
-
-  BitmapClear(screen);
+  BitmapClear(screen[0]);
+  BitmapClear(screen[1]);
 
   SetupPlayfield(MODE_HAM, 7, X(0), Y(0), WIDTH * 4 + 2, HEIGHT * 4);
 
@@ -379,11 +379,12 @@ static void Kill(void) {
 
   DeleteCopList(cp);
 
-  MemFree(chunky);
+  MemFree(chunky[0]);
+  MemFree(chunky[1]);
+  MemFree(fire);
 
-  MemFree(buf);
-
-  DeleteBitmap(screen);
+  DeleteBitmap(screen[0]);
+  DeleteBitmap(screen[1]);
 }
 
 static inline int fastrand(void) {
@@ -412,7 +413,7 @@ static void RandomizeBottom(void) {
    * Bottom two lines are randomized every frame and not displayed.
    * This loop takes 34 raster lines (on average) to execute.
    */
-  bufPtr = &(buf[WIDTH*HEIGHT - 1]);
+  bufPtr = &(fire[WIDTH*HEIGHT - 1]);
   for (i = 1; i <= WIDTH*2; i+=5) {
     r = fastrand();
     *bufPtr-- = (r & 0x3F) * 4;
@@ -439,12 +440,12 @@ static void MainLoop(void) {
    * B C D
    *   E
    */
-  register uint16_t *chunkyPtr asm("a0") = (uint16_t *)chunky;
-  register uint16_t *Aptr      asm("a1") = (uint16_t *)buf;
-  register uint32_t *Bptr      asm("a2") = (uint32_t *)&buf[WIDTH - 1];
-  register uint32_t *Cptr      asm("a3") = (uint32_t *)&buf[WIDTH];
-  register uint32_t *Dptr      asm("a4") = (uint32_t *)&buf[WIDTH + 1];
-  register uint32_t *Eptr      asm("a6") = (uint32_t *)&buf[WIDTH * 2];
+  register uint16_t *chunkyPtr asm("a0") = (uint16_t *)chunky[active];
+  register uint16_t *Aptr      asm("a1") = (uint16_t *)fire;
+  register uint32_t *Bptr      asm("a2") = (uint32_t *)&fire[WIDTH - 1];
+  register uint32_t *Cptr      asm("a3") = (uint32_t *)&fire[WIDTH];
+  register uint32_t *Dptr      asm("a4") = (uint32_t *)&fire[WIDTH + 1];
+  register uint32_t *Eptr      asm("a6") = (uint32_t *)&fire[WIDTH * 2];
   register uint32_t *dt = dualtab;
 
   for (i = 0; i < (WIDTH * HEIGHT - 2 * WIDTH) / 2; ++i) {
@@ -494,9 +495,11 @@ static void Render(void) {
   ProfilerStop(Fire);
 
   c2p.phase = 0;
-  c2p.chunky = chunky;
-  c2p.bpl = screen->planes;
+  c2p.chunky = chunky[active];
+  c2p.bpl = screen[active]->planes;
   ChunkyToPlanar();
+
+  active ^= 1;
 }
 
 EFFECT(Fire, NULL, NULL, Init, Kill, Render, NULL);
