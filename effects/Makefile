@@ -16,6 +16,7 @@ SUBDIRS := \
 	flatshade-convex \
 	floor \
 	floor-old \
+	fire \
 	game-of-life \
 	glitch \
 	growing-tree \

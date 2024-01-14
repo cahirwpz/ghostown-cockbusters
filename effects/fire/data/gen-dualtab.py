@@ -109,8 +109,8 @@ palette = [
 ]
 
 if __name__ == '__main__':
-  out = []
-  for e in lookupTable:
-    out.append(palette[e] + ((e << 16) * 4))
-  print(out)
-  print(len(out))
+    out = []
+    for e in lookupTable:
+        out.append(palette[e] + ((e << 16) * 4))
+    print(out)
+    print(len(out))

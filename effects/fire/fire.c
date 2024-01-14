@@ -455,22 +455,30 @@ static void MainLoop(void) {
     vl += *Dptr++;
     vl += *Cptr++;
 
-    asm("movel (%2,%1:w),%0"
+    asm volatile("movel (%2,%1:w),%0"
       : "=r" (aux2)
       : "d" (vl), "a" (dt));
 
-    asm("movel (%2,%1:w),%0"
+    asm volatile("movel (%2,%1:w),%0"
       : "=r" (aux1)
       : "d" (swap16(vl)), "a" (dt));
 
     *chunkyPtr++ = aux1;
     *chunkyPtr++ = aux2;
 
+#if 0
     aux1 = swap16(aux1);
     aux2 = swap16(aux2);
 
     *Aptr++ = aux1;
     *Aptr++ = aux2;
+#else
+    asm volatile("swap   %2\n"
+                 "move.w %2,%1\n"
+                 "move.l %1,%0@+"
+                 : "+a" (Aptr), "+d" (aux1)
+                 : "d" (aux2));
+#endif
   }
 }
 

@@ -43,26 +43,27 @@ colors = [
   0x0F0,
 ]
 
+
 def scramble(c):
-  r0 = '1' if c & 0b000100000000 else '0' # RED
-  r1 = '1' if c & 0b001000000000 else '0'
-  r2 = '1' if c & 0b010000000000 else '0'
-  r3 = '1' if c & 0b100000000000 else '0'
-  g0 = '1' if c & 0b000000010000 else '0' # GREEN
-  g1 = '1' if c & 0b000000100000 else '0'
-  g2 = '1' if c & 0b000001000000 else '0'
-  g3 = '1' if c & 0b000010000000 else '0'
-  b0 = '1' if c & 0b000000000001 else '0' # BLUE
-  b1 = '1' if c & 0b000000000010 else '0'
-  b2 = '1' if c & 0b000000000100 else '0'
-  b3 = '1' if c & 0b000000001000 else '0'
-  out0 = r0+g0+b0+b0
-  out1 = r1+g1+b1+b1
-  out2 = r2+g2+b2+b2
-  out3 = r3+g3+b3+b3
-  return hex(int(out0+out1+out2+out3, 2))
+    r0 = '1' if c & 0b000100000000 else '0'  # RED
+    r1 = '1' if c & 0b001000000000 else '0'
+    r2 = '1' if c & 0b010000000000 else '0'
+    r3 = '1' if c & 0b100000000000 else '0'
+    g0 = '1' if c & 0b000000010000 else '0'  # GREEN
+    g1 = '1' if c & 0b000000100000 else '0'
+    g2 = '1' if c & 0b000001000000 else '0'
+    g3 = '1' if c & 0b000010000000 else '0'
+    b0 = '1' if c & 0b000000000001 else '0'  # BLUE
+    b1 = '1' if c & 0b000000000010 else '0'
+    b2 = '1' if c & 0b000000000100 else '0'
+    b3 = '1' if c & 0b000000001000 else '0'
+    out0 = r0+g0+b0+b0
+    out1 = r1+g1+b1+b1
+    out2 = r2+g2+b2+b2
+    out3 = r3+g3+b3+b3
+    return hex(int(out0+out1+out2+out3, 2))
 
 
 if __name__ == "__main__":
-  for c in colors:
-    print(scramble(c))
+    for c in colors:
+        print(scramble(c))
