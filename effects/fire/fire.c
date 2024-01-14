@@ -441,45 +441,40 @@ static void MainLoop(void) {
    *   E
    */
   register uint16_t *chunkyPtr asm("a0") = (uint16_t *)chunky[active];
-  register uint16_t *Aptr      asm("a1") = (uint16_t *)fire;
+  register uint32_t *Aptr      asm("a1") = (uint32_t *)fire;
   register uint32_t *Bptr      asm("a2") = (uint32_t *)&fire[WIDTH - 1];
   register uint32_t *Cptr      asm("a3") = (uint32_t *)&fire[WIDTH];
   register uint32_t *Dptr      asm("a4") = (uint32_t *)&fire[WIDTH + 1];
   register uint32_t *Eptr      asm("a6") = (uint32_t *)&fire[WIDTH * 2];
   register uint32_t *dt = dualtab;
 
-  for (i = 0; i < (WIDTH * HEIGHT - 2 * WIDTH) / 2; ++i) {
-    uint32_t vl, aux1, aux2;
+  for (i = 0; i < (WIDTH * HEIGHT - 2 * WIDTH) / 8; ++i) {
+    uint32_t vl, hi, lo;
 
-    vl  = *Eptr++;
-    vl += *Bptr++;
-    vl += *Dptr++;
-    vl += *Cptr++;
+#define FIREITER()                                                             \
+    vl = (*Eptr++) + (*Bptr++) + (*Dptr++) + (*Cptr++);                        \
+                                                                               \
+    asm volatile(                                                              \
+      "movel (%3,%2:w),%1\n"                                                   \
+      "swap  %2\n"                                                             \
+      "movel (%3,%2:w),%0\n"                                                   \
+      : "=r" (hi), "=r" (lo)                                                   \
+      : "d" (vl), "a" (dt));                                                   \
+                                                                               \
+    *chunkyPtr++ = hi;                                                         \
+    *chunkyPtr++ = lo;                                                         \
+                                                                               \
+    asm volatile(                                                              \
+      "swap   %1\n"                                                            \
+      "move.w %1,%0\n"                                                         \
+      : "+d" (hi), "+d" (lo));                                                 \
+                                                                               \
+    *Aptr++ = hi;
 
-    asm volatile("movel (%2,%1:w),%0"
-      : "=r" (aux2)
-      : "d" (vl), "a" (dt));
-
-    asm volatile("movel (%2,%1:w),%0"
-      : "=r" (aux1)
-      : "d" (swap16(vl)), "a" (dt));
-
-    *chunkyPtr++ = aux1;
-    *chunkyPtr++ = aux2;
-
-#if 0
-    aux1 = swap16(aux1);
-    aux2 = swap16(aux2);
-
-    *Aptr++ = aux1;
-    *Aptr++ = aux2;
-#else
-    asm volatile("swap   %2\n"
-                 "move.w %2,%1\n"
-                 "move.l %1,%0@+"
-                 : "+a" (Aptr), "+d" (aux1)
-                 : "d" (aux2));
-#endif
+    FIREITER();
+    FIREITER();
+    FIREITER();
+    FIREITER();
   }
 }
 
