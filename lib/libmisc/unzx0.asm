@@ -1,5 +1,7 @@
 ;  unzx0_68000.s - ZX0 decompressor for 68000 - 88 bytes
 ;
+; cahir: added a symbol and section definition for linking purposes
+;
 ;  in:  a0 = start of compressed data
 ;       a1 = start of decompression buffer
 ;

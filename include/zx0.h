@@ -2,5 +2,6 @@
 #define __ZX0_H__
 
 void zx0_decompress(const void *input asm("a0"), void *output asm("a1"));
+void zx0_decompress_fast(const void *input asm("a0"), void *output asm("a1"));
 
 #endif /* !__ZX0_H__ */
