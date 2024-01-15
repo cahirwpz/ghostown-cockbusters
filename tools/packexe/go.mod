@@ -1,4 +1,4 @@
-module ghostown.pl/packhunk
+module ghostown.pl/packexe
 
 go 1.19
 
