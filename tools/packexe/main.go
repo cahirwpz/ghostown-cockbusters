@@ -93,41 +93,43 @@ func zx0(data []byte, action Action) []byte {
 	return output
 }
 
-func packExe(hs []hunk.Hunk) {
-	header, ok := hs[0].(*hunk.HunkHeader)
-	if !ok {
-		panic("Not an executable file")
+func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
+	if hd.Flags == hunk.HUNKF_OTHER {
+		fmt.Printf("Hunk %d (%s): already packed\n", hunkNum,
+			hd.Type().String())
+		return
 	}
 
-	loadableNum := 0
-	for _, h := range hs {
-		switch h.Type() {
-		case hunk.HUNK_CODE, hunk.HUNK_DATA:
-			hd := h.(*hunk.HunkBin)
-			if hd.Flags == hunk.HUNKF_OTHER {
-				fmt.Printf("Hunk %d (%s): already packed\n", loadableNum,
-					h.Type().String())
-			} else {
-				fmt.Printf("Compressing hunk %d (%s): %d", loadableNum,
-					h.Type().String(), hd.Data.Len())
-				packed := zx0(hd.Data.Bytes(), Pack)
-				fmt.Printf(" -> %d\n", len(packed))
-				if len(packed) >= hd.Data.Len() {
-					println("Skipping compression...")
-				} else {
-					hd.Data = bytes.NewBuffer(packed)
-					hd.Flags = hunk.HUNKF_OTHER
-					header.Specifiers[loadableNum] += 1
-				}
-			}
-			loadableNum += 1
-		case hunk.HUNK_BSS:
-			loadableNum += 1
-		}
+	fmt.Printf("Compressing hunk %d (%s): %d", hunkNum,
+		hd.Type().String(), hd.Data.Len())
+	packed := zx0(hd.Data.Bytes(), Pack)
+	fmt.Printf(" -> %d\n", len(packed))
+	if len(packed) >= hd.Data.Len() {
+		println("Skipping compression...")
+	} else {
+		hd.Data = bytes.NewBuffer(packed)
+		hd.Flags = hunk.HUNKF_OTHER
+		header.Specifiers[hunkNum] += 1
 	}
 }
 
-func unpackExe(hs []hunk.Hunk) {
+func unpackHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
+	if hd.Flags != hunk.HUNKF_OTHER {
+		fmt.Printf("Hunk %d (%s): already unpacked\n", hunkNum,
+			hd.Type().String())
+		return
+	}
+
+	fmt.Printf("Decompressing hunk %d (%s): %d", hunkNum,
+		hd.Type().String(), hd.Data.Len())
+	unpacked := zx0(hd.Data.Bytes(), Unpack)
+	hd.Data = bytes.NewBuffer(unpacked)
+	fmt.Printf(" -> %d\n", hd.Data.Len())
+	hd.Flags = 0
+	header.Specifiers[hunkNum] -= 1
+}
+
+func processExe(hs []hunk.Hunk, action Action) {
 	header, ok := hs[0].(*hunk.HunkHeader)
 	if !ok {
 		panic("Not an executable file")
@@ -138,16 +140,10 @@ func unpackExe(hs []hunk.Hunk) {
 		switch h.Type() {
 		case hunk.HUNK_CODE, hunk.HUNK_DATA:
 			hd := h.(*hunk.HunkBin)
-			if hd.Flags != hunk.HUNKF_OTHER {
-				fmt.Printf("Hunk %d (%s): already unpacked\n", loadableNum,
-					h.Type().String())
+			if action == Pack {
+				packHunk(hd, loadableNum, header)
 			} else {
-				fmt.Printf("Decompressing hunk %d (%s): %d", loadableNum,
-					h.Type().String(), hd.Data.Len())
-				unpacked := zx0(hd.Data.Bytes(), Unpack)
-				hd.Data = bytes.NewBuffer(unpacked)
-				fmt.Printf(" -> %d\n", hd.Data.Bytes())
-				header.Specifiers[loadableNum] -= 1
+				unpackHunk(hd, loadableNum, header)
 			}
 			loadableNum += 1
 		case hunk.HUNK_BSS:
@@ -172,9 +168,9 @@ func main() {
 	beforeSize := FileSize(flag.Arg(0))
 
 	if unpack {
-		unpackExe(hunks)
+		processExe(hunks, Unpack)
 	} else {
-		packExe(hunks)
+		processExe(hunks, Pack)
 	}
 
 	outName := flag.Arg(0)
