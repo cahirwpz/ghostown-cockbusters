@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"log"
@@ -26,6 +27,14 @@ const (
 	Pack   Action = 0
 	Unpack Action = 1
 )
+
+func FileSize(path string) int64 {
+	fi, err := os.Stat(path)
+	if err != nil {
+		log.Fatal("Stat:", err)
+	}
+	return fi.Size()
+}
 
 func zx0(data []byte, action Action) []byte {
 	var f *os.File
@@ -66,6 +75,7 @@ func zx0(data []byte, action Action) []byte {
 	if f, err = os.Open(name + ".zx0"); err != nil {
 		log.Fatal("Open:", err)
 	}
+
 	if fi, err = f.Stat(); err != nil {
 		log.Fatal("Stat:", err)
 	}
@@ -93,20 +103,20 @@ func packExe(hs []hunk.Hunk) {
 	for _, h := range hs {
 		switch h.Type() {
 		case hunk.HUNK_CODE, hunk.HUNK_DATA:
-			if header.Specifiers[loadableNum]&uint32(hunk.HUNKF_ADVISORY) != 0 {
+			hd := h.(*hunk.HunkBin)
+			if hd.Flags == hunk.HUNKF_OTHER {
 				fmt.Printf("Hunk %d (%s): already packed\n", loadableNum,
 					h.Type().String())
 			} else {
-				hd := h.(*hunk.HunkBin)
 				fmt.Printf("Compressing hunk %d (%s): %d", loadableNum,
-					h.Type().String(), len(hd.Bytes))
-				packed := zx0(hd.Bytes, Pack)
+					h.Type().String(), hd.Data.Len())
+				packed := zx0(hd.Data.Bytes(), Pack)
 				fmt.Printf(" -> %d\n", len(packed))
-				if len(packed) >= len(hd.Bytes) {
+				if len(packed) >= hd.Data.Len() {
 					println("Skipping compression...")
 				} else {
-					hd.Bytes = packed
-					header.Specifiers[loadableNum] |= uint32(hunk.HUNKF_ADVISORY)
+					hd.Data = bytes.NewBuffer(packed)
+					hd.Flags = hunk.HUNKF_OTHER
 					header.Specifiers[loadableNum] += 1
 				}
 			}
@@ -127,16 +137,16 @@ func unpackExe(hs []hunk.Hunk) {
 	for _, h := range hs {
 		switch h.Type() {
 		case hunk.HUNK_CODE, hunk.HUNK_DATA:
-			if header.Specifiers[loadableNum]&uint32(hunk.HUNKF_ADVISORY) == 0 {
+			hd := h.(*hunk.HunkBin)
+			if hd.Flags != hunk.HUNKF_OTHER {
 				fmt.Printf("Hunk %d (%s): already unpacked\n", loadableNum,
 					h.Type().String())
 			} else {
-				hd := h.(*hunk.HunkBin)
 				fmt.Printf("Decompressing hunk %d (%s): %d", loadableNum,
-					h.Type().String(), len(hd.Bytes))
-				hd.Bytes = zx0(hd.Bytes, Unpack)
-				fmt.Printf(" -> %d\n", len(hd.Bytes))
-				header.Specifiers[loadableNum] &= ^uint32(hunk.HUNKF_ADVISORY)
+					h.Type().String(), hd.Data.Len())
+				unpacked := zx0(hd.Data.Bytes(), Unpack)
+				hd.Data = bytes.NewBuffer(unpacked)
+				fmt.Printf(" -> %d\n", hd.Data.Bytes())
 				header.Specifiers[loadableNum] -= 1
 			}
 			loadableNum += 1
@@ -159,14 +169,13 @@ func main() {
 		panic("failed to read Amiga Hunk file")
 	}
 
+	beforeSize := FileSize(flag.Arg(0))
+
 	if unpack {
 		unpackExe(hunks)
 	} else {
 		packExe(hunks)
 	}
-
-	println()
-	println(hunks[0].String())
 
 	outName := flag.Arg(0)
 
@@ -176,5 +185,12 @@ func main() {
 
 	if err := hunk.WriteFile(outName, hunks, 0755); err != nil {
 		panic("failed to write Amiga Hunk file")
+	}
+
+	afterSize := FileSize(outName)
+
+	if !unpack {
+		fmt.Printf("Compressed: %d -> %d (%.2f%% gain)\n", beforeSize, afterSize,
+			100.0*(1.0-float64(afterSize)/float64(beforeSize)))
 	}
 }
