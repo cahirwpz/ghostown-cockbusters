@@ -1,11 +1,17 @@
-;  unzx0_68000.s - ZX0 decompressor for 68000 - 88 bytes
+;  unzx0_68000.s - ZX0 decompressor for 68000
 ;
-; cahir: added a symbol and section definition for linking purposes
+; platon42: Modified to not preserve registers and to not use long word operations with
+; unlikely and unsupported block lengths > 64 KB. get_elias inlined for speed and other
+; optimizations.
+;
+; cahir: added a symbol and section definition for linking purposes,
+;        preserve d2/a2 registers
 ;
 ;  in:  a0 = start of compressed data
 ;       a1 = start of decompression buffer
 ;
 ;  Copyright (C) 2021 Emmanuel Marty
+;  Copyright (C) 2023 Emmanuel Marty, Chris Hodges
 ;  ZX0 compression (c) 2021 Einar Saukas, https://github.com/einar-saukas/ZX0
 ;
 ;  This software is provided 'as-is', without any express or implied
@@ -29,56 +35,117 @@
         section '.text',code
 
 _zx0_decompress:
-               movem.l a2/d2,-(sp)  ; preserve registers
-               moveq #-128,d1       ; initialize empty bit queue
-                                    ; plus bit to roll into carry
-               moveq #-1,d2         ; initialize rep-offset to 1
+        movem.l a2/d2,-(sp)     ; preserve registers
+        moveq.l #-128,d1        ; initialize empty bit queue
+                                ; plus bit to roll into carry
+        moveq.l #-1,d2          ; initialize rep-offset to 1
+        bra.s   .literals
 
-.literals:     bsr.s .get_elias     ; read number of literals to copy
-               subq.l #1,d0         ; dbf will loop until d0 is -1, not 0
-.copy_lits:    move.b (a0)+,(a1)+   ; copy literal byte
-               dbf d0,.copy_lits    ; loop for all literal bytes
-               
-               add.b d1,d1          ; read 'match or rep-match' bit
-               bcs.s .get_offset    ; if 1: read offset, if 0: rep-match
+.do_copy_offs2
+        move.b  (a1,d2.l),(a1)+
+        move.b  (a1,d2.l),(a1)+
 
-.rep_match:    bsr.s .get_elias     ; read match length (starts at 1)
-.do_copy:      subq.l #1,d0         ; dbf will loop until d0 is -1, not 0
-.do_copy_offs: move.l a1,a2         ; calculate backreference address
-               add.l d2,a2          ; (dest + negative match offset)               
-.copy_match:   move.b (a2)+,(a1)+   ; copy matched byte
-               dbf d0,.copy_match   ; loop for all matched bytes
+        add.b   d1,d1           ; read 'literal or match' bit
+        bcs.s   .get_offset     ; if 0: go copy literals
 
-               add.b d1,d1          ; read 'literal or match' bit
-               bcc.s .literals      ; if 0: go copy literals
+.literals
+        ; read number of literals to copy
+        moveq.l #1,d0           ; initialize value to 1
+.elias_loop1
+        add.b   d1,d1           ; shift bit queue, high bit into carry
+        bne.s   .got_bit1       ; queue not empty, bits remain
+        move.b  (a0)+,d1        ; read 8 new bits
+        addx.b  d1,d1           ; shift bit queue, high bit into carry
+                                ; and shift 1 from carry into bit queue
 
-.get_offset:   moveq #-2,d0         ; initialize value to $fe
-               bsr.s .elias_loop    ; read high byte of match offset
-               addq.b #1,d0         ; obtain negative offset high byte
-               beq.s .done          ; exit if EOD marker
-               move.w d0,d2         ; transfer negative high byte into d2
-               lsl.w #8,d2          ; shift it to make room for low byte
+.got_bit1
+        bcs.s   .got_elias1     ; done if control bit is 1
+        add.b   d1,d1           ; read data bit
+        addx.w  d0,d0           ; shift data bit into value in d0
+        bra.s   .elias_loop1    ; keep reading
 
-               moveq #1,d0          ; initialize length value to 1
-               move.b (a0)+,d2      ; read low byte of offset + 1 bit of len
-               asr.l #1,d2          ; shift len bit into carry/offset in place
-               bcs.s .do_copy_offs  ; if len bit is set, no need for more
-               bsr.s .elias_bt      ; read rest of elias-encoded match length
-               bra.s .do_copy_offs  ; go copy match
+.got_elias1
+        subq.w  #1,d0           ; dbf will loop until d0 is -1, not 0
+.copy_lits
+        move.b  (a0)+,(a1)+     ; copy literal byte
+        dbra    d0,.copy_lits   ; loop for all literal bytes
 
-.get_elias:    moveq #1,d0          ; initialize value to 1
-.elias_loop:   add.b d1,d1          ; shift bit queue, high bit into carry
-               bne.s .got_bit       ; queue not empty, bits remain
-               move.b (a0)+,d1      ; read 8 new bits
-               addx.b d1,d1         ; shift bit queue, high bit into carry
-                                    ; and shift 1 from carry into bit queue
+        add.b   d1,d1           ; read 'match or rep-match' bit
+        bcs.s   .get_offset     ; if 1: read offset, if 0: rep-match
 
-.got_bit:      bcs.s .got_elias     ; done if control bit is 1
-.elias_bt:     add.b d1,d1          ; read data bit
-               addx.l d0,d0         ; shift data bit into value in d0
-               bra.s .elias_loop    ; keep reading
+.rep_match
+        ; read match length (starts at 1)
+        moveq.l #1,d0           ; initialize value to 1
+.elias_loop2
+        add.b   d1,d1           ; shift bit queue, high bit into carry
+        bne.s   .got_bit2       ; queue not empty, bits remain
+        move.b  (a0)+,d1        ; read 8 new bits
+        addx.b  d1,d1           ; shift bit queue, high bit into carry
+                                ; and shift 1 from carry into bit queue
 
-.done:         movem.l (sp)+,a2/d2  ; restore preserved registers
-.got_elias:    rts
+.got_bit2
+        bcs.s   .got_elias2     ; done if control bit is 1
+        add.b   d1,d1           ; read data bit
+        addx.w  d0,d0           ; shift data bit into value in d0
+        bra.s   .elias_loop2    ; keep reading
+
+.got_elias2
+        subq.w  #1,d0           ; dbra will loop until d0 is -1, not 0
+.do_copy_offs
+        move.l  a1,a2           ; calculate backreference address
+        add.l   d2,a2           ; (dest + negative match offset)
+.copy_match
+        move.b  (a2)+,(a1)+     ; copy matched byte
+        dbra    d0,.copy_match  ; loop for all matched bytes
+
+        add.b   d1,d1           ; read 'literal or match' bit
+        bcc.s   .literals       ; if 0: go copy literals
+
+.get_offset
+        moveq.l #-2,d0          ; initialize value to $fe
+
+        ; read high byte of match offset
+.elias_loop3
+        add.b   d1,d1           ; shift bit queue, high bit into carry
+        bne.s   .got_bit3       ; queue not empty, bits remain
+        move.b  (a0)+,d1        ; read 8 new bits
+        addx.b  d1,d1           ; shift bit queue, high bit into carry
+                                ; and shift 1 from carry into bit queue
+
+.got_bit3
+        bcs.s   .got_elias3     ; done if control bit is 1
+        add.b   d1,d1           ; read data bit
+        addx.w  d0,d0           ; shift data bit into value in d0
+        bra.s   .elias_loop3    ; keep reading
+
+.got_elias3
+        addq.b  #1,d0           ; obtain negative offset high byte
+        beq.s   .done           ; exit if EOD marker
+        move.b  d0,-(sp)        ; transfer negative high byte to stack
+        move.w  (sp)+,d2        ; shift it to make room for low byte
+
+        move.b  (a0)+,d2        ; read low byte of offset + 1 bit of len
+        asr.l   #1,d2           ; shift len bit into carry/offset in place
+        bcs.s   .do_copy_offs2  ; if len bit is set, no need for more
+        moveq.l #1,d0           ; initialize length value to 1
+        ; read rest of elias-encoded match length
+        add.b   d1,d1           ; read data bit
+        addx.w  d0,d0           ; shift data bit into value in d0
+
+.elias_loop4
+        add.b   d1,d1           ; shift bit queue, high bit into carry
+        bne.s   .got_bit4       ; queue not empty, bits remain
+        move.b  (a0)+,d1        ; read 8 new bits
+        addx.b  d1,d1           ; shift bit queue, high bit into carry
+                                ; and shift 1 from carry into bit queue
+
+.got_bit4
+        bcs.s   .do_copy_offs   ; done if control bit is 1
+        add.b   d1,d1           ; read data bit
+        addx.w  d0,d0           ; shift data bit into value in d0
+        bra.s   .elias_loop4    ; keep reading
+.done
+        movem.l (sp)+,a2/d2     ; restore preserved registers
+        rts
 
 ; vim: ft=asm68k:ts=8:sw=8:

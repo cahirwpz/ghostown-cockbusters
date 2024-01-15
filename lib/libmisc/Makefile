@@ -10,8 +10,7 @@ SOURCES := \
 	sort.c \
 	sync.c \
 	uae.S \
-	unzx0.asm \
-	unzx0_fast.asm
+	unzx0.asm
 
 SOURCES_GEN := sintab.c
 
