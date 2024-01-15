@@ -493,8 +493,7 @@ SetupHunkFile:
         ; parse hunks
         move.l  sp,a3
         move.l  d2,d4
-.parse  move.w  (a2)+,d0        ; should always read zero
-        add.w   (a2)+,d0        ; hunk type
+.parse  move.l  (a2)+,d0        ; hunk type
         cmp.w   #HUNK_CODE,d0
         beq     .hdata
         cmp.w   #HUNK_DATA,d0
@@ -513,10 +512,18 @@ SetupHunkFile:
 .hdata  move.l  (a3),a1
         add.w   #SEG_START,a1
         move.l  (a2)+,d0
-        lsl.l   #2,d0           ; [d0] hunk size
+        rol.l   #2,d0           ; [d0] hunk specification
+        moveq   #3,d1
+        and.w   d0,d1           ; [d1] hunk flags
+        and.w   #-4,d0          ; [d0] hunk size
         move.l  a2,a0
         add.l   d0,a2           ; move pointer to next hunk
+        cmp.w   #3,d1           ; is compressed with ZX0? (HUNKF_OTHER)
+        beq.b   .hunzx0
         bsr     CopyMem
+        bra     .parse
+
+.hunzx0 bsr     UnZX0
         bra     .parse
 
 .hbss   addq.l  #4,a2           ; skip bss length
@@ -577,7 +584,7 @@ SetupHunkFile:
 ;     misrepresented as being the original software.
 ;  3. This notice may not be removed or altered from any source distribution.
 
-zx0_decompress:
+UnZX0:
                movem.l a2/d2,-(sp)  ; preserve registers
                moveq #-128,d1       ; initialize empty bit queue
                                     ; plus bit to roll into carry
