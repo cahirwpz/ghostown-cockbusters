@@ -109,7 +109,6 @@ func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 	} else {
 		hd.Data = bytes.NewBuffer(packed)
 		hd.Flags = hunk.HUNKF_OTHER
-		header.Specifiers[hunkNum] += 1
 	}
 }
 
@@ -126,7 +125,6 @@ func unpackHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 	hd.Data = bytes.NewBuffer(unpacked)
 	fmt.Printf(" -> %d\n", hd.Data.Len())
 	hd.Flags = 0
-	header.Specifiers[hunkNum] -= 1
 }
 
 func processExe(hs []hunk.Hunk, action Action) {
@@ -186,7 +184,7 @@ func main() {
 	afterSize := FileSize(outName)
 
 	if !unpack {
-		fmt.Printf("Compressed: %d -> %d (%.2f%% gain)\n", beforeSize, afterSize,
-			100.0*(1.0-float64(afterSize)/float64(beforeSize)))
+		fmt.Printf("%s: %d -> %d (%.2f%% gain)\n", flag.Arg(0), beforeSize,
+			afterSize, 100.0*(1.0-float64(afterSize)/float64(beforeSize)))
 	}
 }
