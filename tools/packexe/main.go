@@ -36,7 +36,7 @@ func FileSize(path string) int64 {
 	return fi.Size()
 }
 
-func zx0(data []byte, action Action) []byte {
+func zx0(data []byte) []byte {
 	var f *os.File
 	var fi os.FileInfo
 	var err error
@@ -61,13 +61,7 @@ func zx0(data []byte, action Action) []byte {
 		log.Fatal("Close:", err)
 	}
 
-	var cmd *exec.Cmd
-	if action == Pack {
-		cmd = exec.Command("salvador", name, name+".zx0")
-	} else {
-		cmd = exec.Command("salvador", "-d", name, name+".zx0")
-	}
-
+	cmd := exec.Command("salvador", name, name+".zx0")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("%s: %v", cmd.String(), err)
 	}
@@ -102,7 +96,7 @@ func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 
 	fmt.Printf("Compressing hunk %d (%s): %d", hunkNum,
 		hd.Type().String(), hd.Data.Len())
-	packed := zx0(hd.Data.Bytes(), Pack)
+	packed := zx0(hd.Data.Bytes())
 	fmt.Printf(" -> %d\n", len(packed))
 	if len(packed) >= hd.Data.Len() {
 		println("Skipping compression...")
@@ -121,7 +115,7 @@ func unpackHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 
 	fmt.Printf("Decompressing hunk %d (%s): %d", hunkNum,
 		hd.Type().String(), hd.Data.Len())
-	unpacked := zx0(hd.Data.Bytes(), Unpack)
+	unpacked := UnZX0(hd.Data.Bytes())
 	hd.Data = bytes.NewBuffer(unpacked)
 	fmt.Printf(" -> %d\n", hd.Data.Len())
 	hd.Flags = 0
