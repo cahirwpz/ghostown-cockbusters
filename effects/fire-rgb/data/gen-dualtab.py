@@ -1,116 +1,175 @@
-lookupTable = [
-  0, 0, 0, 0, 0,
-  1, 1, 1, 1,
-  2, 2, 2, 2,
-  3, 3, 3, 3,
-  4, 4, 4, 4,
-  5, 5, 5, 5,
-  6, 6, 6, 6,
-  7, 7, 7, 7,
-  8, 8, 8, 8,
-  9, 9, 9, 9,
-  10, 10, 10, 10,
-  11, 11, 11, 11,
-  12, 12, 12, 12,
-  13, 13, 13, 13,
-  14, 14, 14, 14,
-  15, 15, 15, 15, 15,
-  16, 16, 16, 16,
-  17, 17, 17, 17,
-  18, 18, 18, 18,
-  19, 19, 19, 19,
-  20, 20, 20, 20,
-  21, 21, 21, 21,
-  22, 22, 22, 22,
-  23, 23, 23, 23,
-  24, 24, 24, 24,
-  25, 25, 25, 25,
-  26, 26, 26, 26,
-  27, 27, 27, 27,
-  28, 28, 28, 28,
-  29, 29, 29, 29,
-  30, 30, 30, 30,
-  31, 31, 31, 31, 31,
-  32, 32, 32, 32,
-  33, 33, 33, 33,
-  34, 34, 34, 34,
-  35, 35, 35, 35,
-  36, 36, 36, 36,
-  37, 37, 37, 37,
-  38, 38, 38, 38,
-  39, 39, 39, 39,
-  40, 40, 40, 40,
-  41, 41, 41, 41,
-  42, 42, 42, 42,
-  43, 43, 43, 43,
-  44, 44, 44, 44,
-  45, 45, 45, 45,
-  46, 46, 46, 46,
-  47, 47, 47, 47, 47,
-  48, 48, 48, 48,
-  49, 49, 49, 49,
-  50, 50, 50, 50,
-  51, 51, 51, 51,
-  52, 52, 52, 52,
-  53, 53, 53, 53,
-  54, 54, 54, 54,
-  55, 55, 55, 55,
-  56, 56, 56, 56,
-  57, 57, 57, 57,
-  58, 58, 58, 58,
-  59, 59, 59, 59,
-  60, 60, 60, 60,
-  61, 61, 61, 61,
-  62, 62, 62, 62,
+#!/usr/bin/env python3
+
+import sys
+
+colorsRed = [
+  0x000,
+  0x100,
+  0x200,
+  0x300,
+  0x400,
+  0x510,
+  0x610,
+  0x720,
+  0x820,
+  0x830,
+  0x930,
+  0xA40,
+  0xB40,
+  0xB50,
+  0xC50,
+  0xC60,
+  0xC70,
+  0xD70,
+  0xE80,
+  0xE90,
+  0xF90,0xF90,
+  0xFA0,0xFA0,
+  0xFB0,0xFB0,
+  0xFC0,0xFC0,
+  0xFD0,0xFD0,
+  0xFE0,0xFE0,
+  0xFF0,0xFF0,
+  0xEF0,0xEF0,
+  0xDF0,0xDF0,
+  0xCF0,0xCF0,
+  0xBF0,0xBF0,
+  0xAF0,0xAF0,
+  0x9F0,0x9F0,
+  0x8F0,0x8F0,
+  0x7F0,0x7F0,
+  0x6F0,0x6F0,
+  0x5F0,0x5F0,
+  0x4F0,0x4F0,
+  0x3F0,0x3F0,
+  0x2F0,0x2F0,
+  0x1F0,0x1F0,
+  0x0F0,0x0F0,
 ]
-palette = [
-  0x0000,
-  0x0003,
-  0x0030,
-  0x0033,
-  0x0300,
-  0x0307,
-  0x0334,
-  0x0373,
-  0x3040,
-  0x3044,
-  0x3047,
-  0x3430,
-  0x3433,
-  0x3437,
-  0x3704,
-  0x3740,
-  0x3744,
-  0x3747,
-  0x7330,
-  0x7334,
-  0x7337, 0x7337,
-  0x7373, 0x7373,
-  0x7377, 0x7377,
-  0x7733, 0x7733,
-  0x7737, 0x7737,
-  0x7773, 0x7773,
-  0x7777, 0x7777,
-  0x7774, 0x7774,
-  0x7747, 0x7747,
-  0x7744, 0x7744,
-  0x7477, 0x7477,
-  0x7474, 0x7474,
-  0x7447, 0x7447,
-  0x7444, 0x7444,
-  0x4777, 0x4777,
-  0x4774, 0x4774,
-  0x4747, 0x4747,
-  0x4744, 0x4744,
-  0x4477, 0x4477,
-  0x4474, 0x4474,
-  0x4447, 0x4447,
-  0x4444, 0x4444,
+colorsBlue = [
+  0x000,
+  0x001,
+  0x002,
+  0x003,
+  0x004,
+  0x015,
+  0x016,
+  0x027,
+  0x028,
+  0x038,
+  0x039,
+  0x04A,
+  0x04B,
+  0x05B,
+  0x05C,
+  0x06C,
+  0x07C,
+  0x07D,
+  0x08E,
+  0x09E,
+  0x09F,0x09F,
+  0x0AF,0x0AF,
+  0x0BF,0x0BF,
+  0x0CF,0x0CF,
+  0x0DF,0x0DF,
+  0x0EF,0x0EF,
+  0x0FF,0x0FF,
+  0x0FE,0x0FE,
+  0x0FD,0x0FD,
+  0x0FC,0x0FC,
+  0x0FB,0x0FB,
+  0x0FA,0x0FA,
+  0x0F9,0x0F9,
+  0x0F8,0x0F8,
+  0x0F7,0x0F7,
+  0x0F6,0x0F6,
+  0x0F5,0x0F5,
+  0x0F4,0x0F4,
+  0x0F3,0x0F3,
+  0x0F2,0x0F2,
+  0x0F1,0x0F1,
+  0x0F0,0x0F0,
+]
+colorsGreen = [
+  0x000,
+  0x010,
+  0x020,
+  0x030,
+  0x040,
+  0x051,
+  0x061,
+  0x072,
+  0x082,
+  0x083,
+  0x093,
+  0x0A4,
+  0x0B4,
+  0x0B5,
+  0x0C5,
+  0x0C6,
+  0x0C7,
+  0x0D7,
+  0x0E8,
+  0x0E9,
+  0x0F9,0x0F9,
+  0x0FA,0x0FA,
+  0x0FB,0x0FB,
+  0x0FC,0x0FC,
+  0x0FD,0x0FD,
+  0x0FE,0x0FE,
+  0x0FF,0x0FF,
+  0x0EF,0x0EF,
+  0x0DF,0x0DF,
+  0x0CF,0x0CF,
+  0x0BF,0x0BF,
+  0x0AF,0x0AF,
+  0x09F,0x09F,
+  0x08F,0x08F,
+  0x07F,0x07F,
+  0x06F,0x06F,
+  0x05F,0x05F,
+  0x04F,0x04F,
+  0x03F,0x03F,
+  0x02F,0x02F,
+  0x01F,0x01F,
+  0x00F,0x00F,
 ]
 
+def scramblePixels(c):
+    '''
+    For given RGB12 value returns color in format
+    [r0 g0 b0 b0 r1 g1 b1 b1 r2 g2 b2 b2 r3 g3 b3 b3]
+    '''
+    r0 = '1' if c & 0b000100000000 else '0'  # RED
+    r1 = '1' if c & 0b001000000000 else '0'
+    r2 = '1' if c & 0b010000000000 else '0'
+    r3 = '1' if c & 0b100000000000 else '0'
+    g0 = '1' if c & 0b000000010000 else '0'  # GREEN
+    g1 = '1' if c & 0b000000100000 else '0'
+    g2 = '1' if c & 0b000001000000 else '0'
+    g3 = '1' if c & 0b000010000000 else '0'
+    b0 = '1' if c & 0b000000000001 else '0'  # BLUE
+    b1 = '1' if c & 0b000000000010 else '0'
+    b2 = '1' if c & 0b000000000100 else '0'
+    b3 = '1' if c & 0b000000001000 else '0'
+    out0 = r0+g0+b0+b0
+    out1 = r1+g1+b1+b1
+    out2 = r2+g2+b2+b2
+    out3 = r3+g3+b3+b3
+    return int(out3+out2+out1+out0, 2)
+
 if __name__ == '__main__':
-    out = []
-    for e in lookupTable:
-        out.append(palette[e] + ((e << 16) * 4))
-    print(out)
-    print(len(out))
+    '''
+    Generates table of 32bit values where the first 16 bits word equals
+    the value of (index * 63 / 256) and the second 16 bits word represents
+    color coresponding to this value.
+    Values 63 and 256 can be adjusted to make fire bigger/smaller.
+    '''
+    palette = colorsBlue
+
+    print('static uint32_t dualtab[256] = {')
+    for i in range(256):
+        val = int(i * 63 / 256)
+        scrambledColor = scramblePixels(palette[val])
+        print('  ' + hex((val << 16) * 4 + scrambledColor) + ',')
+    print('};')
