@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
 	"ghostown.pl/hunk"
+	"ghostown.pl/zx0"
 )
 
 var unpack bool
@@ -36,57 +36,6 @@ func FileSize(path string) int64 {
 	return fi.Size()
 }
 
-func zx0(data []byte) []byte {
-	var f *os.File
-	var fi os.FileInfo
-	var err error
-	var dir string
-
-	if dir, err = os.Getwd(); err != nil {
-		log.Fatal("Getwd:", err)
-	}
-
-	if f, err = os.CreateTemp(dir, flag.Arg(0)); err != nil {
-		log.Fatal("CreateTemp:", err)
-	}
-
-	name := f.Name()
-
-	defer os.Remove(name)
-
-	if _, err := f.Write(data); err != nil {
-		log.Fatal("Write:", err)
-	}
-	if err = f.Close(); err != nil {
-		log.Fatal("Close:", err)
-	}
-
-	cmd := exec.Command("salvador", name, name+".zx0")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("%s: %v", cmd.String(), err)
-	}
-
-	if f, err = os.Open(name + ".zx0"); err != nil {
-		log.Fatal("Open:", err)
-	}
-
-	if fi, err = f.Stat(); err != nil {
-		log.Fatal("Stat:", err)
-	}
-
-	output := make([]byte, fi.Size())
-	if _, err = f.Read(output); err != nil {
-		log.Fatal("Read:", err)
-	}
-	if err = f.Close(); err != nil {
-		log.Fatal("Close:", err)
-	}
-
-	defer os.Remove(name + ".zx0")
-
-	return output
-}
-
 func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 	if hd.Flags == hunk.HUNKF_OTHER {
 		fmt.Printf("Hunk %d (%s): already packed\n", hunkNum,
@@ -96,7 +45,7 @@ func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 
 	fmt.Printf("Compressing hunk %d (%s): %d", hunkNum,
 		hd.Type().String(), hd.Data.Len())
-	packed := zx0(hd.Data.Bytes())
+	packed := zx0.Compress(hd.Data.Bytes())
 	fmt.Printf(" -> %d\n", len(packed))
 	if len(packed) >= hd.Data.Len() {
 		println("Skipping compression...")
@@ -115,7 +64,7 @@ func unpackHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 
 	fmt.Printf("Decompressing hunk %d (%s): %d", hunkNum,
 		hd.Type().String(), hd.Data.Len())
-	unpacked := UnZX0(hd.Data.Bytes())
+	unpacked := zx0.Decompress(hd.Data.Bytes())
 	hd.Data = bytes.NewBuffer(unpacked)
 	fmt.Printf(" -> %d\n", hd.Data.Len())
 	hd.Flags = 0

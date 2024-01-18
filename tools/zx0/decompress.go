@@ -1,4 +1,4 @@
-package main
+package zx0
 
 type State int
 
@@ -111,7 +111,7 @@ func (d *decompressor) decompress() []byte {
 	}
 }
 
-func UnZX0(data []byte) []byte {
+func Decompress(data []byte) []byte {
 	d := &decompressor{input: data, lastOffset: INITIAL_OFFSET}
 	return d.decompress()
 }
