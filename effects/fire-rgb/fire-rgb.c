@@ -5,12 +5,10 @@
 #include <system/interrupt.h>
 #include <system/memory.h>
 #include <common.h>
-#include "data/dualtab.c"
 
 #define WIDTH 80
 #define HEIGHT 64
 #define DEPTH 4
-
 
 static short *chunky[2];
 static short *fire;
@@ -18,6 +16,8 @@ static BitmapT *screen[2];
 static short active = 0;
 static CopListT *cp;
 static CopInsPairT *bplptr;
+
+#include "data/dualtab.c"
 
 static struct {
   short phase;
@@ -231,8 +231,8 @@ static void RandomizeBottom(void) {
    * Bottom two lines are randomized every frame and not displayed.
    * This loop takes 34 raster lines (on average) to execute.
    */
-  bufPtr = &(fire[WIDTH*HEIGHT - 1]);
-  for (i = 1; i <= WIDTH*2; i+=5) {
+  bufPtr = &(fire[WIDTH * HEIGHT - 1]);
+  for (i = 1; i <= WIDTH * 2; i += 5) {
     r = fastrand();
     *bufPtr-- = (r & 0x3F) * 4;
     r >>= 6;
@@ -240,7 +240,7 @@ static void RandomizeBottom(void) {
     r >>= 6; 
     *bufPtr-- = (r & 0x3F) * 4;
     r >>= 6; 
-    *bufPtr-- = (r & 0x3F)  * 4;
+    *bufPtr-- = (r & 0x3F) * 4;
     r >>= 6; 
     *bufPtr-- = (r & 0x3F) * 4;
   }
