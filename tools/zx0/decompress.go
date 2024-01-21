@@ -66,8 +66,10 @@ func (d *decompressor) readGammaCode2() int {
 	return value
 }
 
-func (d *decompressor) writeByte(value byte) {
-	d.output = append(d.output, value)
+func (d *decompressor) copyLiteral(length int) {
+	for i := 0; i < length; i++ {
+		d.output = append(d.output, d.readByte())
+	}
 }
 
 func (d *decompressor) copyBytes(length int) {
@@ -83,9 +85,7 @@ func (d *decompressor) decompress() []byte {
 		switch state {
 		case COPY_LITERALS:
 			length := d.readGammaCode0()
-			for i := 0; i < length; i++ {
-				d.writeByte(d.readByte())
-			}
+			d.copyLiteral(length)
 			if d.readBit() == 0 {
 				state = COPY_FROM_LAST_OFFSET
 			} else {
