@@ -14,13 +14,12 @@ const (
 )
 
 type decompressor struct {
-	lastOffset int
 	input      []byte
 	output     []byte
+	lastOffset int
 	inputIndex int
 	bitMask    byte
 	bitValue   byte
-	backtrack  bool
 	lastByte   byte
 }
 
@@ -31,10 +30,6 @@ func (d *decompressor) readByte() byte {
 }
 
 func (d *decompressor) readBit() byte {
-	if d.backtrack {
-		d.backtrack = false
-		return d.input[d.inputIndex-1] & 1
-	}
 	d.bitMask >>= 1
 	if d.bitMask == 0 {
 		d.bitMask = 128
@@ -46,15 +41,27 @@ func (d *decompressor) readBit() byte {
 	return 0
 }
 
-func (d *decompressor) readInterlacedEliasGamma(msb bool) int {
+func (d *decompressor) readGammaCode0() int {
 	value := 1
-	bit := byte(0)
-	if msb {
-		bit = 1
-	}
 	for d.readBit() == 0 {
-		value <<= 1
-		value |= int(d.readBit() ^ bit)
+		value = (value << 1) | int(d.readBit())
+	}
+	return value
+}
+
+func (d *decompressor) readGammaCode1() int {
+	value := 1
+	for d.readBit() == 0 {
+		value = (value << 1) | int(d.readBit()^1)
+	}
+	return value
+}
+
+func (d *decompressor) readGammaCode2() int {
+	value := 1
+	value = (value << 1) | int(d.readBit())
+	for d.readBit() == 0 {
+		value = (value << 1) | int(d.readBit())
 	}
 	return value
 }
@@ -75,7 +82,7 @@ func (d *decompressor) decompress() []byte {
 	for {
 		switch state {
 		case COPY_LITERALS:
-			length := d.readInterlacedEliasGamma(false)
+			length := d.readGammaCode0()
 			for i := 0; i < length; i++ {
 				d.writeByte(d.readByte())
 			}
@@ -85,7 +92,7 @@ func (d *decompressor) decompress() []byte {
 				state = COPY_FROM_NEW_OFFSET
 			}
 		case COPY_FROM_LAST_OFFSET:
-			length := d.readInterlacedEliasGamma(false)
+			length := d.readGammaCode0()
 			d.copyBytes(length)
 			if d.readBit() == 0 {
 				state = COPY_LITERALS
@@ -93,14 +100,18 @@ func (d *decompressor) decompress() []byte {
 				state = COPY_FROM_NEW_OFFSET
 			}
 		case COPY_FROM_NEW_OFFSET:
-			msb := d.readInterlacedEliasGamma(true)
+			msb := d.readGammaCode1()
 			if msb == 256 {
 				return d.output
 			}
-			lsb := d.readByte() >> 1
-			d.lastOffset = int(msb)*128 - int(lsb)
-			d.backtrack = true
-			length := d.readInterlacedEliasGamma(false) + 1
+			lsb := d.readByte()
+			d.lastOffset = int(msb)*128 - int(lsb>>1)
+			var length int
+			if lsb&1 == 0 {
+				length = d.readGammaCode2() + 1
+			} else {
+				length = 2
+			}
 			d.copyBytes(length)
 			if d.readBit() == 0 {
 				state = COPY_LITERALS
