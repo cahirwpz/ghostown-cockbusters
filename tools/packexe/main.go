@@ -52,6 +52,8 @@ func packHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 	} else {
 		hd.Data = bytes.NewBuffer(packed)
 		hd.Flags = hunk.HUNKF_OTHER
+		/* add extra 8 bytes for in-place decompression */
+		header.Specifiers[hunkNum] += 2
 	}
 }
 
@@ -68,6 +70,7 @@ func unpackHunk(hd *hunk.HunkBin, hunkNum int, header *hunk.HunkHeader) {
 	hd.Data = bytes.NewBuffer(unpacked)
 	fmt.Printf(" -> %d\n", hd.Data.Len())
 	hd.Flags = 0
+	header.Specifiers[hunkNum] -= 2
 }
 
 func processExe(hs []hunk.Hunk, action Action) {

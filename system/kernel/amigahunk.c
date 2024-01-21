@@ -83,10 +83,10 @@ static bool LoadHunks(FileT *fh, HunkT **hunkArray) {
         /* HUNKF_OTHER is added by packexe tool and notifies that the hunk
          * is compressed with ZX0 algorithm. */
         if ((n & HUNKF_OTHER) == HUNKF_OTHER) {
-          void *buf = MemAlloc(size, MEMF_PUBLIC);
-          FileRead(fh, buf, size);
-          zx0_decompress(buf, hunk->data);
-          MemFree(buf);
+          int offset = hunk->size - size;
+          FileRead(fh, hunk->data + offset, size);
+          /* in-place decompression, watch out for delta - see ZX0 algorithm! */
+          zx0_decompress(hunk->data + offset, hunk->data);
         } else {
           FileRead(fh, hunk->data, size);
         }
