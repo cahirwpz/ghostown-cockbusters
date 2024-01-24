@@ -11,11 +11,11 @@ def loadPalette(imgPath):
 
     out = []
     for p in pixels:
-        v  = (p[0][0] & 0xF0)<<4
+        v = (p[0][0] & 0xF0) << 4
         v += (p[0][1] & 0xF0)
-        v += (p[0][2] & 0xF0)>>4
+        v += (p[0][2] & 0xF0) >> 4
         out.append(v)
-    
+
     return out
 
 
