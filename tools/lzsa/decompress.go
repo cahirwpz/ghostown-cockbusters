@@ -23,6 +23,12 @@ func (d *decompressor) getByte() int {
 	return b
 }
 
+func (d *decompressor) getWord() int {
+	w := d.getByte()
+	w |= d.getByte() << 8
+	return w
+}
+
 func (d *decompressor) getByteArray(n int) []uint8 {
 	bs := d.input[d.lastIndex : d.lastIndex+n]
 	d.lastIndex += n
@@ -44,25 +50,24 @@ func (d *decompressor) lzsa1_block(untilIndex int) {
 			literal += d.getByte()
 			if literal == 256 {
 				/* a second and third byte follow */
-				literal = d.getByte()
-				literal |= d.getByte() << 8
+				literal = d.getWord()
 			} else if literal > 256 {
 				/* a second byte follows */
 				literal = 256 + d.getByte()
 			}
 		}
 
-		/* literal values */
+		/* copy literal */
 		d.output = append(d.output, d.getByteArray(literal)...)
 
+		/* end of block in a stream */
 		if d.lastIndex == untilIndex {
 			return
 		}
 
 		/* match offset low */
 		if token&0x80 != 0 {
-			offset = d.getByte()
-			offset |= d.getByte() << 8
+			offset = d.getWord()
 			offset |= -65536
 		} else {
 			offset = d.getByte()
@@ -75,9 +80,8 @@ func (d *decompressor) lzsa1_block(untilIndex int) {
 			match += d.getByte()
 			if match == 256 {
 				/* a second and third byte follow */
-				match = d.getByte()
-				match |= d.getByte() << 8
-				/* EOD */
+				match = d.getWord()
+				/* end of block */
 				if match == 0 {
 					return
 				}
@@ -87,6 +91,7 @@ func (d *decompressor) lzsa1_block(untilIndex int) {
 			}
 		}
 
+		/* copy match */
 		offset += len(d.output)
 		for k := 0; k < match; k++ {
 			d.output = append(d.output, d.output[offset+k])
