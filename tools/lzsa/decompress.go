@@ -129,7 +129,7 @@ func (d *decompressor) lzsa2_block(untilIndex int) {
 			literal += d.getNibble()
 			if literal == 3+15 {
 				literal += d.getByte()
-				if literal == 256 {
+				if literal >= 256 {
 					literal = d.getWord()
 				}
 			}
@@ -146,6 +146,7 @@ func (d *decompressor) lzsa2_block(untilIndex int) {
 		/* determine offset */
 		code := token >> 5
 		invb := (code & 1) ^ 1
+
 		switch code {
 		case 0, 1:
 			// 00Z: 5-bit offset: read a nibble for offset bits 1-4 and use the inverted bit Z
@@ -218,10 +219,8 @@ func Decompress(input []uint8) []uint8 {
 
 	if d.getByte()&0x20 != 0 {
 		format = V2
-		println("LZSAv2")
 	} else {
 		format = V1
-		println("LZSAv1")
 	}
 
 	for {
@@ -241,18 +240,18 @@ func Decompress(input []uint8) []uint8 {
 
 		length := (hi&1)<<16 | mid<<8 | lo
 
-		println("compressed:", compressed)
-		println("length:", length)
-
-		d.hasNibble = false
-
 		if compressed {
 			if format == V1 {
 				d.lzsa1_block(length + d.lastIndex)
 			} else {
 				d.lzsa2_block(length + d.lastIndex)
 			}
+		} else {
+			d.output = append(d.output, d.getByteArray(length)...)
 		}
+
+		d.nibble = 0
+		d.hasNibble = false
 	}
 
 	return d.output
