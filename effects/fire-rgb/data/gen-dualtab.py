@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from PIL import Image
+import sys
 
 
 def loadPalette(imgPath):
@@ -50,7 +51,8 @@ if __name__ == '__main__':
     color coresponding to this value.
     Values 63 and 256 can be adjusted to make fire bigger/smaller.
     '''
-    palette = loadPalette('data/colors-red.png')
+    img_path = sys.argv[1]
+    palette = loadPalette(img_path)
 
     print('static uint32_t dualtab[256] = {')
     for i in range(256):
