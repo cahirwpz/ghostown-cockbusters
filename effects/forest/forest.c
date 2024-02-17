@@ -1,72 +1,79 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <sprite.h>
 #include <system/memory.h>
 #include <system/interrupt.h>
 #include <common.h>
 
 
-#include "data/grass.c"
+#include "data/ground.c"
+#include "../twister-rgb/data/twister-left.c"
+#include "../twister-rgb/data/twister-right.c"
+
 
 #define WIDTH 320
 #define HEIGHT 256
-#define DEPTH 5
+#define DEPTH 6
 
 
 static BitmapT *screen[2];
+static CopInsPairT *bplptr;
 static CopListT *cp;
 static short active = 0;
-static CopInsPairT *bplptr;
 
 
-static inline int fastrand(void) {
-  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+static u_short treeTab[6][20] = {
+    { // 6th LAYER
+      0x00FF, 0x0000, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x000F, 0xF000,
+      0x0000, 0xFF00, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x00FF, 0x0000, 0x0000,
+    },
+    { // 3rd LAYER
+      0x0000, 0x0000, 0x00FF, 0xFF00, 0x0000,
+      0x0000, 0x0000, 0xFFF0, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+      0xFFFF, 0x0000, 0x0000, 0x0000, 0x00FF,
+    },
+    { // 5th LAYER
+      0x0000, 0x0000, 0x0FFF, 0xF000, 0x0000,
+      0x0000, 0xFF00, 0x0000, 0x0000, 0xFFF0,
+      0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x00FF, 0x0000,
+    },
+    { // 2nd LAYER
+      0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000,
+      0x0000, 0x0FFF, 0xF000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0xFFFF, 0xF000,
+    },
+    { // 4th LAYER
+      0x0000, 0x0000, 0x0000, 0x0000, 0x0FFF,
+      0x0FFF, 0x0000, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x0FF0, 0x0000,
+      0x0000, 0x0FFF, 0x0000, 0x0000, 0x0000,
+    },
+    { // 1st LAYER
+      0x0000, 0x0000, 0xFFFF, 0xF000, 0x0000,
+      0x0000, 0xFFFF, 0xF000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x00FF, 0xFF00, 0x0000,
+      0x0000, 0x0000, 0x0FFF, 0xFFF0, 0x0000,
+    },
+};
 
-  int a, b;
-
-  // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
-  asm volatile("move.l (%2)+,%0\n"
-               "move.l (%2),%1\n"
-               "swap   %1\n"
-               "add.l  %0,(%2)\n"
-               "add.l  %1,-(%2)\n"
-               : "=d" (a), "=d" (b)
-               : "a" (m));
-  
-  return a;
-}
-
-static u_short treeTab[DEPTH][20] = {
-    {0x000F, 0xF000, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0000, 0xFF00, 0x0000, 0x0000,
-     0x0000, 0x00FF, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x00FF, 0x0000, 0x0000,},
-
-    {0x0000, 0x0000, 0x0000, 0x0FF0, 0x0000,
-     0x0FFF, 0x0000, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0FFF, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
-
-    {0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF,
-     0x0000, 0x0000, 0x0FFF, 0x0000, 0x0000,
-     0x0000, 0x00FF, 0x0000, 0x0000, 0x0000},
-
-    {0x00FF, 0x0000, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0FFF, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x0000, 0x0000, 0xFFF0},
-
-    {0x0000, 0x0000, 0x0000, 0xFFFF, 0xFFF0,
-     0x0000, 0x0000, 0xFFFF, 0x0000, 0x0000,
-     0x0000, 0x0000, 0x0FFF, 0xFFFF, 0xFFF0,
-     0x0000, 0x0000, 0x0000, 0x0FFF, 0xFF00},
+static u_short groundLevel[6] = {
+  WIDTH/8 * 80 + (960 * 1),
+  WIDTH/8 * 80 + (960 * 4),
+  WIDTH/8 * 80 + (960 * 2),
+  WIDTH/8 * 80 + (960 * 5),
+  WIDTH/8 * 80 + (960 * 3),
+  WIDTH/8 * 80 + (960 * 6),
 };
 
 
 static void DrawForest(short layer) {
   short i, aux;
-  static short count = 0;
   short* ptr = screen[active]->planes[layer];
 
   /* Clear first line */
@@ -79,21 +86,19 @@ static void DrawForest(short layer) {
     ptr[i] = treeTab[layer][i];
   }
 
-  (void)aux;
-  (void)count;
-  // if (++count > 50) {
-  //   aux = treeTab[layer][0];
-  //   for (i = 1; i < 20; ++i) {
-  //     treeTab[layer][i-1] = treeTab[layer][i];
-  //   }
-  //   treeTab[layer][19] = aux;
-  //   count = 0;
-  // }
+  /* Move */
+  // TODO: Move each layer at different speed
+  aux = treeTab[layer][0];
+  for (i = 1; i < 20; ++i) {
+    treeTab[layer][i-1] = treeTab[layer][i];
+  }
+  treeTab[layer][19] = aux;
 }
 
-static void PlantGrass(short layer) {
+static void DrawGround(short layer) {
+  // TODO: Move ground with trees
   void *src = grass;
-  void *dst = screen[active]->planes[layer] + WIDTH/8 * 96 + (960 * (layer+1));
+  void *dst = screen[active]->planes[layer] + groundLevel[layer];
 
   WaitBlitter();
 
@@ -113,8 +118,6 @@ static void PlantGrass(short layer) {
   custom->bltcon1 = 0;
   custom->bltsize = (16 << 6) | 20;
 }
-
-#define BLTSIZE (WIDTH*HEIGHT/16)
 
 static void VerticalFill(short layer) {
   void *srca = screen[active]->planes[layer];
@@ -141,62 +144,111 @@ static void VerticalFill(short layer) {
   custom->bltsize = (254 << 6) | 20;
 }
 
+static void ClearBitplanes(void) {
+  // TODO: Clear bitplanes in DrawGround()?
+  void *dst;
+  short layer;
+
+  for (layer = 0; layer < DEPTH; ++layer) {
+    dst = screen[active^1]->planes[layer];
+
+    WaitBlitter();
+
+    custom->bltdmod = 0;
+
+    custom->bltadat = -1;
+    custom->bltbdat = -1;
+    custom->bltcdat = -1;
+
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+
+    custom->bltdpt = dst;
+
+    custom->bltcon0 = (DEST);
+    custom->bltcon1 = 0;
+    custom->bltsize = (255 << 6) | 20;
+  }
+}
+
+static void SetupColors(void) {
+  // TREES
+  SetColor(0,  0x999); // BACKGROUND
+  // PLAYFIELD 1
+  SetColor(8,  0x999); // BACKGROUND
+  SetColor(9,  0x333); // 3rd LAYER
+  SetColor(10, 0x222); // 2nd LAYER
+  SetColor(11, 0x222); // 2nd LAYER
+  SetColor(12, 0x111); // 1st LAYER
+  SetColor(13, 0x111); // 1st LAYER
+  SetColor(14, 0x111); // 1st LAYER
+  SetColor(15, 0x111); // 1st LAYER
+  // PLAYFLIELD 2
+  SetColor(1,  0x666); // 6th LAYER
+  SetColor(2,  0x555); // 5th LAYER
+  SetColor(3,  0x555); // 5th LAYER
+  SetColor(4,  0x444); // 4th LAYER
+  SetColor(5,  0x444); // 4th LAYER
+  SetColor(6,  0x444); // 4th LAYER
+  SetColor(7,  0x444); // 4th LAYER
+
+  // SPRITES
+  // SPRITES 1-2
+  SetColor(17, 0xC44);
+  SetColor(18, 0xC66);
+  SetColor(19, 0xC88);
+  // SPRITES 3-4
+  SetColor(21, 0xC44);
+  SetColor(22, 0xC66);
+  SetColor(23, 0xC88);
+  // SPRITES 5-6
+  SetColor(25, 0xC44);
+  SetColor(26, 0xC66);
+  SetColor(27, 0xC88);
+  // SPRITES 7-8
+  SetColor(29, 0xC44);
+  SetColor(30, 0xC66);
+  SetColor(31, 0xC88);
+}
+
 static void Init(void) {
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  CopInsPairT *sprptr;
 
   EnableDMA(DMAF_BLITTER);
   EnableDMA(DMAF_RASTER);
+  EnableDMA(DMAF_SPRITE);
 
-  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
-  SetColor(0,  0x999); // BACKGROUND   0b00000
-
-  SetColor(1,  0x666); // 5th LAYER    0b00001
-
-  SetColor(2,  0x555); // 4th LAYER    0b00010
-  SetColor(3,  0x555); // 4th LAYER    0b00011
-
-  SetColor(4,  0x444); // 3th LAYER    0b00100
-  SetColor(5,  0x444); // 3th LAYER    0b00101
-  SetColor(6,  0x444); // 3th LAYER    0b00110
-  SetColor(7,  0x444); // 3th LAYER    0b00111
-
-  SetColor(8,  0x333); // 2nd LAYER    0b01000
-  SetColor(9,  0x333); // 2nd LAYER    0b01001
-  SetColor(10, 0x333); // 2nd LAYER    0b01010
-  SetColor(11, 0x333); // 2nd LAYER    0b01011
-  SetColor(12, 0x333); // 2nd LAYER    0b01100
-  SetColor(13, 0x333); // 2nd LAYER    0b01101
-  SetColor(14, 0x333); // 2nd LAYER    0b01110
-  SetColor(15, 0x333); // 2nd LAYER    0b01111
-
-  SetColor(16, 0x222); // 1st LAYER    0b10000
-  SetColor(17, 0x222); // 1st LAYER    0b10001
-  SetColor(18, 0x222); // 1st LAYER    0b10010
-  SetColor(19, 0x222); // 1st LAYER    0b10011
-  SetColor(20, 0x222); // 1st LAYER    0b10100
-  SetColor(21, 0x222); // 1st LAYER    0b10101
-  SetColor(22, 0x222); // 1st LAYER    0b10110
-  SetColor(23, 0x222); // 1st LAYER    0b10111
-  SetColor(24, 0x222); // 1st LAYER    0b11000
-  SetColor(25, 0x222); // 1st LAYER    0b11001
-  SetColor(26, 0x222); // 1st LAYER    0b11010
-  SetColor(27, 0x222); // 1st LAYER    0b11011
-  SetColor(28, 0x222); // 1st LAYER    0b11100
-  SetColor(29, 0x222); // 1st LAYER    0b11101
-  SetColor(30, 0x222); // 1st LAYER    0b11110
-  SetColor(31, 0x222); // 1st LAYER    0b11111
+  SetupColors();
 
   cp = NewCopList(100);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
+
+  sprptr = CopSetupSprites(cp);
+
+  CopInsSetSprite(&sprptr[4], &left[0]);
+  CopInsSetSprite(&sprptr[5], &left[1]);
+  CopInsSetSprite(&sprptr[6], &right[0]);
+  CopInsSetSprite(&sprptr[7], &right[1]);
+
+  SpriteUpdatePos(&left[0],  X(160-32), Y(0));
+  SpriteUpdatePos(&left[1],  X(160-16), Y(0));
+  SpriteUpdatePos(&right[0], X(160),    Y(0));
+  SpriteUpdatePos(&right[1], X(160+16), Y(0));
+
   CopListFinish(cp);
+
+  // SPRITES BETWEEN PLAYFIELDS
+  custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF1P2;
 
   CopListActivate(cp);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER);
+  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
@@ -208,15 +260,15 @@ PROFILE(Forest);
 static void Render(void) {
   ProfilerStart(Forest);
   {
-    ITER(i, 0, DEPTH - 1, DrawForest(i));
-    ITER(i, 0, DEPTH - 1, PlantGrass(i));
-    ITER(i, 0, DEPTH - 1, VerticalFill(i));
+    ITER(i, 0, DEPTH -1, DrawForest(i));
   }
   ProfilerStop(Forest);
 
+  ITER(i, 0, DEPTH - 1, DrawGround(i));
+  ITER(i, 0, DEPTH - 1, VerticalFill(i));
   ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
+  ClearBitplanes();
 
-  BitmapClear(screen[active^1]);
   TaskWaitVBlank();
   active ^= 1;
 }
