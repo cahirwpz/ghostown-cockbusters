@@ -63,12 +63,13 @@ static u_short treeTab[6][20] = {
 };
 
 static u_short groundLevel[6] = {
-  WIDTH/8 * 80 + (960 * 1),
-  WIDTH/8 * 80 + (960 * 4),
-  WIDTH/8 * 80 + (960 * 2),
-  WIDTH/8 * 80 + (960 * 5),
-  WIDTH/8 * 80 + (960 * 3),
-  WIDTH/8 * 80 + (960 * 6),
+  // Number of lines counting from bottom
+  160,  // 6th LAYER
+  70,   // 3rd LAYER
+  130,  // 5th LAYER
+  40,   // 2nd LAYER
+  100,  // 4th LAYER
+  10,   // 1st LAYER
 };
 
 
@@ -88,6 +89,7 @@ static void DrawForest(short layer) {
 
   /* Move */
   // TODO: Move each layer at different speed
+  (void)aux;
   aux = treeTab[layer][0];
   for (i = 1; i < 20; ++i) {
     treeTab[layer][i-1] = treeTab[layer][i];
@@ -97,8 +99,9 @@ static void DrawForest(short layer) {
 
 static void DrawGround(short layer) {
   // TODO: Move ground with trees
-  void *src = grass;
-  void *dst = screen[active]->planes[layer] + groundLevel[layer];
+  short offset = groundLevel[layer];
+  void *dst = screen[active]->planes[layer] + 40;
+  void *src = grass + offset*20;
 
   WaitBlitter();
 
@@ -116,7 +119,7 @@ static void DrawGround(short layer) {
 
   custom->bltcon0 = (SRCA | DEST) | A_TO_D;
   custom->bltcon1 = 0;
-  custom->bltsize = (16 << 6) | 20;
+  custom->bltsize = ((255 - offset) << 6) | 20;
 }
 
 static void VerticalFill(short layer) {
@@ -142,33 +145,6 @@ static void VerticalFill(short layer) {
   custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
   custom->bltcon1 = 0;
   custom->bltsize = (254 << 6) | 20;
-}
-
-static void ClearBitplanes(void) {
-  // TODO: Clear bitplanes in DrawGround()?
-  void *dst;
-  short layer;
-
-  for (layer = 0; layer < DEPTH; ++layer) {
-    dst = screen[active^1]->planes[layer];
-
-    WaitBlitter();
-
-    custom->bltdmod = 0;
-
-    custom->bltadat = -1;
-    custom->bltbdat = -1;
-    custom->bltcdat = -1;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (DEST);
-    custom->bltcon1 = 0;
-    custom->bltsize = (255 << 6) | 20;
-  }
 }
 
 static void SetupColors(void) {
@@ -260,14 +236,12 @@ PROFILE(Forest);
 static void Render(void) {
   ProfilerStart(Forest);
   {
-    ITER(i, 0, DEPTH -1, DrawForest(i));
+    ITER(i, 0, DEPTH - 1, DrawForest(i));
+    ITER(i, 0, DEPTH - 1, DrawGround(i));
+    ITER(i, 0, DEPTH - 1, VerticalFill(i));
+    ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
   ProfilerStop(Forest);
-
-  ITER(i, 0, DEPTH - 1, DrawGround(i));
-  ITER(i, 0, DEPTH - 1, VerticalFill(i));
-  ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
-  ClearBitplanes();
 
   TaskWaitVBlank();
   active ^= 1;
