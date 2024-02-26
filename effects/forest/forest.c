@@ -13,7 +13,7 @@
 
 
 #define WIDTH 320
-#define HEIGHT 256
+#define HEIGHT 97  // 1 line for trees + 6 layers * 16 lines for ground
 #define DEPTH 6
 
 
@@ -64,46 +64,58 @@ static u_short treeTab[6][20] = {
 
 static u_short groundLevel[6] = {
   // Number of lines counting from bottom
-  160,  // 6th LAYER
-  70,   // 3rd LAYER
-  130,  // 5th LAYER
-  40,   // 2nd LAYER
-  100,  // 4th LAYER
-  10,   // 1st LAYER
+  180,  // 6th LAYER
+  150,  // 5th LAYER
+  120,  // 4th LAYER
+  90,   // 3rd LAYER
+  60,   // 2nd LAYER
+  30,   // 1st LAYER (min. 16)
+};
+
+static short speed[6] = {
+  // Trees move speed in pixels per frame
+  1, 4, 2, 5, 3, 6
 };
 
 
-static void DrawForest(short layer) {
-  short i, aux;
-  short* ptr = screen[active]->planes[layer];
+static void MoveTrees(short layer, u_short bits) {
+  short i;
+  u_short dong = treeTab[layer][0] >> (16 - bits);
 
-  /* Clear first line */
-  for (i = 0; i < WIDTH/16; ++i) {
-    ptr[i] = 0x0;
+  for (i = 0; i < 19; ++i) {
+    treeTab[layer][i] = (treeTab[layer][i] << bits) | (treeTab[layer][i+1] >> (16 - bits));
   }
-
-  /* Fill first line */
-  for (i = 0; i < WIDTH/16; ++i) {
-    ptr[i] = treeTab[layer][i];
-  }
-
-  /* Move */
-  // TODO: Move each layer at different speed
-  (void)aux;
-  aux = treeTab[layer][0];
-  for (i = 1; i < 20; ++i) {
-    treeTab[layer][i-1] = treeTab[layer][i];
-  }
-  treeTab[layer][19] = aux;
+  treeTab[layer][19] = (treeTab[layer][19] << bits) | dong;
 }
 
-static void DrawGround(short layer) {
-  // TODO: Move ground with trees
-  short offset = groundLevel[layer];
-  void *dst = screen[active]->planes[layer] + 40;
-  void *src = grass + offset*20;
+static void DrawForest(void) {
+  /* This function takes 112 raster lines */
+  short i, layer;
+  short* ptr;
 
-  WaitBlitter();
+  for (layer = 0; layer < 6; ++layer) {
+    ptr = screen[active]->planes[layer];
+
+    /* Clear first line */
+    for (i = 0; i < WIDTH/16; ++i) {
+      ptr[i] = 0x0;
+    }
+
+    /* Fill first line */
+    for (i = 0; i < WIDTH/16; ++i) {
+      ptr[i] = treeTab[layer][i];
+    }
+
+    /* Move */
+    MoveTrees(layer, speed[layer]);
+  }
+}
+
+static void DrawGround(void) {
+  // TODO: Move ground with trees
+  void *dst = screen[active]->planes[0];
+  void *src = grass;
+
 
   custom->bltamod = 0;
   custom->bltdmod = 0;
@@ -119,7 +131,7 @@ static void DrawGround(short layer) {
 
   custom->bltcon0 = (SRCA | DEST) | A_TO_D;
   custom->bltcon1 = 0;
-  custom->bltsize = ((255 - offset) << 6) | 20;
+  custom->bltsize = ((HEIGHT * 6) << 6) | 20;
 }
 
 static void VerticalFill(short layer) {
@@ -144,7 +156,7 @@ static void VerticalFill(short layer) {
 
   custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
   custom->bltcon1 = 0;
-  custom->bltsize = (254 << 6) | 20;
+  custom->bltsize = ((HEIGHT - 1) << 6) | 20;
 }
 
 static void SetupColors(void) {
@@ -187,22 +199,14 @@ static void SetupColors(void) {
   SetColor(31, 0xC88);
 }
 
-static void Init(void) {
+static CopListT *MakeCopperList(void) {
+  short i;
   CopInsPairT *sprptr;
 
-  EnableDMA(DMAF_BLITTER);
-  EnableDMA(DMAF_RASTER);
-  EnableDMA(DMAF_SPRITE);
-
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-
-  SetupColors();
-
-  cp = NewCopList(100);
+  cp = NewCopList(1200);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
 
+  // Sprites
   sprptr = CopSetupSprites(cp);
 
   CopInsSetSprite(&sprptr[4], &left[0]);
@@ -215,11 +219,40 @@ static void Init(void) {
   SpriteUpdatePos(&right[0], X(160),    Y(0));
   SpriteUpdatePos(&right[1], X(160+16), Y(0));
 
+  // Duplicate lines
+  CopWaitSafe(cp, Y(0), 0);
+  CopMove16(cp, bpl1mod, -40);
+  CopMove16(cp, bpl2mod, -40);
+
+  for (i = 0; i < DEPTH; ++i) {
+    CopWaitSafe(cp, Y(256 - groundLevel[i]), 0);
+    CopMove16(cp, bpl1mod, 0);
+    CopMove16(cp, bpl2mod, 0);
+    CopWaitSafe(cp, Y(272 - groundLevel[i]), 0);
+    CopMove16(cp, bpl1mod, -40);
+    CopMove16(cp, bpl2mod, -40);
+  }
+
   CopListFinish(cp);
+
+  return cp;
+}
+
+static void Init(void) {
+  EnableDMA(DMAF_BLITTER);
+  EnableDMA(DMAF_RASTER);
+  EnableDMA(DMAF_SPRITE);
+
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, 256);
 
   // SPRITES BETWEEN PLAYFIELDS
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF1P2;
 
+  SetupColors();
+
+  cp = MakeCopperList();
   CopListActivate(cp);
 }
 
@@ -236,8 +269,9 @@ PROFILE(Forest);
 static void Render(void) {
   ProfilerStart(Forest);
   {
-    ITER(i, 0, DEPTH - 1, DrawForest(i));
-    ITER(i, 0, DEPTH - 1, DrawGround(i));
+    DrawGround();
+    WaitBlitter();
+    DrawForest();
     ITER(i, 0, DEPTH - 1, VerticalFill(i));
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
