@@ -24,7 +24,7 @@ if __name__ == '__main__':
                 i = 0
                 val = 0
 
-    print('static __data_chip uint16_t grass[20 * 16] = {')
+    print('static __data_chip uint16_t grass[20 * 16 * 2] = {')
     for i in range(len(GROUND_TEXTURE)):
         print(hex(GROUND_TEXTURE[i]) + ', ', end='')
         if ((i+1) % 20 == 0):

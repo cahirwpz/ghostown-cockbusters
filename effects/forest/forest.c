@@ -23,45 +23,49 @@ static CopInsPairT *bplptr;
 static CopListT *cp;
 static short active = 0;
 
+static short wordOffset[6] = {19, 19, 19, 19, 19, 19};
+static short bitOffset[6] = {0, 0, 0, 0, 0, 0};
+
 
 static __data_chip u_short treeTab[6][20] = {
     { // 1st LAYER (closest)
-      0x0000, 0x0000, 0xFFFF, 0xF000, 0x0000,
-      0x0000, 0xFFFF, 0xF000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x00FF, 0xFF00, 0x0000,
-      0x0000, 0x0000, 0x0FFF, 0xFFF0, 0x0000,
+      0x0000, 0x000F, 0xFFFF, 0xF000, 0x0000,
+      0x0000, 0xFFFF, 0xFF00, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0FFF, 0xFF00, 0x0000,
+      0x0000, 0x0000, 0xFFFF, 0xFFF0, 0x0000,
     },
     { // 2nd LAYER
-      0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0xFFFF, 0x0000,
-      0x0000, 0x0FFF, 0xF000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0xFFFF, 0xF000,
+      0x0000, 0xFFFF, 0xF000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x000F, 0xFFFF, 0x0000,
+      0x0000, 0x0FFF, 0xFF00, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x000F, 0xFFFF, 0xF000,
     },
     { // 3rd LAYER
-      0x0000, 0x0000, 0x00FF, 0xFF00, 0x0000,
-      0x0000, 0x0000, 0xFFF0, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x00FF, 0xFFF0, 0x0000,
+      0x0000, 0x000F, 0xFFF0, 0x0000, 0x0000,
       0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-      0xFFFF, 0x0000, 0x0000, 0x0000, 0x00FF,
+      0xFFFF, 0xF000, 0x0000, 0x0000, 0x0FFF,
     },
     { // 4th LAYER
-      0x0000, 0x0000, 0x0000, 0x0000, 0x0FFF,
-      0x0FFF, 0x0000, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0x0FF0, 0x0000,
-      0x0000, 0x0FFF, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x0000, 0xFFFF,
+      0x00FF, 0xFF00, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x0FFF, 0x0000,
+      0x0000, 0x0FFF, 0xF000, 0x0000, 0x0000,
     },
     { // 5th LAYER
-      0x0000, 0x0000, 0x0FFF, 0xF000, 0x0000,
-      0x0000, 0xFF00, 0x0000, 0x0000, 0xFFF0,
+      0x0000, 0x0000, 0x0FFF, 0xFF00, 0x0000,
+      0x0000, 0xFFF0, 0x0000, 0x0000, 0xFFF0,
       0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0x00FF, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x0FFF, 0x0000,
     },
     { // 6th LAYER
-      0x00FF, 0x0000, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x0000, 0x000F, 0xF000,
-      0x0000, 0xFF00, 0x0000, 0x0000, 0x0000,
-      0x0000, 0x0000, 0x00FF, 0x0000, 0x0000,
+      0x00FF, 0xF000, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x0000, 0x000F, 0xFF00,
+      0x0000, 0xFFF0, 0x0000, 0x0000, 0x0000,
+      0x0000, 0x0000, 0x00FF, 0xF000, 0x0000,
     },
 };
+
 
 static u_short groundLevel[6] = {
   // Number of lines counting from bottom
@@ -95,21 +99,34 @@ static void ClearBitplanes(void) {
 
 static void MoveTrees(short layer, u_short bits) {
   short i;
-  u_short dong = treeTab[layer][0] >> (16 - bits);
+  u_short dong = treeTab[layer][19] << (16 - bits);
 
-  for (i = 0; i < 19; ++i) {
-    treeTab[layer][i] = (treeTab[layer][i] << bits) | (treeTab[layer][i+1] >> (16 - bits));
+  for (i = 19; i > 0; --i) {
+    treeTab[layer][i] = (treeTab[layer][i] >> bits) | (treeTab[layer][i-1] << (16 - bits));
   }
-  treeTab[layer][19] = (treeTab[layer][19] << bits) | dong;
+  treeTab[layer][0] = (treeTab[layer][0] >> bits) | dong;
 }
 
 static void MoveForest(void) {
-  MoveTrees(0, 6);
-  MoveTrees(1, 5);
-  MoveTrees(2, 4);
-  MoveTrees(3, 3);
-  MoveTrees(4, 2);
-  MoveTrees(5, 1);
+  short i = 0;
+
+  for (i = 0; i < 6; ++i) {
+    if (speed[i] == 0) {
+      speed[i] = i + 1;
+      MoveTrees(i, 1);
+
+      bitOffset[i] += 1;
+      if (bitOffset[i] >= 16) {
+        bitOffset[i] = 0;
+        wordOffset[i] -= 1;
+      }
+      if (wordOffset[i] < 0) {
+        wordOffset[i] = 19;
+      }
+    } else {
+      speed[i] -= 1;
+    }
+  }
 }
 
 static void DrawForest(void) {
@@ -121,7 +138,6 @@ static void DrawForest(void) {
 
   (void)MoveTrees;
   (void)speed;
-  WaitBlitter();
 
   { /* PLAYFIELD 1 */
     /* PLAYFIELD 1 BITPLANE 0 */
@@ -229,18 +245,17 @@ static void DrawForest(void) {
 }
 
 static void DrawGround(void) {
-  // TODO: Move ground with trees
   void *dst;
-  void *src;
+  void *srca;
   void *srcb;
   void *srcc;
 
   { /* 6th LAYER */
     dst = screen[active]->planes[2] + 40;
+    srca = grass + wordOffset[5];
     srcb = screen[active]->planes[0];
-    src = grass;
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltbmod = -40;
     custom->bltdmod = 0;
 
@@ -249,11 +264,11 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltbpt = srcb;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(bitOffset[5]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
@@ -262,9 +277,9 @@ static void DrawGround(void) {
 
   { /* 5th LAYER */
     dst = screen[active]->planes[0] + 40 + 16*40;
-    src = grass;
+    srca = grass + wordOffset[4];
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltdmod = 0;
 
     custom->bltbdat = -1;
@@ -273,10 +288,10 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(bitOffset[4]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
@@ -285,11 +300,11 @@ static void DrawGround(void) {
 
   { /* 4th LAYER */
     dst = screen[active]->planes[2] + 40 + 32*40;
-    src = grass;
+    srca = grass + wordOffset[3];
     srcb = screen[active]->planes[0];
     srcc = screen[active]->planes[2];
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltbmod = -40;
     custom->bltcmod = -40;
     custom->bltdmod = 0;
@@ -297,12 +312,12 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltbpt = srcb;
     custom->bltcpt = srcc;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(bitOffset[3]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
@@ -311,10 +326,10 @@ static void DrawGround(void) {
 
   { /* 3rd LAYER */
     dst = screen[active]->planes[3] + 40 + 48*40;
+    srca = grass + wordOffset[2];
     srcb = screen[active]->planes[1];
-    src = grass;
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltbmod = -40;
     custom->bltdmod = 0;
 
@@ -323,11 +338,11 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltbpt = srcb;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(bitOffset[2]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
@@ -336,9 +351,9 @@ static void DrawGround(void) {
 
   { /* 2nd LAYER */
     dst = screen[active]->planes[1] + 40 + 64*40;
-    src = grass;
+    srca = grass + wordOffset[1];
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltdmod = 0;
 
     custom->bltbdat = -1;
@@ -347,10 +362,10 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(bitOffset[1]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
@@ -359,11 +374,11 @@ static void DrawGround(void) {
 
   { /* 1st LAYER */
     dst = screen[active]->planes[3] + 40 + 80*40;
-    src = grass;
+    srca = grass + wordOffset[0];
     srcb = screen[active]->planes[1];
     srcc = screen[active]->planes[3];
 
-    custom->bltamod = 0;
+    custom->bltamod = 40;
     custom->bltbmod = -40;
     custom->bltcmod = -40;
     custom->bltdmod = 0;
@@ -371,16 +386,16 @@ static void DrawGround(void) {
     custom->bltafwm = -1;
     custom->bltalwm = -1;
 
-    custom->bltapt = src;
+    custom->bltapt = srca;
     custom->bltbpt = srcb;
     custom->bltcpt = srcc;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(bitOffset[0]);
     custom->bltcon1 = 0;
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    WaitBlitter();
+    // WaitBlitter();
   }
 }
 
@@ -461,15 +476,15 @@ static CopListT *MakeCopperList(void) {
 
   (void)left;
   (void)right;
-  // CopInsSetSprite(&sprptr[4], &left[0]);
-  // CopInsSetSprite(&sprptr[5], &left[1]);
-  // CopInsSetSprite(&sprptr[6], &right[0]);
-  // CopInsSetSprite(&sprptr[7], &right[1]);
+  CopInsSetSprite(&sprptr[4], &left[0]);
+  CopInsSetSprite(&sprptr[5], &left[1]);
+  CopInsSetSprite(&sprptr[6], &right[0]);
+  CopInsSetSprite(&sprptr[7], &right[1]);
 
-  // SpriteUpdatePos(&left[0],  X(160-32), Y(0));
-  // SpriteUpdatePos(&left[1],  X(160-16), Y(0));
-  // SpriteUpdatePos(&right[0], X(160),    Y(0));
-  // SpriteUpdatePos(&right[1], X(160+16), Y(0));
+  SpriteUpdatePos(&left[0],  X(160-32), Y(0));
+  SpriteUpdatePos(&left[1],  X(160-16), Y(0));
+  SpriteUpdatePos(&right[0], X(160),    Y(0));
+  SpriteUpdatePos(&right[1], X(160+16), Y(0));
 
   // Duplicate lines
   (void)groundLevel;
@@ -528,14 +543,16 @@ static void Render(void) {
   (void)ClearBitplanes;
   ProfilerStart(Forest);
   {
-    ClearBitplanes();  // 110 raster lines
-    DrawForest();  // 6 raster lines
-    DrawGround();  // 35 raster lines
+    ClearBitplanes();
+    DrawForest();
+    DrawGround();
+    MoveForest();
+
     VerticalFill(0, HEIGHT);
     VerticalFill(1, HEIGHT);
     VerticalFill(2, HEIGHT-64);
     VerticalFill(3, HEIGHT-16);
-    MoveForest();
+
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
   ProfilerStop(Forest);
