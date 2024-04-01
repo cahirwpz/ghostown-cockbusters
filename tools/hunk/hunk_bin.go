@@ -7,47 +7,49 @@ import (
 	"io"
 )
 
-// This is private, non-standard extension!
-type BinHunkFlag uint32
+// Compression Type: This is private, non-standard extension.
+// Valid only for loadable files, but does not clash with
+// linkable hunk type.
+type CompType uint32
 
 const (
-	BHF_COMP      BinHunkFlag = 4 << 29
-	BHF_ALGO_ZX0  BinHunkFlag = 0 << 29
-	BHF_ALGO_LZSA BinHunkFlag = 1 << 29
-	BHF_ALGO_MASK BinHunkFlag = 3 << 29
+	COMP_NONE CompType = 0 << 28
+	COMP_LZSA CompType = 1 << 28
+	COMP_ZX0  CompType = 3 << 28
+	COMP_MASK CompType = 3 << 28
 
-	BHF_COMP_MASK = uint32(BHF_COMP) | uint32(BHF_ALGO_MASK)
-	BHF_SIZE_MASK = ^BHF_COMP_MASK
+	BHF_FLAG_MASK = HUNKF_FLAG_MASK
+	BHF_COMP_MASK = uint32(COMP_MASK)
+	BHF_SIZE_MASK = ^(BHF_COMP_MASK | BHF_FLAG_MASK)
 )
 
-func (flag BinHunkFlag) String() string {
-	if flag&BHF_COMP == 0 {
-		return ""
-	}
-
-	switch flag & BHF_ALGO_MASK {
-	case BHF_ALGO_ZX0:
-		return "ZX0"
-	case BHF_ALGO_LZSA:
+func (comp CompType) String() string {
+	switch comp & COMP_MASK {
+	case COMP_NONE:
+		return "NONE"
+	case COMP_LZSA:
 		return "LZSA"
+	case COMP_ZX0:
+		return "ZX0"
 	default:
 		return "???"
 	}
 }
 
-func binHunkSpec(x uint32) (BinHunkFlag, uint32) {
-	return BinHunkFlag(x & BHF_COMP_MASK), (x & BHF_SIZE_MASK) * 4
+func binHunkSpec(x uint32) (HunkFlag, CompType, uint32) {
+	return HunkFlag(x & BHF_FLAG_MASK), CompType(x & BHF_COMP_MASK), (x & BHF_SIZE_MASK) * 4
 }
 
 type HunkBin struct {
 	htype HunkType
-	Flags BinHunkFlag
+	Flags HunkFlag
+	Comp  CompType
 	Data  *bytes.Buffer
 }
 
 func readHunkBin(r io.Reader, htype HunkType) *HunkBin {
-	flags, size := binHunkSpec(readLong(r))
-	return &HunkBin{htype, flags, bytes.NewBuffer(readData(r, size))}
+	flags, comp, size := binHunkSpec(readLong(r))
+	return &HunkBin{htype, flags, comp, bytes.NewBuffer(readData(r, size))}
 }
 
 func (h HunkBin) Type() HunkType {
@@ -56,17 +58,15 @@ func (h HunkBin) Type() HunkType {
 
 func (h HunkBin) Write(w io.Writer) {
 	writeLong(w, uint32(h.htype))
-	writeLong(w, uint32(h.Flags)|bytesSize(h.Data.Bytes()))
+	writeLong(w, uint32(h.Flags)|uint32(h.Comp)|bytesSize(h.Data.Bytes()))
 	writeData(w, h.Data.Bytes())
 }
 
 func (h HunkBin) String() string {
-	var flags string
-	if h.Flags != 0 {
-		flags = h.Flags.String() + ", "
-	} else {
-		flags = ""
+	comp := ""
+	if h.Comp != 0 {
+		comp = fmt.Sprintf("compressed: %s, ", h.Comp.String())
 	}
-	return fmt.Sprintf("%s [%s%d bytes]\n%s", h.Type().String(),
-		flags, h.Data.Len(), hex.Dump(h.Data.Bytes()))
+	return fmt.Sprintf("%s [%s, %s%d bytes]\n%s", h.Type().String(),
+		h.Flags.String(), comp, h.Data.Len(), hex.Dump(h.Data.Bytes()))
 }
