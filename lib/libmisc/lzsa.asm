@@ -1,3 +1,5 @@
+; https://github.com/tattlemuss/lz4-m68k/blob/main/src/lzsa.s
+;
 ; Copyright (c) 2016 Steven Tattersall
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -34,7 +36,7 @@
 ; Depack an lzsa stream containing 1 or more lzsa-1 blocks.
 ; No bounds checking is performed.
 ; input a0 - start of compressed frame
-; input a1 - start of output buffer
+; input a2 - start of output buffer
 _lzsa_depack_stream:
         movem.l d2-d4/a2-a5,-(sp)
 
@@ -44,14 +46,14 @@ _lzsa_depack_stream:
         bne.s   .bad_format
 
         move.l  a7,a5
+        subq.l  #4,a7
         ; read encoding type
         ; * V: 3 bit code that indicates which block data encoding is used.
         ; 0 is LZSA1 and 2 is LZSA2.
-        lea     _decode_block_lzsa1,a1          ; a1 = block depacker v1
-        move.b  (a0)+,d0                        ; get encoding type ($40 == lzsa2)
-        cmp.b   #%00100000,d0
-        bne.s   .block_loop
-        lea     _decode_block_lzsa2,a1          ; a1 = block depacker v2
+        lea     _decode_block_lzsa1(pc),a1      ; a1 = block depacker v1
+        btst.b  #5,(a0)+                        ; get encoding type ($40 == lzsa2)
+        beq.s   .block_loop
+        lea     _decode_block_lzsa2(pc),a1      ; a1 = block depacker v2
 
 .block_loop:
         ;# Frame format
@@ -75,6 +77,7 @@ _lzsa_depack_stream:
         jsr     (a1)                            ; run block depacker
         bra.s   .block_loop
 .all_done:
+        addq.l  #4,a7
         movem.l (sp)+,d2-d4/a2-a5
         rts
 
