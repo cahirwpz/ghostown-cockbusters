@@ -8,8 +8,8 @@
 
 
 #include "data/ground.c"
-#include "../twister-rgb/data/twister-left.c"
-#include "../twister-rgb/data/twister-right.c"
+#include "data/tree-left.c"
+#include "data/tree-slim.c"
 
 
 #define WIDTH 320
@@ -22,9 +22,6 @@ static BitmapT *screen[2];
 static CopInsPairT *bplptr;
 static CopListT *cp;
 static short active = 0;
-
-static short wordOffset[6] = {19, 19, 19, 19, 19, 19};
-static short bitOffset[6] = {0, 0, 0, 0, 0, 0};
 
 
 static __data_chip u_short treeTab[6][20] = {
@@ -66,20 +63,40 @@ static __data_chip u_short treeTab[6][20] = {
     },
 };
 
+static short branchesPos[3][2] = {
+  {0, 0},
+  {0, 0},
+  {0, 0},
+};
 
 static u_short groundLevel[6] = {
   // Number of lines counting from bottom
-  180,  // 6th LAYER
-  150,  // 5th LAYER
-  120,  // 4th LAYER
-  90,   // 3rd LAYER
-  60,   // 2nd LAYER
+  // 180,  // 6th LAYER
+  // 150,  // 5th LAYER
+  // 120,  // 4th LAYER
+  // 90,   // 3rd LAYER
+  // 60,   // 2nd LAYER
+  // 30,   // 1st LAYER (min. 16)
+  160,  // 6th LAYER
+  144,  // 5th LAYER
+  122,  // 4th LAYER
+  94,   // 3rd LAYER
+  64,   // 2nd LAYER
   30,   // 1st LAYER (min. 16)
 };
 
 static short speed[6] = {
   // Trees move speed in pixels per frame
-  1, 4, 2, 5, 3, 6
+  // 1, 4, 2, 5, 3, 6
+  2, 8, 4, 10, 6, 12
+};
+
+static short wordOffset[6] = {
+  19, 19, 19, 19, 19, 19
+};
+
+static short bitOffset[6] = {
+  0, 0, 0, 0, 0, 0
 };
 
 
@@ -107,11 +124,29 @@ static void MoveTrees(short layer, u_short bits) {
   treeTab[layer][0] = (treeTab[layer][0] >> bits) | dong;
 }
 
+static void MoveBranches(void) {
+  ++branchesPos[0][0];
+  ++branchesPos[0][1];
+  ++branchesPos[1][0];
+  ++branchesPos[1][1];
+  ++branchesPos[2][0];
+  ++branchesPos[2][1];
+
+  SpriteUpdatePos(&slim[0],  X(branchesPos[0][0]), Y(-16));
+  SpriteUpdatePos(&slim[1],  X(branchesPos[0][1]), Y(-16));
+
+  SpriteUpdatePos(&left[0],  X(branchesPos[1][0]), Y(-16));
+  SpriteUpdatePos(&left[1],  X(branchesPos[1][1]), Y(-16));
+}
+
 static void MoveForest(void) {
   short i = 0;
 
   for (i = 0; i < 6; ++i) {
     if (speed[i] == 0) {
+      if (i == 0) {
+        MoveBranches();
+      }
       speed[i] = i + 1;
       MoveTrees(i, 1);
 
@@ -252,7 +287,7 @@ static void DrawGround(void) {
 
   { /* 6th LAYER */
     dst = screen[active]->planes[2] + 40;
-    srca = grass + wordOffset[5];
+    srca = _ground_bpl + wordOffset[5];
     srcb = screen[active]->planes[0];
 
     custom->bltamod = 40;
@@ -277,7 +312,7 @@ static void DrawGround(void) {
 
   { /* 5th LAYER */
     dst = screen[active]->planes[0] + 40 + 16*40;
-    srca = grass + wordOffset[4];
+    srca = _ground_bpl + wordOffset[4];
 
     custom->bltamod = 40;
     custom->bltdmod = 0;
@@ -300,7 +335,7 @@ static void DrawGround(void) {
 
   { /* 4th LAYER */
     dst = screen[active]->planes[2] + 40 + 32*40;
-    srca = grass + wordOffset[3];
+    srca = _ground_bpl + wordOffset[3];
     srcb = screen[active]->planes[0];
     srcc = screen[active]->planes[2];
 
@@ -326,7 +361,7 @@ static void DrawGround(void) {
 
   { /* 3rd LAYER */
     dst = screen[active]->planes[3] + 40 + 48*40;
-    srca = grass + wordOffset[2];
+    srca = _ground_bpl + wordOffset[2];
     srcb = screen[active]->planes[1];
 
     custom->bltamod = 40;
@@ -351,7 +386,7 @@ static void DrawGround(void) {
 
   { /* 2nd LAYER */
     dst = screen[active]->planes[1] + 40 + 64*40;
-    srca = grass + wordOffset[1];
+    srca = _ground_bpl + wordOffset[1];
 
     custom->bltamod = 40;
     custom->bltdmod = 0;
@@ -374,7 +409,7 @@ static void DrawGround(void) {
 
   { /* 1st LAYER */
     dst = screen[active]->planes[3] + 40 + 80*40;
-    srca = grass + wordOffset[0];
+    srca = _ground_bpl + wordOffset[0];
     srcb = screen[active]->planes[1];
     srcc = screen[active]->planes[3];
 
@@ -447,21 +482,21 @@ static void SetupColors(void) {
 
   // SPRITES
   // SPRITES 1-2
-  SetColor(17, 0xC44);
-  SetColor(18, 0xC66);
-  SetColor(19, 0xC88);
+  SetColor(17, 0x111);
+  SetColor(18, 0x111);
+  SetColor(19, 0x111);
   // SPRITES 3-4
-  SetColor(21, 0xC44);
-  SetColor(22, 0xC66);
-  SetColor(23, 0xC88);
+  SetColor(21, 0x111);
+  SetColor(22, 0x111);
+  SetColor(23, 0x111);
   // SPRITES 5-6
-  SetColor(25, 0xC44);
-  SetColor(26, 0xC66);
-  SetColor(27, 0xC88);
+  SetColor(25, 0x111);
+  SetColor(26, 0x111);
+  SetColor(27, 0x111);
   // SPRITES 7-8
-  SetColor(29, 0xC44);
-  SetColor(30, 0xC66);
-  SetColor(31, 0xC88);
+  SetColor(29, 0x111);
+  SetColor(30, 0x111);
+  SetColor(31, 0x111);
 }
 
 static CopListT *MakeCopperList(void) {
@@ -475,20 +510,17 @@ static CopListT *MakeCopperList(void) {
   sprptr = CopSetupSprites(cp);
 
   (void)left;
-  (void)right;
-  CopInsSetSprite(&sprptr[4], &left[0]);
-  CopInsSetSprite(&sprptr[5], &left[1]);
-  CopInsSetSprite(&sprptr[6], &right[0]);
-  CopInsSetSprite(&sprptr[7], &right[1]);
+  CopInsSetSprite(&sprptr[4], &slim[0]);
+  CopInsSetSprite(&sprptr[5], &slim[1]);
+  CopInsSetSprite(&sprptr[6], &left[0]);
+  CopInsSetSprite(&sprptr[7], &left[1]);
 
-  SpriteUpdatePos(&left[0],  X(160-32), Y(0));
-  SpriteUpdatePos(&left[1],  X(160-16), Y(0));
-  SpriteUpdatePos(&right[0], X(160),    Y(0));
-  SpriteUpdatePos(&right[1], X(160+16), Y(0));
+  branchesPos[0][0] = 96 - 16;
+  branchesPos[0][1] = 96 + 20;
+  branchesPos[1][0] = 28 - 32;
+  branchesPos[1][1] = 28 - 16;
 
   // Duplicate lines
-  (void)groundLevel;
-  (void)i;
   CopWaitSafe(cp, Y(0), 0);
   CopMove16(cp, bpl1mod, -40);
   CopMove16(cp, bpl2mod, -40);
@@ -517,7 +549,7 @@ static void Init(void) {
   SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, 256);
 
   // SPRITES BETWEEN PLAYFIELDS
-  custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF1P2;
+  // custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF1P2;
 
   SetupColors();
 

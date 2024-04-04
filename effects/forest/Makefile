@@ -1,7 +1,9 @@
 TOPDIR := $(realpath ../..)
 
-include $(TOPDIR)/build/effect.mk
+CLEAN-FILES := data/tree-left.c data/ground.c
 
-data/ground.c: data/ground.py data/ground-double-full.bmp
-	@echo "[GEN] $(DIR)$@"
-	$(PYTHON3) $^ > $@
+PNG2C.ground := --bitmap ground,640x16x1
+PNG2C.tree-left := --sprite left,256,2
+PNG2C.tree-slim := --sprite slim,256,2
+
+include $(TOPDIR)/build/effect.mk
