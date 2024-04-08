@@ -1,14 +1,16 @@
 package obj
 
+type Vector []float64
+
 type Obj struct {
-	GVertices  []float32 // "v"
-	NVertices  []float32 // "vn"
+	GVertices  []Vector  // "v Geometric Vertices"
+	NVertices  []Vector  // "vn Vertex Normals"
+	TVertices  []Vector  // "vt Texture Vertices"
 	PSVertices []float32 // "vp"
 	Faces      []int32   // "f"
-	Texture    []float32 // "vt"
 }
 
-type Output struct {
+type Model struct {
 	Name     string
 	Surfaces []*Surface
 	Points   []*Point
