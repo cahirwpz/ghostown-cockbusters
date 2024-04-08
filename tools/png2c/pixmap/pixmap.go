@@ -62,7 +62,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		}
 		bpp := util.GetDepth(pix)
 		if o.LimitBpp {
-			bpp = min(o.Bpp, bpp)
+			bpp = util.Min(o.Bpp, bpp)
 		}
 
 		// Validate image depth
@@ -74,7 +74,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		if o.Bpp == 4 {
 			o.Type = "PM_CMAP4"
 			o.Stride = (o.Width + 1) / 2
-			data = chunky4(in, pix, o.Width, o.Height)
+			data = chunky4(in, o.Width, o.Height)
 		} else {
 			o.Type = "PM_CMAP8"
 			o.Stride = o.Width
@@ -104,7 +104,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 	return out
 }
 
-func chunky4(im image.Image, pix []uint8, width, height int) (out []uint) {
+func chunky4(im image.Image, width, height int) (out []uint) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < ((width + 1) & ^1); x += 2 {
 			var x0, x1 uint8

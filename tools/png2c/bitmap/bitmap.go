@@ -19,7 +19,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	// Set and validate depth
 	depth := util.GetDepth(in.Pix)
 	if o.LimitDepth {
-		depth = min(o.Depth, depth)
+		depth = util.Min(o.Depth, depth)
 	}
 
 	// Crop the image if needed (--extract_at option)

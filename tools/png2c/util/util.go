@@ -8,7 +8,6 @@ import (
 	"image/png"
 	"log"
 	"math"
-	"slices"
 	"strings"
 	"text/template"
 )
@@ -41,7 +40,7 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 }
 
 func GetDepth(pix []uint8) int {
-	return int(math.Ceil(math.Log2(float64(slices.Max(pix) + 1))))
+	return int(math.Ceil(math.Log2(float64(sliceMax(pix) + 1))))
 }
 
 func DecodePNG(file []byte) (image.Image, image.Config, error) {
@@ -94,4 +93,22 @@ func Planar(pix []uint8, width, height, depth int, interleaved bool) []uint16 {
 func RGB12(c color.Color) uint {
 	r, g, b, _ := c.RGBA() // 16-bit components
 	return uint(((r & 0xf000) >> 4) | ((g & 0xf000) >> 8) | ((b & 0xf000) >> 12))
+}
+
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func sliceMax(arr []uint8) uint8 {
+	var out uint8
+	out = arr[0]
+	for _, x := range arr {
+		if x > out {
+			out = x
+		}
+	}
+	return out
 }
