@@ -10,11 +10,11 @@
 #include "data/ground.c"
 #include "data/ground2.c"
 
-#include "data/tree-slim.c"
-#include "data/tree-bold.c"
-#include "data/just-tree.c"
+#include "data/tree1.c"
+#include "data/tree2.c"
+#include "data/tree3.c"
 
-#include "data/ghost.c"
+#include "data/moonghost.c"
 
 
 #define WIDTH 320
@@ -74,8 +74,8 @@ static __data_chip u_short treeTab[6][24] = {
     },
 };
 
-/* TODO: Calculate these values from treeTab in Init */
 static short branchesPos[4][2] = {
+  // Calculate these values from treeTab in Init?
   {-4, 43},
   {112, 163},
   {248, 299},
@@ -112,7 +112,7 @@ static short bitOffset[6] = {
 };
 
 static short ghostPos[2] = {
-  -32, 96
+  -32, 107
 };
 
 static bool ghostUp = false;
@@ -133,14 +133,14 @@ static void MoveSprites(void) {
   short i, j;
 
   /* Move branches */
-  SpriteUpdatePos(&slim[0],   X(branchesPos[0][0]), Y(-16));
-  SpriteUpdatePos(&slim[1],   X(branchesPos[0][1]), Y(-16));
+  SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
+  SpriteUpdatePos(&tree1[1],   X(branchesPos[0][1]), Y(-16));
 
-  SpriteUpdatePos(&bold[0],   X(branchesPos[1][0]), Y(-16));
-  SpriteUpdatePos(&bold[1],   X(branchesPos[1][1]), Y(-16));
+  SpriteUpdatePos(&tree2[0],   X(branchesPos[1][0]), Y(-16));
+  SpriteUpdatePos(&tree2[1],   X(branchesPos[1][1]), Y(-16));
 
-  SpriteUpdatePos(&just[0],   X(branchesPos[2][0]), Y(-16));
-  SpriteUpdatePos(&just[1],   X(branchesPos[2][1]), Y(-16));
+  SpriteUpdatePos(&tree3[0],   X(branchesPos[2][0]), Y(-16));
+  SpriteUpdatePos(&tree3[1],   X(branchesPos[2][1]), Y(-16));
 
   for (i = 0; i <= 2; ++i) {
     for (j = 0; j <= 1; ++j) {
@@ -152,23 +152,22 @@ static void MoveSprites(void) {
   }
 
   /* Move ghost */
-  SpriteUpdatePos(&ghost[0],   X(ghostPos[0]),    Y(ghostPos[1]));
-  SpriteUpdatePos(&ghost[1],   X(ghostPos[0]+16), Y(ghostPos[1]));
+  moonghost[0].sprdat->data[32][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
+  moonghost[0].sprdat->data[32][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 49);
+  moonghost[1].sprdat->data[32][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
+  moonghost[1].sprdat->data[32][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 49);
 
-  ghostPos[0]+=2;
-  if (!ghostUp) {
-    ghostPos[1]++;
-  } else {
+  ghostPos[0] += 2;
+  if (ghostUp) {
     ghostPos[1]--;
+  } else {
+    ghostPos[1]++;
   }
   if (ghostPos[0] > 320) {
     ghostPos[0] = -64;
   }
-  if (ghostPos[1] >= 100) {
-    ghostUp = true;
-  }
-  if (ghostPos[1] <= 94) {
-    ghostUp = false;
+  if (ghostPos[1] >= 110 || ghostPos[1] <= 104) {
+    ghostUp = !ghostUp;
   }
 }
 
@@ -509,21 +508,38 @@ static void ClearBitplanes(void) {
 
 /* SETUP */
 static void SetupColors(void) {
+  unsigned short colors[7] = {
+    0x111, // 1st layer
+    0x223,
+    0x334,
+    0x445,
+    0x556,
+    0x667,
+    0x778, // background
+    // 0x111, // 1st layer
+    // 0x232,
+    // 0x343,
+    // 0x454,
+    // 0x565,
+    // 0x676,
+    // 0x787, // background
+  };
+
   // TREES
   // PLAYFIELD 1
-  SetColor(8,  0x9AA); // BACKGROUND
-  SetColor(9,  0x111); // 1st LAYER
-  SetColor(10, 0x343); // 3rd LAYER
-  SetColor(11, 0x232); // 2nd LAYER
+  SetColor(8,  colors[6]); // BACKGROUND
+  SetColor(9,  colors[0]); // 1st LAYER
+  SetColor(10, colors[2]); // 3rd LAYER
+  SetColor(11, colors[1]); // 2nd LAYER
   SetColor(12, 0xF0F); // UNUSED
   SetColor(13, 0xF0F); // UNUSED
   SetColor(14, 0xF0F); // UNUSED
   SetColor(15, 0xF0F); // UNUSED
   // PLAYFLIELD 2
-  SetColor(0,  0x9AA); // BACKGROUND
-  SetColor(1,  0x454); // 4th LAYER
-  SetColor(2,  0x676); // 6th LAYER
-  SetColor(3,  0x565); // 5th LAYER
+  SetColor(0,  colors[6]); // BACKGROUND
+  SetColor(1,  colors[3]); // 4th LAYER
+  SetColor(2,  colors[5]); // 6th LAYER
+  SetColor(3,  colors[4]); // 5th LAYER
   SetColor(4,  0xF0F); // UNUSED
   SetColor(5,  0xF0F); // UNUSED
   SetColor(6,  0xF0F); // UNUSED
@@ -550,43 +566,48 @@ static void SetupColors(void) {
 
 static void SetupSprites(void) {
   CopInsPairT *sprptr;
-
   sprptr = CopSetupSprites(cp);
 
-  CopInsSetSprite(&sprptr[0], &slim[0]);
-  CopInsSetSprite(&sprptr[1], &slim[1]);
+  CopInsSetSprite(&sprptr[0], &tree1[0]);
+  CopInsSetSprite(&sprptr[1], &tree1[1]);
 
-  CopInsSetSprite(&sprptr[2], &bold[0]);
-  CopInsSetSprite(&sprptr[3], &bold[1]);
+  CopInsSetSprite(&sprptr[2], &tree2[0]);
+  CopInsSetSprite(&sprptr[3], &tree2[1]);
 
-  CopInsSetSprite(&sprptr[4], &just[0]);
-  CopInsSetSprite(&sprptr[5], &just[1]);
+  CopInsSetSprite(&sprptr[4], &tree3[0]);
+  CopInsSetSprite(&sprptr[5], &tree3[1]);
 
-  CopInsSetSprite(&sprptr[6], &ghost[0]);
-  CopInsSetSprite(&sprptr[7], &ghost[1]);
+  CopInsSetSprite(&sprptr[6], &moonghost[0]);
+  CopInsSetSprite(&sprptr[7], &moonghost[1]);
 
-  SpriteUpdatePos(&slim[0],   X(branchesPos[0][0]), Y(-16));
-  SpriteUpdatePos(&slim[1],   X(branchesPos[0][1]), Y(-16));
+  SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
+  SpriteUpdatePos(&tree1[1],   X(branchesPos[0][1]), Y(-16));
 
-  SpriteUpdatePos(&bold[0],   X(branchesPos[1][0]), Y(-16));
-  SpriteUpdatePos(&bold[1],   X(branchesPos[1][1]), Y(-16));
+  SpriteUpdatePos(&tree2[0],   X(branchesPos[1][0]), Y(-16));
+  SpriteUpdatePos(&tree2[1],   X(branchesPos[1][1]), Y(-16));
 
-  SpriteUpdatePos(&just[0],   X(branchesPos[2][0]), Y(-16));
-  SpriteUpdatePos(&just[1],   X(branchesPos[2][1]), Y(-16));
+  SpriteUpdatePos(&tree3[0],   X(branchesPos[2][0]), Y(-16));
+  SpriteUpdatePos(&tree3[1],   X(branchesPos[2][1]), Y(-16));
 
-  SpriteUpdatePos(&ghost[0],   X(ghostPos[0]),    Y(ghostPos[1]));
-  SpriteUpdatePos(&ghost[1],   X(ghostPos[0]+16), Y(ghostPos[1]));
+  SpriteUpdatePos(&moonghost[0], X(16), Y(16));
+  SpriteUpdatePos(&moonghost[1], X(32), Y(16));
 }
 
 static CopListT *MakeCopperList(void) {
   short i;
-  unsigned short gradient[6] = {
-    0x455,
-    0x566,
-    0x677,
-    0x788,
-    0x899,
-    0x9aa,
+  unsigned short backgroundGradient[12] = {
+    0x222,
+    0x222,
+    0x223,
+    0x223,
+    0x233,
+    0x334,
+    0x334,
+    0x435,
+    0x445,
+    0x446,
+    0x456,
+    0x557
   };
 
   cp = NewCopList(1200);
@@ -595,17 +616,24 @@ static CopListT *MakeCopperList(void) {
   // Sprites
   SetupSprites();
 
+  // Moon behind trees
+  CopWait(cp, 0, 0);
+  CopMove16(cp, bplcon2, BPLCON2_PF2PRI | BPLCON2_PF1P0 | BPLCON2_PF1P1 | BPLCON2_PF2P0 | BPLCON2_PF2P1);
+
   // Duplicate lines
   CopWaitSafe(cp, Y(0), 0);
   CopMove16(cp, bpl1mod, -40);
   CopMove16(cp, bpl2mod, -40);
-  
-  // mehh...
-  // for (i = 0; i < 6; ++i) {
-  //   CopWait(cp, Y(i * 16), 0);
-  //   CopSetColor(cp, 0, gradient[i]);
+
+  // Ghost between playfields
+  CopWait(cp, Y(80), 0);
+  CopMove16(cp, bplcon2, BPLCON2_PF2PRI | BPLCON2_PF2P0 | BPLCON2_PF2P1 | BPLCON2_PF1P2);
+
+  (void)backgroundGradient;
+  // for (i = 0; i < 12; ++i) {
+  //   CopWait(cp, Y(i * 8), 0);
+  //   CopSetColor(cp, 0, backgroundGradient[i]);
   // }
-  (void)gradient;
 
   for (i = 0; i < 6; ++i) {
     CopWaitSafe(cp, Y(256 - groundLevel[i]), 0);
@@ -630,8 +658,10 @@ static void Init(void) {
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, 256);
 
-  // Branches on top, ghost in between
-  custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P0 | BPLCON2_PF2P1 | BPLCON2_PF1P2;
+  moonghost[0].height = 32;
+  moonghost[1].height = 32;
+  moonghost[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
+  moonghost[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
 
   SetupColors();
 
