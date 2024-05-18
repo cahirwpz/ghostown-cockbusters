@@ -344,7 +344,7 @@ static void DrawGround(void) {
   void *srcc;
 
   { /* 6th LAYER */
-    dst = screen[active]->planes[2] + 40;
+    dst = screen[active]->planes[2] + 40;  // TODO: don't like magic numbers
     srca = _ground_bpl + wordOffset[5];
     srcb = screen[active]->planes[0];
 
@@ -501,7 +501,43 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((4 * HEIGHT) << 6) | 20;
+  custom->bltsize = ((1 + GROUND_HEIGHT) << 6) | 20;
+
+  WaitBlitter();
+
+  dst = screen[active]->planes[2];
+
+  custom->bltdmod = 0;
+
+  custom->bltdpt = dst;
+
+  custom->bltcon0 = (DEST) | 0x0;
+  custom->bltcon1 = 0;
+  custom->bltsize = ((1 + GROUND_HEIGHT*2) << 6) | 20;
+
+  WaitBlitter();
+
+  dst = screen[active]->planes[1];
+
+  custom->bltdmod = 0;
+
+  custom->bltdpt = dst;
+
+  custom->bltcon0 = (DEST) | 0x0;
+  custom->bltcon1 = 0;
+  custom->bltsize = ((1 + GROUND_HEIGHT*4) << 6) | 20;
+
+  WaitBlitter();
+
+  dst = screen[active]->planes[3];
+
+  custom->bltdmod = 0;
+
+  custom->bltdpt = dst;
+
+  custom->bltcon0 = (DEST) | 0x0;
+  custom->bltcon1 = 0;
+  custom->bltsize = ((1 + GROUND_HEIGHT*5) << 6) | 20;
 
   WaitBlitter();
 }
@@ -635,6 +671,8 @@ static CopListT *MakeCopperList(void) {
   //   CopSetColor(cp, 0, backgroundGradient[i]);
   // }
 
+  (void)i;
+  (void)groundLevel;
   for (i = 0; i < 6; ++i) {
     CopWaitSafe(cp, Y(256 - groundLevel[i]), 0);
     CopMove16(cp, bpl1mod, 0);
@@ -680,6 +718,12 @@ static void Kill(void) {
 PROFILE(Forest);
 
 static void Render(void) {
+  // Czy można wykorzystać jakoś pozostałe 2 bitplany?
+  // Na przykład na chmury? Tak żeby ich nie fillować i nie rozciągać
+  (void)MoveForest;
+  (void)DrawForest;
+  (void)DrawGround;
+  (void)ClearBitplanes;
   ProfilerStart(Forest);
   {
     ClearBitplanes();
@@ -687,10 +731,10 @@ static void Render(void) {
     DrawGround();
     MoveForest();
 
-    VerticalFill(0, HEIGHT);
+    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);
     VerticalFill(1, HEIGHT);
-    VerticalFill(2, HEIGHT-64);
-    VerticalFill(3, HEIGHT-16);
+    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);
+    VerticalFill(3, HEIGHT - GROUND_HEIGHT);
 
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
