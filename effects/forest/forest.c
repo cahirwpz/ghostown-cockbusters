@@ -14,7 +14,8 @@
 #include "data/tree2.c"
 #include "data/tree3.c"
 
-#include "data/moonghost.c"
+#include "data/moonbatghost1.c"
+#include "data/moonbatghost2.c"
 
 
 #define WIDTH 320
@@ -81,34 +82,22 @@ static short branchesPos[4][2] = {
   {248, 299},
 };
 
-static short groundLevel[6] = {
-  // Number of lines counting from bottom
-  // 180,  // 6th LAYER
-  // 150,  // 5th LAYER
-  // 120,  // 4th LAYER
-  // 90,   // 3rd LAYER
-  // 60,   // 2nd LAYER
-  // 30,   // 1st LAYER (min. 16)
-  160,  // 6th LAYER
-  144,  // 5th LAYER
-  122,  // 4th LAYER
-  94,   // 3rd LAYER
-  64,   // 2nd LAYER
-  30,   // 1st LAYER (min. 16)
-};
-
 static short speed[6] = {
   // Trees move speed in pixels per frame
   // 1, 4, 2, 5, 3, 6
   2, 8, 4, 10, 6, 12
 };
 
-static short wordOffset[6] = {
+static short groundWordOffset[6] = {
   19, 19, 19, 19, 19, 19
 };
 
-static short bitOffset[6] = {
+static short groundBitOffset[6] = {
   0, 0, 0, 0, 0, 0
+};
+
+static short batPos[2] = {
+  320, 48
 };
 
 static short ghostPos[2] = {
@@ -119,18 +108,41 @@ static bool ghostUp = false;
 
 
 /* MOVEMENTS */
-static void MoveTrees(short layer, u_short bits) {
-  short i;
-  u_short dong = treeTab[layer][23] << (16 - bits);
+static void MoveTrees(short layer) {
+  u_short tail = (treeTab[layer][23] & 1) * 0x8000;
 
-  for (i = 23; i > 0; --i) {
-    treeTab[layer][i] = (treeTab[layer][i] >> bits) | (treeTab[layer][i-1] << (16 - bits));
-  }
-  treeTab[layer][0] = (treeTab[layer][0] >> bits) | dong;
+  treeTab[layer][23] = (treeTab[layer][23] / 2) | ((treeTab[layer][23-1] & 1) * 0x8000);
+  treeTab[layer][22] = (treeTab[layer][22] / 2) | ((treeTab[layer][22-1] & 1) * 0x8000);
+  treeTab[layer][21] = (treeTab[layer][21] / 2) | ((treeTab[layer][21-1] & 1) * 0x8000);
+  treeTab[layer][20] = (treeTab[layer][20] / 2) | ((treeTab[layer][20-1] & 1) * 0x8000);
+
+  treeTab[layer][19] = (treeTab[layer][19] / 2) | ((treeTab[layer][19-1] & 1) * 0x8000);
+  treeTab[layer][18] = (treeTab[layer][18] / 2) | ((treeTab[layer][18-1] & 1) * 0x8000);
+  treeTab[layer][17] = (treeTab[layer][17] / 2) | ((treeTab[layer][17-1] & 1) * 0x8000);
+  treeTab[layer][16] = (treeTab[layer][16] / 2) | ((treeTab[layer][16-1] & 1) * 0x8000);
+  treeTab[layer][15] = (treeTab[layer][15] / 2) | ((treeTab[layer][15-1] & 1) * 0x8000);
+  treeTab[layer][14] = (treeTab[layer][14] / 2) | ((treeTab[layer][14-1] & 1) * 0x8000);
+  treeTab[layer][13] = (treeTab[layer][13] / 2) | ((treeTab[layer][13-1] & 1) * 0x8000);
+  treeTab[layer][12] = (treeTab[layer][12] / 2) | ((treeTab[layer][12-1] & 1) * 0x8000);
+  treeTab[layer][11] = (treeTab[layer][11] / 2) | ((treeTab[layer][11-1] & 1) * 0x8000);
+  treeTab[layer][10] = (treeTab[layer][10] / 2) | ((treeTab[layer][10-1] & 1) * 0x8000);
+
+  treeTab[layer][9] = (treeTab[layer][9] / 2) | ((treeTab[layer][9-1] & 1) * 0x8000);
+  treeTab[layer][8] = (treeTab[layer][8] / 2) | ((treeTab[layer][8-1] & 1) * 0x8000);
+  treeTab[layer][7] = (treeTab[layer][7] / 2) | ((treeTab[layer][7-1] & 1) * 0x8000);
+  treeTab[layer][6] = (treeTab[layer][6] / 2) | ((treeTab[layer][6-1] & 1) * 0x8000);
+  treeTab[layer][5] = (treeTab[layer][5] / 2) | ((treeTab[layer][5-1] & 1) * 0x8000);
+  treeTab[layer][4] = (treeTab[layer][4] / 2) | ((treeTab[layer][4-1] & 1) * 0x8000);
+  treeTab[layer][3] = (treeTab[layer][3] / 2) | ((treeTab[layer][3-1] & 1) * 0x8000);
+  treeTab[layer][2] = (treeTab[layer][2] / 2) | ((treeTab[layer][2-1] & 1) * 0x8000);
+  treeTab[layer][1] = (treeTab[layer][1] / 2) | ((treeTab[layer][1-1] & 1) * 0x8000);
+
+  treeTab[layer][0] = (treeTab[layer][0] / 2) | tail;
 }
 
 static void MoveSprites(void) {
   short i, j;
+  (void)moonbatghost2;
 
   /* Move branches */
   SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
@@ -151,12 +163,22 @@ static void MoveSprites(void) {
     }
   }
 
-  /* Move ghost */
-  moonghost[0].sprdat->data[32][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
-  moonghost[0].sprdat->data[32][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 49);
-  moonghost[1].sprdat->data[32][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
-  moonghost[1].sprdat->data[32][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 49);
+  /* Move bat */
+  moonbatghost1[0].sprdat->data[32][0] = SPRPOS(X(batPos[0]), Y(batPos[1]));
+  moonbatghost1[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 20);
+  moonbatghost1[1].sprdat->data[32][0] = SPRPOS(X(batPos[0]+16), Y(batPos[1]));
+  moonbatghost1[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 20);
 
+  /* Move ghost */
+  moonbatghost1[0].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
+  moonbatghost1[0].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 46);
+  moonbatghost1[1].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
+  moonbatghost1[1].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 46);
+
+  batPos[0] -= 1;
+  if (batPos[0] < -64) {
+    batPos[0] = 360;
+  }
   ghostPos[0] += 2;
   if (ghostUp) {
     ghostPos[1]--;
@@ -171,28 +193,22 @@ static void MoveSprites(void) {
   }
 }
 
-static void MoveForest(void) {
-  short i = 0;
+static void MoveForest(short l) {
 
-  for (i = 0; i < 6; ++i) {
-    if (speed[i] == 0) {
-      if (i == 0) {
-        MoveSprites();
-      }
-      speed[i] = i + 1;
-      MoveTrees(i, 1);
+  if (speed[l] == 0) {
+    speed[l] = l + 1;
+    MoveTrees(l);
 
-      bitOffset[i] += 1;
-      if (bitOffset[i] >= 16) {
-        bitOffset[i] = 0;
-        wordOffset[i] -= 1;
-      }
-      if (wordOffset[i] < 0) {
-        wordOffset[i] = 19;
-      }
-    } else {
-      speed[i] -= 1;
+    groundBitOffset[l] += 1;
+    if (groundBitOffset[l] >= 16) {
+      groundBitOffset[l] = 0;
+      groundWordOffset[l] -= 1;
     }
+    if (groundWordOffset[l] < 0) {
+      groundWordOffset[l] = 19;
+    }
+  } else {
+    speed[l] -= 1;
   }
 }
 
@@ -254,7 +270,7 @@ static void DrawForest(void) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;
+    custom->bltsize = (1 << 6) | 20;  // 160 cycles
 
     WaitBlitter();
 
@@ -279,7 +295,7 @@ static void DrawForest(void) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;
+    custom->bltsize = (1 << 6) | 20;  // 160 cycles
 
     WaitBlitter();
   }
@@ -306,7 +322,7 @@ static void DrawForest(void) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;
+    custom->bltsize = (1 << 6) | 20;  // 160 cycles
 
     WaitBlitter();
 
@@ -331,7 +347,7 @@ static void DrawForest(void) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;
+    custom->bltsize = (1 << 6) | 20;  // 160 cycles
 
     WaitBlitter();
   }
@@ -344,8 +360,8 @@ static void DrawGround(void) {
   void *srcc;
 
   { /* 6th LAYER */
-    dst = screen[active]->planes[2] + 40;  // TODO: don't like magic numbers
-    srca = _ground_bpl + wordOffset[5];
+    dst = screen[active]->planes[2] + 40;
+    srca = _ground_bpl + groundWordOffset[5];
     srcb = screen[active]->planes[0];
 
     custom->bltamod = 40;
@@ -361,16 +377,17 @@ static void DrawGround(void) {
     custom->bltbpt = srcb;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(bitOffset[5]);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(groundBitOffset[5]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1920 cycles
 
+    MoveForest(5);
     WaitBlitter();
   }
 
   { /* 5th LAYER */
     dst = screen[active]->planes[0] + 40 + 16*40;
-    srca = _ground_bpl + wordOffset[4];
+    srca = _ground_bpl + groundWordOffset[4];
 
     custom->bltamod = 40;
     custom->bltdmod = 0;
@@ -384,16 +401,17 @@ static void DrawGround(void) {
     custom->bltapt = srca;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(bitOffset[4]);
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(groundBitOffset[4]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1280 cycles
 
+    MoveForest(4);
     WaitBlitter();
   }
 
   { /* 4th LAYER */
     dst = screen[active]->planes[2] + 40 + 32*40;
-    srca = _ground2_bpl + wordOffset[3];
+    srca = _ground2_bpl + groundWordOffset[3];
     srcb = screen[active]->planes[0];
     srcc = screen[active]->planes[2];
 
@@ -410,16 +428,17 @@ static void DrawGround(void) {
     custom->bltcpt = srcc;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(bitOffset[3]);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(groundBitOffset[3]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 2560 cycles
 
+    MoveForest(3);
     WaitBlitter();
   }
 
   { /* 3rd LAYER */
     dst = screen[active]->planes[3] + 40 + 48*40;
-    srca = _ground_bpl + wordOffset[2];
+    srca = _ground_bpl + groundWordOffset[2];
     srcb = screen[active]->planes[1];
 
     custom->bltamod = 40;
@@ -435,16 +454,17 @@ static void DrawGround(void) {
     custom->bltbpt = srcb;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(bitOffset[2]);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(groundBitOffset[2]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1920 cycles
 
+    MoveForest(2);
     WaitBlitter();
   }
 
   { /* 2nd LAYER */
     dst = screen[active]->planes[1] + 40 + 64*40;
-    srca = _ground2_bpl + wordOffset[1];
+    srca = _ground2_bpl + groundWordOffset[1];
 
     custom->bltamod = 40;
     custom->bltdmod = 0;
@@ -458,16 +478,17 @@ static void DrawGround(void) {
     custom->bltapt = srca;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(bitOffset[1]);
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(groundBitOffset[1]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1280 cycles
 
+    MoveForest(1);
     WaitBlitter();
   }
 
   { /* 1st LAYER */
     dst = screen[active]->planes[3] + 40 + 80*40;
-    srca = _ground_bpl + wordOffset[0];
+    srca = _ground_bpl + groundWordOffset[0];
     srcb = screen[active]->planes[1];
     srcc = screen[active]->planes[3];
 
@@ -484,10 +505,11 @@ static void DrawGround(void) {
     custom->bltcpt = srcc;
     custom->bltdpt = dst;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(bitOffset[0]);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(groundBitOffset[0]);
     custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 2560 cycles
 
+    MoveForest(0);
     // WaitBlitter();
   }
 }
@@ -501,7 +523,7 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT) << 6) | 20;
+  custom->bltsize = ((1 + GROUND_HEIGHT) << 6) | 20;  // 1360 cycles
 
   WaitBlitter();
 
@@ -513,7 +535,7 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*2) << 6) | 20;
+  custom->bltsize = ((1 + GROUND_HEIGHT*2) << 6) | 20;  // 2640 cycles
 
   WaitBlitter();
 
@@ -525,7 +547,7 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*4) << 6) | 20;
+  custom->bltsize = ((1 + GROUND_HEIGHT*4) << 6) | 20;  // 5200 cyces
 
   WaitBlitter();
 
@@ -537,8 +559,12 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*5) << 6) | 20;
+  custom->bltsize = ((1 + GROUND_HEIGHT*5) << 6) | 20;  // 6480 cycles
 
+
+  if (speed[0] == 0) {
+    MoveSprites();
+  }
   WaitBlitter();
 }
 
@@ -582,22 +608,22 @@ static void SetupColors(void) {
   SetColor(7,  0xF0F); // UNUSED
 
   // SPRITES
-  // SPRITES 0-1
+  // SPRITES 0-1  (tree 1)
   SetColor(17, 0x111);
   SetColor(18, 0x031);
   SetColor(19, 0x999);
-  // SPRITES 2-3
+  // SPRITES 2-3  (tree 2)
   SetColor(21, 0x111);
   SetColor(22, 0x920);
   SetColor(23, 0x031);
-  // SPRITES 4-5
+  // SPRITES 4-5  (tree 3)
   SetColor(25, 0x111);
   SetColor(26, 0x920);
   SetColor(27, 0x031);
-  // SPRITES 6-7
-  SetColor(29, 0x666);
-  SetColor(30, 0x999);
-  SetColor(31, 0xDDD);
+  // SPRITES 6-7  (moon and ghost)
+  SetColor(29, 0x444);
+  SetColor(30, 0x222);
+  SetColor(31, 0xBBB);
 }
 
 static void SetupSprites(void) {
@@ -613,8 +639,8 @@ static void SetupSprites(void) {
   CopInsSetSprite(&sprptr[4], &tree3[0]);
   CopInsSetSprite(&sprptr[5], &tree3[1]);
 
-  CopInsSetSprite(&sprptr[6], &moonghost[0]);
-  CopInsSetSprite(&sprptr[7], &moonghost[1]);
+  CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
+  CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
 
   SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
   SpriteUpdatePos(&tree1[1],   X(branchesPos[0][1]), Y(-16));
@@ -625,25 +651,24 @@ static void SetupSprites(void) {
   SpriteUpdatePos(&tree3[0],   X(branchesPos[2][0]), Y(-16));
   SpriteUpdatePos(&tree3[1],   X(branchesPos[2][1]), Y(-16));
 
-  SpriteUpdatePos(&moonghost[0], X(16), Y(16));
-  SpriteUpdatePos(&moonghost[1], X(32), Y(16));
+  SpriteUpdatePos(&moonbatghost1[0], X(16), Y(16));
+  SpriteUpdatePos(&moonbatghost1[1], X(32), Y(16));
 }
 
 static CopListT *MakeCopperList(void) {
   short i;
   unsigned short backgroundGradient[12] = {
-    0x222,
-    0x222,
-    0x223,
-    0x223,
-    0x233,
-    0x334,
-    0x334,
-    0x435,
-    0x445,
-    0x446,
-    0x456,
-    0x557
+    0x222, 0x222, 0x223, 0x223,
+    0x233, 0x334, 0x334, 0x435,
+    0x445, 0x446, 0x456, 0x557
+  };
+  static short groundLevel[6] = {
+    160,  // 6th LAYER (changing these values may brake copper list)
+    144,  // 5th LAYER
+    122,  // 4th LAYER
+    94,   // 3rd LAYER
+    64,   // 2nd LAYER
+    30,   // 1st LAYER (min. 16)
   };
 
   cp = NewCopList(1200);
@@ -656,28 +681,35 @@ static CopListT *MakeCopperList(void) {
   CopWait(cp, 0, 0);
   CopMove16(cp, bplcon2, BPLCON2_PF2PRI | BPLCON2_PF1P0 | BPLCON2_PF1P1 | BPLCON2_PF2P0 | BPLCON2_PF2P1);
 
+  // Moon colors
+  CopSetColor(cp, 29, 0x444);
+  CopSetColor(cp, 30, 0x777);
+  CopSetColor(cp, 31, 0xBBB);
+
   // Duplicate lines
   CopWaitSafe(cp, Y(0), 0);
   CopMove16(cp, bpl1mod, -40);
   CopMove16(cp, bpl2mod, -40);
 
+  // Background gradient
+  for (i = 0; i < 12; ++i) {
+    CopWait(cp, Y(i * 8), 0);
+    CopSetColor(cp, 0, backgroundGradient[i]);
+  }
+
+  // Ghost colors
+  CopSetColor(cp, 29, 0x666);
+  CopSetColor(cp, 30, 0x999);
+  CopSetColor(cp, 31, 0xDDD);
+
   // Ghost between playfields
-  CopWait(cp, Y(80), 0);
   CopMove16(cp, bplcon2, BPLCON2_PF2PRI | BPLCON2_PF2P0 | BPLCON2_PF2P1 | BPLCON2_PF1P2);
 
-  (void)backgroundGradient;
-  // for (i = 0; i < 12; ++i) {
-  //   CopWait(cp, Y(i * 8), 0);
-  //   CopSetColor(cp, 0, backgroundGradient[i]);
-  // }
-
-  (void)i;
-  (void)groundLevel;
   for (i = 0; i < 6; ++i) {
     CopWaitSafe(cp, Y(256 - groundLevel[i]), 0);
     CopMove16(cp, bpl1mod, 0);
     CopMove16(cp, bpl2mod, 0);
-    CopWaitSafe(cp, Y(272 - groundLevel[i]), 0);
+    CopWaitSafe(cp, Y(256 + GROUND_HEIGHT - groundLevel[i]), 0);
     CopMove16(cp, bpl1mod, -40);
     CopMove16(cp, bpl2mod, -40);
   }
@@ -696,10 +728,10 @@ static void Init(void) {
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, 256);
 
-  moonghost[0].height = 32;
-  moonghost[1].height = 32;
-  moonghost[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
-  moonghost[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
+  moonbatghost1[0].height = 32;
+  moonbatghost1[1].height = 32;
+  moonbatghost1[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
+  moonbatghost1[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
 
   SetupColors();
 
@@ -718,23 +750,21 @@ static void Kill(void) {
 PROFILE(Forest);
 
 static void Render(void) {
-  // Czy można wykorzystać jakoś pozostałe 2 bitplany?
-  // Na przykład na chmury? Tak żeby ich nie fillować i nie rozciągać
   (void)MoveForest;
   (void)DrawForest;
   (void)DrawGround;
   (void)ClearBitplanes;
+  (void)MoveSprites;
   ProfilerStart(Forest);
   {
     ClearBitplanes();
     DrawForest();
     DrawGround();
-    MoveForest();
 
-    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);
-    VerticalFill(1, HEIGHT);
-    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);
-    VerticalFill(3, HEIGHT - GROUND_HEIGHT);
+    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);  //  7800 cycles
+    VerticalFill(1, HEIGHT);                    // 11640 cycles
+    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);  //  3960 cycles
+    VerticalFill(3, HEIGHT - GROUND_HEIGHT);    //  9720 cycles
 
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
