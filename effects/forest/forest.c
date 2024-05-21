@@ -26,6 +26,7 @@
 
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 static CopListT *cp;
 static short active = 0;
 
@@ -97,11 +98,11 @@ static short groundBitOffset[6] = {
 };
 
 static short batPos[2] = {
-  320, 48
+  320, 56
 };
 
 static short ghostPos[2] = {
-  -32, 107
+  -32, 116
 };
 
 static bool ghostUp = false;
@@ -142,7 +143,6 @@ static void MoveTrees(short layer) {
 
 static void MoveSprites(void) {
   short i, j;
-  (void)moonbatghost2;
 
   /* Move branches */
   SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
@@ -163,17 +163,26 @@ static void MoveSprites(void) {
     }
   }
 
+  // Moon Bat Ghost
   /* Move bat */
   moonbatghost1[0].sprdat->data[32][0] = SPRPOS(X(batPos[0]), Y(batPos[1]));
-  moonbatghost1[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 20);
+  moonbatghost1[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 19);
   moonbatghost1[1].sprdat->data[32][0] = SPRPOS(X(batPos[0]+16), Y(batPos[1]));
-  moonbatghost1[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 20);
+  moonbatghost1[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 19);
+  moonbatghost2[0].sprdat->data[32][0] = SPRPOS(X(batPos[0]), Y(batPos[1]));
+  moonbatghost2[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 19);
+  moonbatghost2[1].sprdat->data[32][0] = SPRPOS(X(batPos[0]+16), Y(batPos[1]));
+  moonbatghost2[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 19);
 
   /* Move ghost */
   moonbatghost1[0].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
   moonbatghost1[0].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 46);
   moonbatghost1[1].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
   moonbatghost1[1].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 46);
+  moonbatghost2[0].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
+  moonbatghost2[0].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 46);
+  moonbatghost2[1].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
+  moonbatghost2[1].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 46);
 
   batPos[0] -= 1;
   if (batPos[0] < -64) {
@@ -181,14 +190,18 @@ static void MoveSprites(void) {
   }
   ghostPos[0] += 2;
   if (ghostUp) {
+    CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
+    CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
     ghostPos[1]--;
   } else {
+    CopInsSetSprite(&sprptr[6], &moonbatghost2[0]);
+    CopInsSetSprite(&sprptr[7], &moonbatghost2[1]);
     ghostPos[1]++;
   }
   if (ghostPos[0] > 320) {
     ghostPos[0] = -64;
   }
-  if (ghostPos[1] >= 110 || ghostPos[1] <= 104) {
+  if (ghostPos[1] >= 120 || ghostPos[1] <= 114) {
     ghostUp = !ghostUp;
   }
 }
@@ -627,7 +640,7 @@ static void SetupColors(void) {
 }
 
 static void SetupSprites(void) {
-  CopInsPairT *sprptr;
+  // CopInsPairT *sprptr;
   sprptr = CopSetupSprites(cp);
 
   CopInsSetSprite(&sprptr[0], &tree1[0]);
@@ -653,6 +666,8 @@ static void SetupSprites(void) {
 
   SpriteUpdatePos(&moonbatghost1[0], X(16), Y(16));
   SpriteUpdatePos(&moonbatghost1[1], X(32), Y(16));
+  SpriteUpdatePos(&moonbatghost2[0], X(16), Y(16));
+  SpriteUpdatePos(&moonbatghost2[1], X(32), Y(16));
 }
 
 static CopListT *MakeCopperList(void) {
@@ -695,6 +710,12 @@ static CopListT *MakeCopperList(void) {
   for (i = 0; i < 12; ++i) {
     CopWait(cp, Y(i * 8), 0);
     CopSetColor(cp, 0, backgroundGradient[i]);
+    // Bat Colors
+    if (i * 8 == 48) {
+      CopSetColor(cp, 29, 0x222);
+      CopSetColor(cp, 30, 0x777);
+      CopSetColor(cp, 31, 0x700);
+    }
   }
 
   // Ghost colors
@@ -732,6 +753,11 @@ static void Init(void) {
   moonbatghost1[1].height = 32;
   moonbatghost1[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
   moonbatghost1[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
+
+  moonbatghost2[0].height = 32;
+  moonbatghost2[1].height = 32;
+  moonbatghost2[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
+  moonbatghost2[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
 
   SetupColors();
 
