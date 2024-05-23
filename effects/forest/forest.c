@@ -110,35 +110,36 @@ static bool ghostUp = false;
 
 /* MOVEMENTS */
 static void MoveTrees(short layer) {
-  u_short tail = (treeTab[layer][23] & 1) * 0x8000;
+  u_short* tab = treeTab[layer];
+  u_short tail = (tab[23] & 1) * 0x8000;
 
-  treeTab[layer][23] = (treeTab[layer][23] / 2) | ((treeTab[layer][23-1] & 1) * 0x8000);
-  treeTab[layer][22] = (treeTab[layer][22] / 2) | ((treeTab[layer][22-1] & 1) * 0x8000);
-  treeTab[layer][21] = (treeTab[layer][21] / 2) | ((treeTab[layer][21-1] & 1) * 0x8000);
-  treeTab[layer][20] = (treeTab[layer][20] / 2) | ((treeTab[layer][20-1] & 1) * 0x8000);
+  tab[23] = (tab[23] / 2) | ((tab[23-1] & 1) * 0x8000);
+  tab[22] = (tab[22] / 2) | ((tab[22-1] & 1) * 0x8000);
+  tab[21] = (tab[21] / 2) | ((tab[21-1] & 1) * 0x8000);
+  tab[20] = (tab[20] / 2) | ((tab[20-1] & 1) * 0x8000);
 
-  treeTab[layer][19] = (treeTab[layer][19] / 2) | ((treeTab[layer][19-1] & 1) * 0x8000);
-  treeTab[layer][18] = (treeTab[layer][18] / 2) | ((treeTab[layer][18-1] & 1) * 0x8000);
-  treeTab[layer][17] = (treeTab[layer][17] / 2) | ((treeTab[layer][17-1] & 1) * 0x8000);
-  treeTab[layer][16] = (treeTab[layer][16] / 2) | ((treeTab[layer][16-1] & 1) * 0x8000);
-  treeTab[layer][15] = (treeTab[layer][15] / 2) | ((treeTab[layer][15-1] & 1) * 0x8000);
-  treeTab[layer][14] = (treeTab[layer][14] / 2) | ((treeTab[layer][14-1] & 1) * 0x8000);
-  treeTab[layer][13] = (treeTab[layer][13] / 2) | ((treeTab[layer][13-1] & 1) * 0x8000);
-  treeTab[layer][12] = (treeTab[layer][12] / 2) | ((treeTab[layer][12-1] & 1) * 0x8000);
-  treeTab[layer][11] = (treeTab[layer][11] / 2) | ((treeTab[layer][11-1] & 1) * 0x8000);
-  treeTab[layer][10] = (treeTab[layer][10] / 2) | ((treeTab[layer][10-1] & 1) * 0x8000);
+  tab[19] = (tab[19] / 2) | ((tab[19-1] & 1) * 0x8000);
+  tab[18] = (tab[18] / 2) | ((tab[18-1] & 1) * 0x8000);
+  tab[17] = (tab[17] / 2) | ((tab[17-1] & 1) * 0x8000);
+  tab[16] = (tab[16] / 2) | ((tab[16-1] & 1) * 0x8000);
+  tab[15] = (tab[15] / 2) | ((tab[15-1] & 1) * 0x8000);
+  tab[14] = (tab[14] / 2) | ((tab[14-1] & 1) * 0x8000);
+  tab[13] = (tab[13] / 2) | ((tab[13-1] & 1) * 0x8000);
+  tab[12] = (tab[12] / 2) | ((tab[12-1] & 1) * 0x8000);
+  tab[11] = (tab[11] / 2) | ((tab[11-1] & 1) * 0x8000);
+  tab[10] = (tab[10] / 2) | ((tab[10-1] & 1) * 0x8000);
 
-  treeTab[layer][9] = (treeTab[layer][9] / 2) | ((treeTab[layer][9-1] & 1) * 0x8000);
-  treeTab[layer][8] = (treeTab[layer][8] / 2) | ((treeTab[layer][8-1] & 1) * 0x8000);
-  treeTab[layer][7] = (treeTab[layer][7] / 2) | ((treeTab[layer][7-1] & 1) * 0x8000);
-  treeTab[layer][6] = (treeTab[layer][6] / 2) | ((treeTab[layer][6-1] & 1) * 0x8000);
-  treeTab[layer][5] = (treeTab[layer][5] / 2) | ((treeTab[layer][5-1] & 1) * 0x8000);
-  treeTab[layer][4] = (treeTab[layer][4] / 2) | ((treeTab[layer][4-1] & 1) * 0x8000);
-  treeTab[layer][3] = (treeTab[layer][3] / 2) | ((treeTab[layer][3-1] & 1) * 0x8000);
-  treeTab[layer][2] = (treeTab[layer][2] / 2) | ((treeTab[layer][2-1] & 1) * 0x8000);
-  treeTab[layer][1] = (treeTab[layer][1] / 2) | ((treeTab[layer][1-1] & 1) * 0x8000);
+  tab[9] = (tab[9] / 2) | ((tab[9-1] & 1) * 0x8000);
+  tab[8] = (tab[8] / 2) | ((tab[8-1] & 1) * 0x8000);
+  tab[7] = (tab[7] / 2) | ((tab[7-1] & 1) * 0x8000);
+  tab[6] = (tab[6] / 2) | ((tab[6-1] & 1) * 0x8000);
+  tab[5] = (tab[5] / 2) | ((tab[5-1] & 1) * 0x8000);
+  tab[4] = (tab[4] / 2) | ((tab[4-1] & 1) * 0x8000);
+  tab[3] = (tab[3] / 2) | ((tab[3-1] & 1) * 0x8000);
+  tab[2] = (tab[2] / 2) | ((tab[2-1] & 1) * 0x8000);
+  tab[1] = (tab[1] / 2) | ((tab[1-1] & 1) * 0x8000);
 
-  treeTab[layer][0] = (treeTab[layer][0] / 2) | tail;
+  tab[0] = (tab[0] / 2) | tail;
 }
 
 static void MoveSprites(void) {
@@ -528,7 +529,7 @@ static void DrawGround(void) {
 }
 
 static void ClearBitplanes(void) {
-  void *dst = screen[active]->planes[0];
+  void *dst = screen[active]->planes[0] + 40;
 
   custom->bltdmod = 0;
 
@@ -536,11 +537,11 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT) << 6) | 20;  // 1360 cycles
+  custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
   WaitBlitter();
 
-  dst = screen[active]->planes[2];
+  dst = screen[active]->planes[2] + 40 + 16*40;
 
   custom->bltdmod = 0;
 
@@ -548,11 +549,11 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*2) << 6) | 20;  // 2640 cycles
+  custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
   WaitBlitter();
 
-  dst = screen[active]->planes[1];
+  dst = screen[active]->planes[1] + 40;
 
   custom->bltdmod = 0;
 
@@ -560,11 +561,11 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*4) << 6) | 20;  // 5200 cyces
+  custom->bltsize = ((GROUND_HEIGHT*4) << 6) | 20;
 
   WaitBlitter();
 
-  dst = screen[active]->planes[3];
+  dst = screen[active]->planes[3] + 40;
 
   custom->bltdmod = 0;
 
@@ -572,8 +573,7 @@ static void ClearBitplanes(void) {
 
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = ((1 + GROUND_HEIGHT*5) << 6) | 20;  // 6480 cycles
-
+  custom->bltsize = ((GROUND_HEIGHT*5) << 6) | 20;
 
   if (speed[0] == 0) {
     MoveSprites();
@@ -787,10 +787,10 @@ static void Render(void) {
     DrawForest();
     DrawGround();
 
-    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);  //  7800 cycles
-    VerticalFill(1, HEIGHT);                    // 11640 cycles
-    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);  //  3960 cycles
-    VerticalFill(3, HEIGHT - GROUND_HEIGHT);    //  9720 cycles
+    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);
+    VerticalFill(1, HEIGHT);
+    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);
+    VerticalFill(3, HEIGHT - GROUND_HEIGHT);
 
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
