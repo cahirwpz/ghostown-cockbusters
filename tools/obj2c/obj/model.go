@@ -2,12 +2,17 @@ package obj
 
 type Vector []float64
 
-type Obj struct {
-	GVertices  []Vector  // "v Geometric Vertices"
-	NVertices  []Vector  // "vn Vertex Normals"
-	TVertices  []Vector  // "vt Texture Vertices"
-	PSVertices []float32 // "vp"
-	Faces      []int32   // "f"
+type Face struct {
+	Vertex   int64
+	TexCoord int64
+	Normal   int64
+}
+
+type WavefrontObj struct {
+	Vertices  []Vector
+	TexCoords []Vector
+	Normals   []Vector
+	Faces     []Face
 }
 
 type Model struct {
@@ -33,9 +38,9 @@ type Point struct {
 }
 
 type Mesh struct {
-	VerticeCounter int16
-	FaceCounter    int16
-	EdgeCounter    int16
-	SurfaceCounter int16
-	ImageCounter   int16
+	VerticeCount int16
+	FaceCount    int16
+	EdgeCount    int16
+	SurfaceCount int16
+	ImageCount   int16
 }

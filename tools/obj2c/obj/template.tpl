@@ -6,31 +6,31 @@ static MeshSurfaceT _{{ .Name }}_surf[1] = {
     },
 };
 
-static Point3D _{{ .Name }}_pnts[{{ .PointsCounter }}] = {
+static Point3D _{{ .Name }}_pnts[{{ .PointsCount }}] = {
     {{ range .Points }}
     { .x = {{ .X }}, .y = {{ .Y }}, .z = {{ .Z }}, .pad = {{ .Pad }} },
     {{ end -}}
 };
 
-static IndexListT *_{{ .Name }}_face[{{ .FaceCounter }}] = {
+static IndexListT *_{{ .Name }}_face[{{ .FaceCount }}] = {
     {{ range .Faces }}
     (IndexListT *)(short[7]{{ . }}),
     {{ end -}}
     NULL
 };
 
-static u_char _{{ .Name }}_face_surf[{{ .SurfaceCounter }}] = {
+static u_char _{{ .Name }}_face_surf[{{ .SurfaceCount }}] = {
     {{ range .Surfaces }}
     {{- . -}},
     {{ end -}}
 };
 
 Mesh3D {{ .Name }} = {
-    .vertices = {{ .VerticeCounter }},
-    .faces = {{ .FaceCounter }},
-    .edges = {{ .EdgeCounter }},
-    .surfaces = {{ .SurfaceCounter }},
-    .images = {{ .ImageCounter}},
+    .vertices = {{ .VerticeCount }},
+    .faces = {{ .FaceCount }},
+    .edges = {{ .EdgeCount }},
+    .surfaces = {{ .SurfaceCount }},
+    .images = {{ .ImageCount}},
     .vertex = _{{ .Name }}_pnts,
     .uv = NULL,
     .faceNormal = NULL, 

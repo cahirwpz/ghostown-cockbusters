@@ -66,6 +66,7 @@ SYNC2C := $(TOPDIR)/tools/sync2c/sync2c
 SVG2C := $(TOPDIR)/tools/svg2c/svg2c
 PACKEXE := $(TOPDIR)/tools/packexe/packexe
 SPLITEXE := $(TOPDIR)/tools/splitexe/splitexe
+OBJ2C := $(TOPDIR)/tools/obj2c/obj2c
 STRIP := m68k-amigaos-strip -s
 OBJCOPY := m68k-amigaos-objcopy
 
