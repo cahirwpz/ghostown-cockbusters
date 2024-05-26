@@ -8,7 +8,22 @@ import (
 	"strings"
 )
 
-func ParseObj(file io.Reader) (*WavefrontObj, error) {
+type Vector []float64
+
+type Face struct {
+	Vertex   int64
+	TexCoord int64
+	Normal   int64
+}
+
+type WavefrontObj struct {
+	Vertices  []Vector
+	TexCoords []Vector
+	Normals   []Vector
+	Faces     []Face
+}
+
+func ParseWavefrontObj(file io.Reader) (*WavefrontObj, error) {
 	scanner := bufio.NewScanner(file)
 
 	var vs []Vector
@@ -43,7 +58,7 @@ func ParseObj(file io.Reader) (*WavefrontObj, error) {
 			}
 			vts = append(vts, vt)
 		case "vn":
-			/* Vertex normal in (x,y,z) form; normals might not be unit vectors */
+			/* Vertex normal in (x, y, z) form; normals might not be unit vectors */
 			vn, err := parseVector(fields, 3)
 			if err != nil {
 				return nil, err

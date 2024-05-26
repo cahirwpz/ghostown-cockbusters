@@ -1,19 +1,9 @@
 package obj
 
-type Vector []float64
-
-type Face struct {
-	Vertex   int64
-	TexCoord int64
-	Normal   int64
-}
-
-type WavefrontObj struct {
-	Vertices  []Vector
-	TexCoords []Vector
-	Normals   []Vector
-	Faces     []Face
-}
+import (
+	_ "embed"
+	"fmt"
+)
 
 type Model struct {
 	Name     string
@@ -43,4 +33,13 @@ type Mesh struct {
 	EdgeCount    int16
 	SurfaceCount int16
 	ImageCount   int16
+}
+
+//go:embed template.tpl
+var tpl string
+
+func Convert(obj *WavefrontObj) (output string, err error) {
+	// var model Model
+	// out := util.CompileTemplate(tpl, model)
+	return "", fmt.Errorf("not implemented")
 }

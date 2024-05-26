@@ -21,25 +21,28 @@ func init() {
 func main() {
 	flag.Parse()
 
-	if len(flag.Args()) < 1 || printHelp {
+	if len(flag.Args()) < 2 || printHelp {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	file, err := os.Open(flag.Arg(0))
+	input, err := os.Open(flag.Arg(0))
 	if err != nil {
-		log.Panicf("Failed to open file %q", flag.Arg(0))
+		log.Fatalf("Failed to open file %q", flag.Arg(0))
 	}
 
-	_, err = obj.ParseObj(file)
+	object, err := obj.ParseWavefrontObj(input)
 	if err != nil {
-		log.Fatalf("failed to parse Wavefront object file: %v", err)
+		log.Fatalf("failed to parse file: %v", err)
 	}
 
-	// inName := strings.Split(r.Name(), ".")[0]
-	// outName := fmt.Sprintf("%s.c", inName)
-	// err = os.WriteFile(outName, []byte(out), 0777)
-	// if err != nil {
-	// 	log.Panicf("Failed to write file %q", flag.Arg(0))
-	// }
+	output, err := obj.Convert(object)
+	if err != nil {
+		log.Fatalf("failed to covert file: %v", err)
+	}
+
+	err = os.WriteFile(flag.Arg(1), []byte(output), 0755)
+	if err != nil {
+		log.Fatalf("failed to write file %q", flag.Arg(1))
+	}
 }
