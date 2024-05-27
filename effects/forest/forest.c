@@ -741,7 +741,7 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  EnableDMA(DMAF_BLITTER);
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   EnableDMA(DMAF_RASTER);
   EnableDMA(DMAF_SPRITE);
 
@@ -766,7 +766,7 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
+  DisableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER | DMAF_SPRITE);
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
