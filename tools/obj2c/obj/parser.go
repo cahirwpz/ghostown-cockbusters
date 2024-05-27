@@ -3,7 +3,8 @@ package obj
 import (
 	"bufio"
 	"fmt"
-	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -21,14 +22,92 @@ type WavefrontObj struct {
 	TexCoords []Vector
 	Normals   []Vector
 	Faces     []Face
+	Materials map[string]Material
 }
 
-func ParseWavefrontObj(file io.Reader) (*WavefrontObj, error) {
+type Color struct {
+	R, G, B float64
+}
+
+type Material struct {
+	Name             string
+	AmbientColor     Color
+	DiffuseColor     Color
+	SpecularColor    Color
+	SpecularExponent float64
+	RefractionIndex  float64
+	Illumination     int
+}
+
+/* https://paulbourke.net/dataformats/mtl/ */
+func ParseWavefrontMtl(filename string) (map[string]Material, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %q: %v", filename, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	mtls := make(map[string]Material)
+	var mtl *Material
+
+	lc := 1
+
+	for scanner.Scan() {
+		line := strings.Trim(scanner.Text(), " ")
+		fields := strings.Split(line, " ")
+		cmd := fields[0]
+		fields = fields[1:]
+
+		switch cmd {
+		case "":
+		case "#":
+			/* empty line or comment */
+		case "newmtl":
+			if mtl != nil {
+				mtls[mtl.Name] = *mtl
+			}
+			mtl = &Material{Name: fields[0]}
+		case "Ka":
+		case "Ks":
+		case "Kd":
+		case "Ke":
+		case "illum":
+		case "d":
+		case "Ni":
+		case "Ns":
+		default:
+			return nil, fmt.Errorf("unknown command '%s' in line %d", cmd, lc)
+		}
+
+		lc++
+	}
+
+	/* store last seen material */
+	mtls[mtl.Name] = *mtl
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error while reading object: %s", err)
+	}
+
+	return mtls, nil
+}
+
+/* https://paulbourke.net/dataformats/obj/ */
+func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %q: %v", filename, err)
+	}
+	defer file.Close()
+
 	scanner := bufio.NewScanner(file)
 
 	var vs []Vector
 	var vts []Vector
 	var vns []Vector
+	var mtls map[string]Material
 
 	lc := 1
 
@@ -91,8 +170,14 @@ func ParseWavefrontObj(file io.Reader) (*WavefrontObj, error) {
 				}
 			}
 		case "mtllib":
+			path := filepath.Join(filepath.Dir(file.Name()), fields[0])
+			mtls, err = ParseWavefrontMtl(path)
+			if err != nil {
+				return nil, err
+			}
 		case "p":
 		case "l":
+			/* Line element */
 		case "g":
 		case "o":
 		case "usemtl":
@@ -104,9 +189,9 @@ func ParseWavefrontObj(file io.Reader) (*WavefrontObj, error) {
 		lc++
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error while reading object: %s", err)
+		return nil, fmt.Errorf("error while reading object: %v", err)
 	}
-	return &WavefrontObj{Vertices: vs, TexCoords: vts, Normals: vns}, nil
+	return &WavefrontObj{Vertices: vs, TexCoords: vts, Normals: vns, Materials: mtls}, nil
 }
 
 func parseVector(fields []string, length int) (vec Vector, err error) {

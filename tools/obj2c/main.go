@@ -26,12 +26,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	input, err := os.Open(flag.Arg(0))
-	if err != nil {
-		log.Fatalf("Failed to open file %q", flag.Arg(0))
-	}
-
-	object, err := obj.ParseWavefrontObj(input)
+	object, err := obj.ParseWavefrontObj(flag.Arg(0))
 	if err != nil {
 		log.Fatalf("failed to parse file: %v", err)
 	}
