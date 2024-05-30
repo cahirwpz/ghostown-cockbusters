@@ -460,7 +460,7 @@ def convertLWO2(lwo, name, scale):
                 pols_surf[polygon] = surface
 
     pols = lwo['POLS'].data[1]
-    npols = sum(len(p) + 1 for p in pols) + 2
+    npols = sum(len(p) + 1 for p in pols) + 1
     print(f'static short _{name}_face_data[{npols}] = {{')
     print('  /* #vertices, vertices... */')
     for pol in pols:
@@ -470,10 +470,10 @@ def convertLWO2(lwo, name, scale):
     print('};\n')
 
     print(f'static short *_{name}_face[] = {{')
-    pos = 2
+    pos = 1
     for polygon in pols:
         print(f'  &_{name}_face_data[{pos}],')
-        pos += len(polygon) + 2
+        pos += len(polygon) + 1
     print('  NULL')
     print('};\n')
 
