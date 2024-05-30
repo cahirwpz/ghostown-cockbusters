@@ -451,12 +451,14 @@ def convertLWO2(lwo, name, scale):
     print('};\n')
 
     pnts = lwo['PNTS']
-    print('static Point3D _%s_pnts[%d] = {' % (name, len(pnts.data)))
+    npnts = len(pnts.data) * 4
+    print(f'static short _{name}_pnts[{npnts}] = {{')
+    print('  /* x, y, z, pad */')
     for point in pnts.data:
         x = int(point[0] * scale * 16)
         y = int(point[1] * scale * 16)
         z = int(point[2] * scale * 16)
-        print('  {.x = %5d, .y = %5d, .z = %5d, .pad = 0},' % (x, y, z))
+        print('  %5d, %5d, %5d, 0,' % (x, y, z))
     print('};\n')
 
     vmap_txuv = []
@@ -523,7 +525,7 @@ def convertLWO2(lwo, name, scale):
     print('  .edges = 0,')
     print('  .surfaces = %d,' % len(tags))
     print('  .images = %d,' % len(clips))
-    print('  .vertex = _%s_pnts,' % name)
+    print('  .vertex = (Point3D *)&_%s_pnts,' % name)
     if vmap_txuv:
         print('  .uv = _%s_pnts_uv,' % name)
     else:
