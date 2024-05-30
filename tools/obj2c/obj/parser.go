@@ -207,7 +207,6 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	}
 	obj := &WavefrontObj{
 		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs, Materials: mtls}
-	fmt.Printf("%v", obj)
 	return obj, nil
 }
 

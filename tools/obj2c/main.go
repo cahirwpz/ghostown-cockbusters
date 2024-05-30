@@ -36,7 +36,7 @@ func main() {
 		log.Fatalf("failed to covert file: %v", err)
 	}
 
-	err = os.WriteFile(flag.Arg(1), []byte(output), 0755)
+	err = os.WriteFile(flag.Arg(1), []byte(output), 0644)
 	if err != nil {
 		log.Fatalf("failed to write file %q", flag.Arg(1))
 	}

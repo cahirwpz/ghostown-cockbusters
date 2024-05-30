@@ -1,10 +1,12 @@
 static short _{{ .Name }}_pnts[{{ .VertexCount }} * 4] = {
-   {{- range .Vertices }}
-   {{ range . }}{{ . }}, {{ end -}} 0,
+  /* x, y, z, pad */
+  {{- range .Vertices }}
+  {{ range . }}{{ . }}, {{ end -}} 0,
 {{- end }}
 };
 
 static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
+  /* #vertices, vertices... */
   {{- range .Faces }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
@@ -22,11 +24,11 @@ Mesh3D {{ .Name }} = {
   .vertices = {{ .VertexCount }},
   .faces = {{ .FaceCount }},
   .edges = 0,
-  .vertex = (Point3D *)_{{ .Name }}_pnts,
-  .faceNormal = NULL, 
+  .vertex = (Point3D *)&_{{ .Name }}_pnts,
+  .faceNormal = NULL,
   .vertexNormal = NULL,
   .edge = NULL,
   .face = _{{ .Name }}_face,
-  .faceEdge = NULL, 
+  .faceEdge = NULL,
   .vertexFace = NULL,
 };
