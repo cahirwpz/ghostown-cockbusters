@@ -483,10 +483,19 @@ def convertLWO2(lwo, name, scale):
                 pols_surf[polygon] = surface
 
     pols = lwo['POLS'].data[1]
-    print('static IndexListT *_%s_face[%d] = {' % (name, len(pols) + 1))
-    for i, polygon in enumerate(pols):
-        print('  (IndexListT *)(short[%d]){%d, %s},' % (
-            len(polygon) + 1, len(polygon), ', '.join(map(str, polygon))))
+    npols = sum(len(p) + 1 for p in pols) + 1
+    print(f'static short _{name}_face_data[{npols}] = {{')
+    for polygon in pols:
+        indices = [str(p) for p in polygon]
+        print('  %d, %s,' % (len(polygon), ', '.join(indices)))
+    print('  0')
+    print('};\n')
+
+    print(f'static short *_{name}_face[] = {{')
+    pos = 1
+    for polygon in pols:
+        print(f'  &_{name}_face_data[{pos}],')
+        pos += len(polygon) + 1
     print('  NULL')
     print('};\n')
 
@@ -503,13 +512,12 @@ def convertLWO2(lwo, name, scale):
             surf_dict[vertex] = i
             pols_txuv[surface] = surf_dict
 
-        print('static IndexListT *_%s_face_uv[%d] = {' % (name, len(pols) + 1))
+        print(f'static short *_{name}_face_uv[{npols}] = {{')
         for i, vertices in enumerate(pols):
             surface = pols_surf[i]
             vertices = [str(pols_txuv[surface][v]) for v in vertices]
-            print('  (IndexListT *)(short[%d]){%d, %s},' % (
-                len(vertices) + 1, len(vertices), ', '.join(vertices)))
-        print('  NULL')
+            print('  %d, %s,' % (len(vertices), ', '.join(vertices)))
+        print('  0')
         print('};\n')
 
     # TODO: image

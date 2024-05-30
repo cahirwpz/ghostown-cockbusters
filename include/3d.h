@@ -74,7 +74,7 @@ typedef struct {
   u_char *faceSurface;
   Point3D *vertexNormal;
   EdgeT *edge;
-  IndexListT **face;       /* { #face => [#vertex] } */
+  short **face;            /* { #face => [#vertex] } */
   IndexListT **faceEdge;   /* { #face => [#edge] } */
   IndexListT **faceUV;     /* { #face => [#uv] } */
   IndexListT **vertexFace; /* { #vertex => [#face] } */
