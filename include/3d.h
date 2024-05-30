@@ -68,7 +68,6 @@ typedef struct {
 void CalculateEdges(Mesh3D *mesh);
 void CalculateVertexFaceMap(Mesh3D *mesh);
 void CalculateVertexNormals(Mesh3D *mesh);
-void CalculateFaceNormals(Mesh3D *mesh);
 void ResetMesh3D(Mesh3D *mesh);
 
 /* 3D object representation */

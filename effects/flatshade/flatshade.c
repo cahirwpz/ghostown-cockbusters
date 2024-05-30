@@ -20,14 +20,6 @@ static int active = 0;
 
 static Mesh3D *mesh = &pilka;
 
-static void Load(void) {
-  CalculateFaceNormals(mesh);
-}
-
-static void UnLoad(void) {
-  ResetMesh3D(mesh);
-}
-
 static void Init(void) {
   cube = NewObject3D(mesh);
   cube->translate.z = fx4i(-250);
@@ -358,4 +350,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(FlatShade, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(FlatShade, NULL, NULL, Init, Kill, Render, NULL);

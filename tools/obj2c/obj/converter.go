@@ -34,6 +34,19 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 
 	ps.FaceDataCount = faceOffset
 
+	if cp.FaceNormals {
+		faceNormals, err := CalculateFaceNormals(obj)
+		if err != nil {
+			return "", err
+		}
+
+		s := 4096.0
+		for _, fn := range faceNormals {
+			ofn := []int{int(fn[0] * s), int(fn[1] * s), int(fn[2] * s)}
+			ps.FaceNormals = append(ps.FaceNormals, ofn)
+		}
+	}
+
 	tmpl, err := template.New("template").Parse(tpl)
 	if err != nil {
 		return "", err
@@ -49,7 +62,8 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 }
 
 type ConverterParams struct {
-	Scale float64
+	Scale       float64
+	FaceNormals bool
 }
 
 type TemplateParams struct {
@@ -62,4 +76,5 @@ type TemplateParams struct {
 	Vertices    [][]int
 	Faces       [][]int
 	FaceIndices []int
+	FaceNormals [][]int
 }

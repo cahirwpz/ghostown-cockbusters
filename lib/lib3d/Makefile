@@ -2,7 +2,6 @@ TOPDIR := $(realpath ../..)
 
 SOURCES := \
 	CalculateEdges.c \
-	CalculateFaceNormals.c \
 	CalculateVertexFaceMap.c \
 	CalculateVertexNormals.c \
 	ClipFrustum.c \

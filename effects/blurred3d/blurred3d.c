@@ -28,7 +28,6 @@ static Mesh3D *mesh = &szescian;
 
 static void Load(void) {
   CalculateEdges(mesh);
-  CalculateFaceNormals(mesh);
 }
 
 static void UnLoad(void) {
