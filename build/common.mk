@@ -55,7 +55,6 @@ ROMUTIL := $(TOPDIR)/tools/romutil.py
 FSUTIL := $(TOPDIR)/tools/fsutil.py
 BINPATCH := $(TOPDIR)/tools/binpatch.py
 LAUNCH := $(PYTHON3) $(TOPDIR)/tools/launch.py
-LWO2C := $(TOPDIR)/tools/lwo2c.py $(QUIET)
 CONV2D := $(TOPDIR)/tools/conv2d.py
 GRADIENT := $(TOPDIR)/tools/gradient.py
 TMXCONV := $(TOPDIR)/tools/tmxconv/tmxconv
