@@ -11,17 +11,18 @@ import (
 
 type Vector []float64
 
-type Face struct {
-	Vertex   int64
-	TexCoord int64
-	Normal   int64
+type FaceIndices struct {
+	Vertex   int
+	TexCoord int
+	Normal   int
 }
 
 type WavefrontObj struct {
+	Name      string
 	Vertices  []Vector
 	TexCoords []Vector
 	Normals   []Vector
-	Faces     []Face
+	Faces     [][]FaceIndices
 	Materials map[string]Material
 }
 
@@ -104,9 +105,11 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 
 	scanner := bufio.NewScanner(file)
 
+	var name string
 	var vs []Vector
 	var vts []Vector
 	var vns []Vector
+	var fs [][]FaceIndices
 	var mtls map[string]Material
 
 	lc := 1
@@ -148,27 +151,37 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 			 * indices in the format vertex_index/texture_index/normal_index for
 			 * which each index starts at 1 and increases corresponding to the
 			 * order in which the referenced element was defined. */
-			indices := strings.Split(fields[0], "/")
-			face := Face{}
-			for i, index := range indices {
-				if index == "" {
-					continue
+			var f []FaceIndices
+
+			for _, field := range fields {
+				indices := strings.Split(field, "/")
+				fi := FaceIndices{Vertex: -1, TexCoord: -1, Normal: -1}
+
+				for i, index := range indices {
+					if index == "" {
+						continue
+					}
+
+					v, err := strconv.ParseInt(index, 10, 32)
+					if err != nil {
+						return nil, err
+					}
+
+					switch i {
+					case 0:
+						fi.Vertex = int(v)
+					case 1:
+						fi.TexCoord = int(v)
+					case 2:
+						fi.Normal = int(v)
+					default:
+					}
 				}
 
-				v, err := strconv.ParseInt(index, 10, 32)
-				if err != nil {
-					return nil, err
-				}
-				switch i {
-				case 0:
-					face.Vertex = v
-				case 1:
-					face.TexCoord = v
-				case 2:
-					face.Normal = v
-				default:
-				}
+				f = append(f, fi)
 			}
+
+			fs = append(fs, f)
 		case "mtllib":
 			path := filepath.Join(filepath.Dir(file.Name()), fields[0])
 			mtls, err = ParseWavefrontMtl(path)
@@ -180,6 +193,7 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 			/* Line element */
 		case "g":
 		case "o":
+			name = fields[0]
 		case "usemtl":
 			/* not implemented, skipped */
 		default:
@@ -191,7 +205,10 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error while reading object: %v", err)
 	}
-	return &WavefrontObj{Vertices: vs, TexCoords: vts, Normals: vns, Materials: mtls}, nil
+	obj := &WavefrontObj{
+		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs, Materials: mtls}
+	fmt.Printf("%v", obj)
+	return obj, nil
 }
 
 func parseVector(fields []string, length int) (vec Vector, err error) {

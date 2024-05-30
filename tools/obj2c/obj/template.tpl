@@ -1,45 +1,32 @@
-static MeshSurfaceT _{{ .Name }}_surf[1] = {
-    [0] = { /* name = "default"  */
-        .r = {{ .R }}, .g = {{ .G }}, .b = {{ .B }},
-        .sideness = {{ .Sideness }}
-        .texture = {{ .Texture }},
-    },
+static short _{{ .Name }}_pnts[{{ .VertexCount }} * 4] = {
+   {{- range .Vertices }}
+   {{ range . }}{{ . }}, {{ end -}} 0,
+{{- end }}
 };
 
-static Point3D _{{ .Name }}_pnts[{{ .PointsCount }}] = {
-    {{ range .Points }}
-    { .x = {{ .X }}, .y = {{ .Y }}, .z = {{ .Z }}, .pad = {{ .Pad }} },
-    {{ end -}}
+static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
+  {{- range .Faces }}
+  {{range . }}{{ . }}, {{ end -}}
+{{- end}}
+  0 
 };
 
-static IndexListT *_{{ .Name }}_face[{{ .FaceCount }}] = {
-    {{ range .Faces }}
-    (IndexListT *)(short[7]{{ . }}),
-    {{ end -}}
-    NULL
-};
-
-static u_char _{{ .Name }}_face_surf[{{ .SurfaceCount }}] = {
-    {{ range .Surfaces }}
-    {{- . -}},
-    {{ end -}}
+static short *_{{ .Name }}_face[{{ .FaceCount }} + 1] = {
+  {{- range .FaceIndices }}
+  &_{{ $.Name }}_face_data[{{ . }}],
+{{- end }}
+  NULL
 };
 
 Mesh3D {{ .Name }} = {
-    .vertices = {{ .VerticeCount }},
-    .faces = {{ .FaceCount }},
-    .edges = {{ .EdgeCount }},
-    .surfaces = {{ .SurfaceCount }},
-    .images = {{ .ImageCount}},
-    .vertex = _{{ .Name }}_pnts,
-    .uv = NULL,
-    .faceNormal = NULL, 
-    .edge = NULL,
-    .face = _{{ .Name }}_face,
-    .faceEdge = NULL, 
-    .faceUV = NULL,
-    .vertexFace = NULL,
-    .image = NULL,
-    .surface = _{{ .Name }}_surf,
-
+  .vertices = {{ .VertexCount }},
+  .faces = {{ .FaceCount }},
+  .edges = 0,
+  .vertex = (Point3D *)_{{ .Name }}_pnts,
+  .faceNormal = NULL, 
+  .vertexNormal = NULL,
+  .edge = NULL,
+  .face = _{{ .Name }}_face,
+  .faceEdge = NULL, 
+  .vertexFace = NULL,
 };

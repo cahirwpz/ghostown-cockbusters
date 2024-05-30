@@ -2,44 +2,59 @@ package obj
 
 import (
 	_ "embed"
-	"fmt"
+	"strings"
+	"text/template"
 )
-
-type Model struct {
-	Name     string
-	Surfaces []*Surface
-	Points   []*Point
-	Mesh     Mesh
-}
-
-type Surface struct {
-	R        int16
-	G        int16
-	B        int16
-	Sideness int32
-	Texture  int32
-}
-
-type Point struct {
-	X   int16
-	Y   int16
-	Z   int16
-	Pad int16
-}
-
-type Mesh struct {
-	VerticeCount int16
-	FaceCount    int16
-	EdgeCount    int16
-	SurfaceCount int16
-	ImageCount   int16
-}
 
 //go:embed template.tpl
 var tpl string
 
-func Convert(obj *WavefrontObj) (output string, err error) {
-	// var model Model
-	// out := util.CompileTemplate(tpl, model)
-	return "", fmt.Errorf("not implemented")
+func Convert(obj *WavefrontObj) (string, error) {
+	ps := Params{Name: obj.Name}
+
+	for _, v := range obj.Vertices {
+		ov := []int{int(v[0] * 16), int(v[1] * 16), int(v[1] * 16)}
+		ps.Vertices = append(ps.Vertices, ov)
+		ps.VertexCount += 1
+	}
+
+	faceOffset := 1
+	for _, f := range obj.Faces {
+		of := []int{len(f)}
+		for _, fi := range f {
+			of = append(of, fi.Vertex-1)
+		}
+		ps.Faces = append(ps.Faces, of)
+		ps.FaceIndices = append(ps.FaceIndices, faceOffset)
+
+		faceOffset += len(of)
+		ps.FaceCount += 1
+	}
+
+	ps.FaceDataCount = faceOffset
+
+	tmpl, err := template.New("template").Parse(tpl)
+	if err != nil {
+		return "", err
+	}
+
+	var buf strings.Builder
+	err = tmpl.Execute(&buf, ps)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+type Params struct {
+	Name string
+
+	VertexCount   int
+	FaceCount     int
+	FaceDataCount int
+
+	Vertices    [][]int
+	Faces       [][]int
+	FaceIndices []int
 }
