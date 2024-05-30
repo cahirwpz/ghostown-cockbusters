@@ -483,25 +483,21 @@ def convertLWO2(lwo, name, scale):
                 pols_surf[polygon] = surface
 
     pols = lwo['POLS'].data[1]
-    npols = sum(len(p) + 1 for p in pols) + 1
+    npols = sum(len(p) + 2 for p in pols) + 2
     print(f'static short _{name}_face_data[{npols}] = {{')
-    for polygon in pols:
-        indices = [str(p) for p in polygon]
-        print('  %d, %s,' % (len(polygon), ', '.join(indices)))
-    print('  0')
+    print('  /* surface, #vertices, vertices... */')
+    for pol in pols:
+        line = [pols_surf[i], len(pol)] + list(pol)
+        print('  %s,' % ', '.join(map(str, line)))
+    print('  0, 0')
     print('};\n')
 
     print(f'static short *_{name}_face[] = {{')
-    pos = 1
+    pos = 2
     for polygon in pols:
         print(f'  &_{name}_face_data[{pos}],')
-        pos += len(polygon) + 1
+        pos += len(polygon) + 2
     print('  NULL')
-    print('};\n')
-
-    print('static u_char _%s_face_surf[%d] = {' % (name, len(pols)))
-    for i, _ in enumerate(pols):
-        print('  %d,' % pols_surf[i])
     print('};\n')
 
     if vmap_txuv:
@@ -533,7 +529,6 @@ def convertLWO2(lwo, name, scale):
     else:
         print('  .uv = NULL,')
     print('  .faceNormal = NULL,')
-    print('  .faceSurface = _%s_face_surf,' % name)
     print('  .vertexNormal = NULL,')
     print('  .edge = NULL,')
     print('  .face = _%s_face,' % name)

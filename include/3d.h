@@ -71,10 +71,10 @@ typedef struct {
   Point3D *vertex;
   UVCoord *uv;
   Point3D *faceNormal;
-  u_char *faceSurface;
   Point3D *vertexNormal;
   EdgeT *edge;
-  short **face;            /* { #face => [#vertex] } */
+  /* '|' indicates 0 offset, '[x]' is an array of x's */
+  short **face;            /* { #face => [surface #vertices | [vertex]] } */
   IndexListT **faceEdge;   /* { #face => [#edge] } */
   IndexListT **faceUV;     /* { #face => [#uv] } */
   IndexListT **vertexFace; /* { #vertex => [#face] } */
