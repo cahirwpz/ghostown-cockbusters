@@ -31,7 +31,8 @@ func main() {
 		log.Fatalf("failed to parse file: %v", err)
 	}
 
-	output, err := obj.Convert(object)
+	cp := obj.ConverterParams{Scale: scaleFactor}
+	output, err := obj.Convert(object, cp)
 	if err != nil {
 		log.Fatalf("failed to covert file: %v", err)
 	}

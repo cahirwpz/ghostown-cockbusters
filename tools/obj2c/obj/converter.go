@@ -9,11 +9,12 @@ import (
 //go:embed template.tpl
 var tpl string
 
-func Convert(obj *WavefrontObj) (string, error) {
-	ps := Params{Name: obj.Name}
+func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
+	ps := TemplateParams{Name: obj.Name}
 
+	s := cp.Scale * 16
 	for _, v := range obj.Vertices {
-		ov := []int{int(v[0] * 16), int(v[1] * 16), int(v[1] * 16)}
+		ov := []int{int(v[0] * s), int(v[1] * s), int(v[2] * s)}
 		ps.Vertices = append(ps.Vertices, ov)
 		ps.VertexCount += 1
 	}
@@ -47,7 +48,11 @@ func Convert(obj *WavefrontObj) (string, error) {
 	return buf.String(), nil
 }
 
-type Params struct {
+type ConverterParams struct {
+	Scale float64
+}
+
+type TemplateParams struct {
 	Name string
 
 	VertexCount   int
