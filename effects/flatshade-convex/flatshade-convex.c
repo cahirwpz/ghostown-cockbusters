@@ -21,7 +21,6 @@ static short active;
 static Mesh3D *mesh = &pilka;
 
 static void Load(void) {
-  CalculateVertexFaceMap(mesh);
   CalculateEdges(mesh);
 }
 

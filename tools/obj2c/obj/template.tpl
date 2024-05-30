@@ -39,9 +39,7 @@ Mesh3D {{ .Name }} = {
   .faceNormal = (Point3D *)&_{{ .Name }}_face_normals,
 {{- else }}
   .faceNormal = NULL,{{ end }}
-  .vertexNormal = NULL,
   .edge = NULL,
   .face = _{{ .Name }}_face,
   .faceEdge = NULL,
-  .vertexFace = NULL,
 };
