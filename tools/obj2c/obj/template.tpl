@@ -27,9 +27,6 @@ static short _{{ .Name }}_edge_data[{{ .EdgeCount }} * 2] = {
   {{ range . }}{{ . }} * 8, {{ end -}}
 {{- end }}
 };
-{{- end }}
-
-{{- if .FaceEdges }}
 
 static short _{{ .Name }}_face_edge_data[{{ .FaceDataCount }}] = {
   /* #edge, edges... */
@@ -71,7 +68,7 @@ Mesh3D {{ .Name }} = {
 {{- else }}
   .edge = NULL,{{ end }}
   .face = _{{ .Name }}_face,
-{{- if .FaceEdges }}
+{{- if .Edges }}
   .faceEdge = _{{ .Name }}_face_edge,
 {{- else }}
   .faceEdge = NULL,{{ end }}
