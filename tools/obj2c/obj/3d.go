@@ -88,16 +88,16 @@ func CalculateEdges(obj *WavefrontObj) ([]Edge, [][]int) {
 
 	/* Construct { #face => [#edge] } map. */
 	var es []Edge
-
 	eis := make([][]int, len(obj.Faces))
-	n := 0
+	n := -1
 
 	for _, fe := range fes {
-		eis[fe.Face] = append(eis[fe.Face], n)
-		if len(es) == 0 || EdgeCmp(es[n-1], fe.Edge) != 0 {
+		l := len(es)
+		if l == 0 || EdgeCmp(es[l-1], fe.Edge) != 0 {
 			es = append(es, fe.Edge)
 			n++
 		}
+		eis[fe.Face] = append(eis[fe.Face], n)
 	}
 
 	return es, eis
