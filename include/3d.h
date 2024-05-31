@@ -58,13 +58,10 @@ typedef struct {
   Point3D *vertex;
   Point3D *faceNormal;
   EdgeT *edge;
-  /* '|' indicates 0 offset, '[x]' is an array of x's */
-  short **face;            /* { #face => [#vertices | [vertex]] } */
-  IndexListT **faceEdge;   /* { #face => [#edge] } */
+  /* '|' indicates 0 offset */
+  short **face;       /* { #face => [#vertices | vertices...] } */
+  short **faceEdge;   /* { #face => [#edge | edges...] } */
 } Mesh3D;
-
-void CalculateEdges(Mesh3D *mesh);
-void ResetMesh3D(Mesh3D *mesh);
 
 /* 3D object representation */
 

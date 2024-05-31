@@ -20,14 +20,6 @@ static short active;
 
 static Mesh3D *mesh = &pilka;
 
-static void Load(void) {
-  CalculateEdges(mesh);
-}
-
-static void UnLoad(void) {
-  ResetMesh3D(mesh);
-}
-
 static void Init(void) {
   cube = NewObject3D(mesh);
   cube->translate.z = fx4i(-250);
@@ -58,8 +50,8 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *faceFlags = object->faceFlags;
   short **faces = object->mesh->face;
   short *face = *faces++;
-  IndexListT **faceEdges = object->mesh->faceEdge;
-  IndexListT *faceEdge = *faceEdges++;
+  short **faceEdges = object->mesh->faceEdge;
+  short *faceEdge = *faceEdges++;
 
   bzero(vertexFlags, object->mesh->vertices);
   bzero(edgeFlags, object->mesh->edges);
@@ -69,17 +61,16 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
 
     if (f >= 0) {
       short n = face[-1] - 3;
-      short *ei = faceEdge->indices;
 
       /* Face has at least (and usually) three vertices / edges. */
       vertexFlags[*face++] = -1;
-      edgeFlags[*ei++] ^= f;
+      edgeFlags[*faceEdge++] ^= f;
       vertexFlags[*face++] = -1;
-      edgeFlags[*ei++] ^= f;
+      edgeFlags[*faceEdge++] ^= f;
 
       do {
         vertexFlags[*face++] = -1;
-        edgeFlags[*ei++] ^= f;
+        edgeFlags[*faceEdge++] ^= f;
       } while (--n != -1);
     }
 
@@ -338,4 +329,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(FlatShadeConvex, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(FlatShadeConvex, NULL, NULL, Init, Kill, Render, NULL);

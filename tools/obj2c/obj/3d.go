@@ -1,8 +1,10 @@
 package obj
 
 import (
+	"cmp"
 	"fmt"
 	"math"
+	"slices"
 )
 
 /*
@@ -44,4 +46,59 @@ func CalculateFaceNormals(obj *WavefrontObj) ([]Vector, error) {
 	}
 
 	return ns, nil
+}
+
+type Edge [2]int
+
+type FaceEdge struct {
+	Edge Edge
+	Face int
+}
+
+func EdgeCmp(a, b Edge) int {
+	if n := cmp.Compare(a[0], b[0]); n != 0 {
+		return n
+	}
+	return cmp.Compare(a[1], b[1])
+}
+
+func CalculateEdges(obj *WavefrontObj) ([]Edge, [][]int) {
+	var fes []FaceEdge
+
+	/* Create all edges. */
+	for i, face := range obj.Faces {
+		for j := 0; j < len(face); j++ {
+			k := j + 1
+			if k == len(face) {
+				k = 0
+			}
+			p0 := face[j].Vertex - 1
+			p1 := face[k].Vertex - 1
+			if p1 < p0 {
+				p0, p1 = p1, p0
+			}
+			fes = append(fes, FaceEdge{Edge: Edge{p0, p1}, Face: i})
+		}
+	}
+
+	/* Sort the edges lexicographically. */
+	slices.SortFunc(fes, func(a, b FaceEdge) int {
+		return EdgeCmp(a.Edge, b.Edge)
+	})
+
+	/* Construct { #face => [#edge] } map. */
+	var es []Edge
+
+	eis := make([][]int, len(obj.Faces))
+	n := 0
+
+	for _, fe := range fes {
+		eis[fe.Face] = append(eis[fe.Face], n)
+		if len(es) == 0 || EdgeCmp(es[n-1], fe.Edge) != 0 {
+			es = append(es, fe.Edge)
+			n++
+		}
+	}
+
+	return es, eis
 }

@@ -20,15 +20,7 @@ static CopInsPairT *bplptr;
 
 static Mesh3D *mesh = &pilka;
 
-static void Load(void) {
-  CalculateEdges(mesh);
-}
-
-static void UnLoad(void) {
-  ResetMesh3D(mesh);
-}
-
-static void Init(void) {
+ststatic void Init(void) {
   cube = NewObject3D(mesh);
   cube->translate.z = fx4i(-250);
 
@@ -331,4 +323,4 @@ static void Render(void) {
     active = 0;
 }
 
-EFFECT(Wireframe, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(Wireframe, NULL, NULL, Init, Kill, Render, NULL);

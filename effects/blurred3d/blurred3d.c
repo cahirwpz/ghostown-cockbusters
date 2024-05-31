@@ -26,14 +26,6 @@ static int active = 0;
 
 static Mesh3D *mesh = &szescian;
 
-static void Load(void) {
-  CalculateEdges(mesh);
-}
-
-static void UnLoad(void) {
-  ResetMesh3D(mesh);
-}
-
 static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(80 + gradient.height * (gradient.width + 1));
   bplptr = CopSetupBitplanes(cp, screen[0], DEPTH);
@@ -198,7 +190,7 @@ static void DrawObject(Object3D *object) {
   void *tmpbuf = scratchpad->planes[0];
   Point3D *point = object->vertex;
   char *faceFlags = object->faceFlags;
-  IndexListT **faceEdges = object->mesh->faceEdge;
+  short **faceEdges = object->mesh->faceEdge;
   short **faces = object->mesh->face;
   short *face;
 
@@ -206,7 +198,7 @@ static void DrawObject(Object3D *object) {
   custom->bltalwm = -1;
 
   while ((face = *faces++)) {
-    IndexListT *faceEdge = *faceEdges++;
+    short *faceEdge = *faceEdges++;
 
     if (*faceFlags++) {
       u_short bltmod, bltsize;
@@ -254,11 +246,10 @@ static void DrawObject(Object3D *object) {
       /* Draw face. */
       {
         EdgeT *edges = object->mesh->edge;
-        short m = faceEdge->count;
-        short *i = faceEdge->indices;
+        short m = faceEdge[-1];
 
         while (--m >= 0) {
-          short *edge = (short *)&edges[*i++];
+          short *edge = (short *)&edges[*faceEdge++];
 
           short *p0 = (void *)point + *edge++;
           short *p1 = (void *)point + *edge++;
@@ -493,4 +484,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Blurred3D, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(Blurred3D, NULL, NULL, Init, Kill, Render, NULL);

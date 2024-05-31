@@ -11,6 +11,7 @@ import (
 var printHelp bool
 var scaleFactor float64
 var calcFaceNormals bool
+var calcEdges bool
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
@@ -19,6 +20,9 @@ func init() {
 		"the object will be scaled by this factor")
 	flag.BoolVar(&calcFaceNormals, "face-normals", false,
 		"calculate normal vector to each face")
+	flag.BoolVar(&calcEdges, "edges", false,
+		"calculate edges and face-to-edge map")
+
 }
 
 func main() {
@@ -36,7 +40,8 @@ func main() {
 
 	cp := obj.ConverterParams{
 		Scale:       scaleFactor,
-		FaceNormals: calcFaceNormals}
+		FaceNormals: calcFaceNormals,
+		Edges:       calcEdges}
 
 	output, err := obj.Convert(object, cp)
 	if err != nil {

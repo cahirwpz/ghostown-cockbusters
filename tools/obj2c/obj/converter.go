@@ -47,6 +47,16 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		}
 	}
 
+	if cp.Edges {
+		es, eis := CalculateEdges(obj)
+		for i := 0; i < len(eis); i++ {
+			eis[i] = append([]int{len(eis[i])}, eis[i]...)
+		}
+		ps.EdgeCount = len(es)
+		ps.Edges = es
+		ps.FaceEdges = eis
+	}
+
 	tmpl, err := template.New("template").Parse(tpl)
 	if err != nil {
 		return "", err
@@ -64,6 +74,7 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 type ConverterParams struct {
 	Scale       float64
 	FaceNormals bool
+	Edges       bool
 }
 
 type TemplateParams struct {
@@ -72,9 +83,12 @@ type TemplateParams struct {
 	VertexCount   int
 	FaceCount     int
 	FaceDataCount int
+	EdgeCount     int
 
 	Vertices    [][]int
 	Faces       [][]int
 	FaceIndices []int
 	FaceNormals [][]int
+	Edges       []Edge
+	FaceEdges   [][]int
 }
