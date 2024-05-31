@@ -20,7 +20,7 @@ static CopInsPairT *bplptr;
 
 static Mesh3D *mesh = &pilka;
 
-ststatic void Init(void) {
+static void Init(void) {
   cube = NewObject3D(mesh);
   cube->translate.z = fx4i(-250);
 
@@ -85,8 +85,8 @@ static void UpdateEdgeVisibility(Object3D *object) {
   char *faceFlags = object->faceFlags;
   short **faces = object->mesh->face;
   short *face = *faces++;
-  IndexListT **faceEdges = object->mesh->faceEdge;
-  IndexListT *faceEdge = *faceEdges++;
+  short **faceEdges = object->mesh->faceEdge;
+  short *faceEdge = *faceEdges++;
   
   bzero(vertexFlags, object->mesh->vertices);
   bzero(edgeFlags, object->mesh->edges);
@@ -94,17 +94,16 @@ static void UpdateEdgeVisibility(Object3D *object) {
   do {
     if (*faceFlags++ >= 0) {
       short n = face[-1] - 3;
-      short *ei = faceEdge->indices;
 
       /* Face has at least (and usually) three vertices / edges. */
       vertexFlags[*face++] = -1;
-      edgeFlags[*ei++] = -1;
+      edgeFlags[*faceEdge++] = -1;
       vertexFlags[*face++] = -1;
-      edgeFlags[*ei++] = -1;
+      edgeFlags[*faceEdge++] = -1;
 
       do {
         vertexFlags[*face++] = -1;
-        edgeFlags[*ei++] = -1;
+        edgeFlags[*faceEdge++] = -1;
       } while (--n != -1);
     }
 
