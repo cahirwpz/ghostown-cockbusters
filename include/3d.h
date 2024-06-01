@@ -50,7 +50,7 @@ u_short ClipPolygon3D(Point3D *in, Point3D **outp, u_short n,
 
 /* 3D mesh representation */
 
-typedef struct {
+typedef struct Mesh3D {
   short vertices;
   short faces;
   short edges;
@@ -65,9 +65,7 @@ typedef struct {
 
 /* 3D object representation */
 
-typedef struct {
-  Mesh3D *mesh;
-
+typedef struct Object3D {
   Point3D rotate;
   Point3D scale;
   Point3D translate;
@@ -77,6 +75,18 @@ typedef struct {
 
   Point3D camera;      /* camera position in object space */
 
+  /* potentially shared between objects, copied from mesh */
+  short faces;
+  short vertices;
+  short edges;
+
+  Point3D *point;
+  EdgeT *edge;
+  short **face;       /* { #face => [#vertices | vertices...] } */
+  short **faceEdge;   /* { #face => [#edge | edges...] } */
+  Point3D *faceNormal;
+
+  /* private */
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
   char *vertexFlags;   /* used by clipping */
   char *faceFlags;     /* e.g. visiblity flags */

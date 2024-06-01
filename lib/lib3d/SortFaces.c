@@ -1,8 +1,8 @@
 #include <3d.h>
 
 void SortFaces(Object3D *object) {
-  short **faces = object->mesh->face;
-  short n = object->mesh->faces;
+  short **faces = object->face;
+  short n = object->faces;
   void *points = object->vertex;
   char *faceFlags = object->faceFlags;
   short count = 0;

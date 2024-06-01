@@ -8,7 +8,16 @@ Object3D *NewObject3D(Mesh3D *mesh) {
   short faces = mesh->faces;
   short edges = mesh->edges;
 
-  object->mesh = mesh;
+  object->vertices = vertices;
+  object->faces = faces;
+  object->edges = edges;
+
+  object->point = mesh->vertex;
+  object->edge = mesh->edge;
+  object->face = mesh->face;
+  object->faceEdge = mesh->faceEdge;
+  object->faceNormal = mesh->faceNormal;
+
   object->vertex = MemAlloc(sizeof(Point3D) * vertices, MEMF_PUBLIC);
   object->vertexFlags = MemAlloc(vertices, MEMF_PUBLIC);
   object->faceFlags = MemAlloc(faces, MEMF_PUBLIC);

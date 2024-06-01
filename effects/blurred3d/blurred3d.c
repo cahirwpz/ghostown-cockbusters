@@ -95,9 +95,9 @@ static void Kill(void) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *src = (short *)object->mesh->vertex;
+  short *src = (short *)object->point;
   short *dst = (short *)object->vertex;
-  register short n asm("d7") = object->mesh->vertices - 1;
+  register short n asm("d7") = object->vertices - 1;
 
   /* WARNING! This modifies camera matrix! */
   M->x -= normfx(M->m00 * M->m01);
@@ -190,8 +190,8 @@ static void DrawObject(Object3D *object) {
   void *tmpbuf = scratchpad->planes[0];
   Point3D *point = object->vertex;
   char *faceFlags = object->faceFlags;
-  short **faceEdges = object->mesh->faceEdge;
-  short **faces = object->mesh->face;
+  short **faceEdges = object->faceEdge;
+  short **faces = object->face;
   short *face;
 
   custom->bltafwm = -1;
@@ -245,7 +245,7 @@ static void DrawObject(Object3D *object) {
 
       /* Draw face. */
       {
-        EdgeT *edges = object->mesh->edge;
+        EdgeT *edges = object->edge;
         short m = faceEdge[-1];
 
         while (--m >= 0) {

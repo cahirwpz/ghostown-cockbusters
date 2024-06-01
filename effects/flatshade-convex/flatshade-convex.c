@@ -46,14 +46,14 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = object->vertexFlags;
   char *edgeFlags = object->edgeFlags;
   char *faceFlags = object->faceFlags;
-  short **faces = object->mesh->face;
-  short **faceEdges = object->mesh->faceEdge;
+  short **faces = object->face;
+  short **faceEdges = object->faceEdge;
   short *face;
 
   register char s asm("d7") = -1;
 
-  bzero(vertexFlags, object->mesh->vertices);
-  bzero(edgeFlags, object->mesh->edges);
+  bzero(vertexFlags, object->vertices);
+  bzero(edgeFlags, object->edges);
 
   while ((face = *faces++)) {
     short *faceEdge = *faceEdges++;
@@ -95,10 +95,10 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
   short *v = (short *)M;
-  short *src = (short *)object->mesh->vertex;
+  short *src = (short *)object->point;
   short *dst = (short *)object->vertex;
   char *flags = object->vertexFlags;
-  register short n asm("d7") = object->mesh->vertices - 1;
+  register short n asm("d7") = object->vertices - 1;
 
   int m0 = (M->x << 8) - ((M->m00 * M->m01) >> 4);
   int m1 = (M->y << 8) - ((M->m10 * M->m11) >> 4);
@@ -150,10 +150,10 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(void *planes, Object3D *object,
                        CustomPtrT custom_ asm("a6"))
 {
-  short *edge = (short *)object->mesh->edge;
+  short *edge = (short *)object->edge;
   char *edgeFlags = object->edgeFlags;
   Point3D *point = object->vertex;
-  short n = object->mesh->edges - 1;
+  short n = object->edges - 1;
 
   WaitBlitter();
   custom_->bltafwm = -1;
