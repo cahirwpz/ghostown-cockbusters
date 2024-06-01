@@ -18,10 +18,8 @@ static short active;
 #include "data/flatshade-pal.c"
 #include "data/pilka.c"
 
-static Mesh3D *mesh = &pilka;
-
 static void Init(void) {
-  cube = NewObject3D(mesh);
+  cube = NewObject3D(&pilka);
   cube->translate.z = fx4i(-250);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -166,11 +164,9 @@ static void DrawObject(void *planes, Object3D *object,
   custom_->bltdmod = WIDTH / 8;
 
   do {
-    char edgeColor = *edgeFlags++;
-
-    if (edgeColor) {
-      u_short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
-      void *bltapt, *bltcpt;
+    if (*edgeFlags) {
+      short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
+      int bltapt, bltcpt;
 
       {
         short x0, y0, x1, y1;
@@ -188,8 +184,10 @@ static void DrawObject(void *planes, Object3D *object,
           y1 = *p1++;
         }
 
-        if (y0 == y1)
+        if (y0 == y1) {
+          edgeFlags++;
           continue;
+        }
         if (y0 > y1) {
           swapr(x0, x1);
           swapr(y0, y1);
@@ -213,7 +211,7 @@ static void DrawObject(void *planes, Object3D *object,
           swapr(dmax, dmin);
         }
 
-        bltcpt = planes + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
+        bltcpt = (int)planes + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
 
         bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_EOR;
         bltcon1 |= rorw(x0 & 15, 4);
@@ -224,29 +222,34 @@ static void DrawObject(void *planes, Object3D *object,
         bltamod = derr - dmax;
         bltbmod = dmin;
         bltsize = (dmax << 6) + 66;
-        bltapt = (void *)(int)derr;
+        bltapt = derr;
       }
 
-#define DRAWLINE()                   \
-      WaitBlitter();                 \
-      custom_->bltcon0 = bltcon0;    \
-      custom_->bltcon1 = bltcon1;    \
-      custom_->bltcpt = bltcpt;      \
-      custom_->bltapt = bltapt;      \
-      custom_->bltdpt = planes;      \
-      custom_->bltbmod = bltbmod;    \
-      custom_->bltamod = bltamod;    \
+#define DRAWLINE()                              \
+      WaitBlitter();                            \
+      custom_->bltcon0 = bltcon0;               \
+      custom_->bltcon1 = bltcon1;               \
+      custom_->bltcpt = (void *)bltcpt;         \
+      custom_->bltapt = (void *)bltapt;         \
+      custom_->bltdpt = planes;                 \
+      custom_->bltbmod = bltbmod;               \
+      custom_->bltamod = bltamod;               \
       custom_->bltsize = bltsize;
 
-      if (edgeColor & 1) { DRAWLINE(); }
-      bltcpt += WIDTH * HEIGHT / 8;
-      if (edgeColor & 2) { DRAWLINE(); }
-      bltcpt += WIDTH * HEIGHT / 8;
-      if (edgeColor & 4) { DRAWLINE(); }
-      bltcpt += WIDTH * HEIGHT / 8;
-      if (edgeColor & 8) { DRAWLINE(); }
+      {
+        char edgeColor = *edgeFlags++;
+
+        if (edgeColor & 1) { DRAWLINE(); }
+        bltcpt += WIDTH * HEIGHT / 8;
+        if (edgeColor & 2) { DRAWLINE(); }
+        bltcpt += WIDTH * HEIGHT / 8;
+        if (edgeColor & 4) { DRAWLINE(); }
+        bltcpt += WIDTH * HEIGHT / 8;
+        if (edgeColor & 8) { DRAWLINE(); }
+      }
     } else {
       edge += 2;
+      edgeFlags++;
     }
   } while (--n != -1);
 }
