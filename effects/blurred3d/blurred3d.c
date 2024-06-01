@@ -190,15 +190,15 @@ static void DrawObject(Object3D *object) {
   void *tmpbuf = scratchpad->planes[0];
   Point3D *vertex = object->vertex;
   char *faceFlags = object->faceFlags;
-  short **faceEdges = object->faceEdge;
-  short **faces = object->face;
-  short *face;
+  short **edgeIndexList = object->faceEdgeIndexList;
+  short **vertexIndexList = object->faceVertexIndexList;
+  short *vertexIndex;
 
   custom->bltafwm = -1;
   custom->bltalwm = -1;
 
-  while ((face = *faces++)) {
-    short *faceEdge = *faceEdges++;
+  while ((vertexIndex = *vertexIndexList++)) {
+    short *faceEdge = *edgeIndexList++;
 
     if (*faceFlags++) {
       u_short bltmod, bltsize;
@@ -206,15 +206,15 @@ static void DrawObject(Object3D *object) {
 
       /* Estimate the size of rectangle that contains a face. */
       {
-        short n = face[-1] - 2;
-        Point3D *p = &vertex[*face++];
+        short n = vertexIndex[-1] - 2;
+        Point3D *p = &vertex[*vertexIndex++];
         short minX = p->x;
         short minY = p->y;
         short maxX = minX; 
         short maxY = minY;
 
         do {
-          p = &vertex[*face++];
+          p = &vertex[*vertexIndex++];
 
           if (p->x < minX)
             minX = p->x;

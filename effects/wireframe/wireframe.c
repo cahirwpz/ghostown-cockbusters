@@ -44,7 +44,7 @@ static void Kill(void) {
 
 static void UpdateFaceVisibilityFast(Object3D *object) {
   short *src = (short *)object->faceNormal;
-  short **faces = object->face;
+  short **vertexIndexList = object->faceVertexIndexList;
   char *faceFlags = object->faceFlags;
   void *point = object->point;
   short n = object->faces - 1;
@@ -54,12 +54,12 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
   short cz = object->camera.z;
 
   do {
-    short *face = *faces++;
+    short *vertexIndex = *vertexIndexList++;
     short px, py, pz;
     int f;
 
     {
-      short *p = (short *)(point + (short)(*face << 3));
+      short *p = (short *)(point + (short)(*vertexIndex << 3));
       px = cx - *p++;
       py = cy - *p++;
       pz = cz - *p++;
@@ -83,29 +83,29 @@ static void UpdateEdgeVisibility(Object3D *object) {
   char *vertexFlags = object->vertexFlags;
   char *edgeFlags = object->edgeFlags;
   char *faceFlags = object->faceFlags;
-  short **faces = object->face;
-  short **faceEdges = object->faceEdge;
+  short **vertexIndexList = object->faceVertexIndexList;
+  short **edgeIndexList = object->faceEdgeIndexList;
   short f = object->faces;
   
   bzero(vertexFlags, object->vertices);
   bzero(edgeFlags, object->edges);
 
   while (--f >= 0) {
-    short *face = *faces++;
-    short *faceEdge = *faceEdges++;
+    short *vertexIndex = *vertexIndexList++;
+    short *edgeIndex = *edgeIndexList++;
 
     if (*faceFlags++ >= 0) {
-      short n = face[-1] - 3;
+      short n = vertexIndex[-1] - 3;
 
       /* Face has at least (and usually) three vertices / edges. */
-      vertexFlags[*face++] = -1;
-      edgeFlags[*faceEdge++] = -1;
-      vertexFlags[*face++] = -1;
-      edgeFlags[*faceEdge++] = -1;
+      vertexFlags[*vertexIndex++] = -1;
+      edgeFlags[*edgeIndex++] = -1;
+      vertexFlags[*vertexIndex++] = -1;
+      edgeFlags[*edgeIndex++] = -1;
 
       do {
-        vertexFlags[*face++] = -1;
-        edgeFlags[*faceEdge++] = -1;
+        vertexFlags[*vertexIndex++] = -1;
+        edgeFlags[*edgeIndex++] = -1;
       } while (--n != -1);
     }
   }

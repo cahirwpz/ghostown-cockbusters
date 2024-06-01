@@ -46,31 +46,31 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = object->vertexFlags;
   char *edgeFlags = object->edgeFlags;
   char *faceFlags = object->faceFlags;
-  short **faces = object->face;
-  short **faceEdges = object->faceEdge;
-  short *face;
+  short **vertexIndexList = object->faceVertexIndexList;
+  short **edgeIndexList = object->faceEdgeIndexList;
+  short *vertexIndex;
 
   register char s asm("d7") = -1;
 
   bzero(vertexFlags, object->vertices);
   bzero(edgeFlags, object->edges);
 
-  while ((face = *faces++)) {
-    short *faceEdge = *faceEdges++;
+  while ((vertexIndex = *vertexIndexList++)) {
+    short *edgeIndex = *edgeIndexList++;
     char f = *faceFlags++;
 
     if (f >= 0) {
-      short n = face[-1] - 3;
+      short n = vertexIndex[-1] - 3;
 
       /* Face has at least (and usually) three vertices / edges. */
-      vertexFlags[*face++] = s;
-      edgeFlags[*faceEdge++] ^= f;
-      vertexFlags[*face++] = s;
-      edgeFlags[*faceEdge++] ^= f;
+      vertexFlags[*vertexIndex++] = s;
+      edgeFlags[*edgeIndex++] ^= f;
+      vertexFlags[*vertexIndex++] = s;
+      edgeFlags[*edgeIndex++] ^= f;
 
       do {
-        vertexFlags[*face++] = s;
-        edgeFlags[*faceEdge++] ^= f;
+        vertexFlags[*vertexIndex++] = s;
+        edgeFlags[*edgeIndex++] ^= f;
       } while (--n != -1);
     }
   }
@@ -301,24 +301,24 @@ static void Render(void) {
 
   ProfilerStart(Transform);
   {
-    UpdateObjectTransformation(cube); // 18 lines
-    UpdateFaceVisibility(cube); // 211 lines O(faces)
-    UpdateEdgeVisibilityConvex(cube); // 78 lines O(edge)
-    TransformVertices(cube); // 89 lines O(vertex)
+    UpdateObjectTransformation(cube);
+    UpdateFaceVisibility(cube);
+    UpdateEdgeVisibilityConvex(cube);
+    TransformVertices(cube);
   }
-  ProfilerStop(Transform);
+  ProfilerStop(Transform); /* Average: 156 */
 
   ProfilerStart(Draw);
   {
-    DrawObject(screen[active]->planes[0], cube, custom); // 237 lines
+    DrawObject(screen[active]->planes[0], cube, custom);
   }
-  ProfilerStop(Draw);
+  ProfilerStop(Draw); /* Average: 130 */
 
   ProfilerStart(Fill);
   {
-    BitmapFillFast(screen[active]); // 287 lines
+    BitmapFillFast(screen[active]);
   }
-  ProfilerStop(Fill);
+  ProfilerStop(Fill); /* Average: 289 */
 
   CopUpdateBitplanes(bplptr, screen[active], DEPTH);
   TaskWaitVBlank();

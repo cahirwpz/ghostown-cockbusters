@@ -58,7 +58,7 @@ typedef struct Mesh3D {
   Point3D *vertex;
   Point3D *faceNormal;
   EdgeT *edge;
-  short *face;       /* [#vertices vertices...] */
+  short *faceVertex; /* [#vertices vertices...] */
   short *faceEdge;   /* [#edge edges...] */
 } Mesh3D;
 
@@ -86,8 +86,8 @@ typedef struct Object3D {
 
   Point3D *point;
   /* '|' indicates 0 offset */
-  short **face;       /* { #face => [#vertices | vertices...] } */
-  short **faceEdge;   /* { #face => [#edge | edges...] } */
+  short **faceVertexIndexList; /* [#vertices | vertex-indices...] */
+  short **faceEdgeIndexList;   /* [#edge | edge-indices...] */
   Point3D *faceNormal;
 
   /* private */

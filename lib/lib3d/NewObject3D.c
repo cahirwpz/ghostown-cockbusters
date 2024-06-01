@@ -27,32 +27,34 @@ Object3D *NewObject3D(Mesh3D *mesh) {
     }
   }
 
-  object->face = MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
+  object->faceVertexIndexList =
+    MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
   {
-    short **facePtr = object->face;
-    short *face = mesh->face;
+    short **indexListPtr = object->faceVertexIndexList;
+    short *list = mesh->faceVertex;
     short n;
 
-    while ((n = *face++)) {
-      *facePtr++ = face;
-      face += n;
+    while ((n = *list++)) {
+      *indexListPtr++ = list;
+      list += n;
     }
 
-    *facePtr = NULL;
+    *indexListPtr = NULL;
   }
 
-  object->faceEdge = MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
+  object->faceEdgeIndexList =
+    MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
   {
-    short **faceEdgePtr = object->faceEdge;
-    short *faceEdge = mesh->faceEdge;
+    short **indexListPtr = object->faceEdgeIndexList;
+    short *list = mesh->faceEdge;
     short n;
 
-    while ((n = *faceEdge++)) {
-      *faceEdgePtr++ = faceEdge;
-      faceEdge += n;
+    while ((n = *list++)) {
+      *indexListPtr++ = list;
+      list += n;
     }
 
-    *faceEdgePtr = NULL;
+    *indexListPtr = NULL;
   }
 
   object->vertexFlags = MemAlloc(vertices, MEMF_PUBLIC);
