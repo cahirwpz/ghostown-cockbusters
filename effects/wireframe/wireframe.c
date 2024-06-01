@@ -84,14 +84,16 @@ static void UpdateEdgeVisibility(Object3D *object) {
   char *edgeFlags = object->edgeFlags;
   char *faceFlags = object->faceFlags;
   short **faces = object->mesh->face;
-  short *face = *faces++;
   short **faceEdges = object->mesh->faceEdge;
-  short *faceEdge = *faceEdges++;
+  short f = object->mesh->faces;
   
   bzero(vertexFlags, object->mesh->vertices);
   bzero(edgeFlags, object->mesh->edges);
 
-  do {
+  while (--f >= 0) {
+    short *face = *faces++;
+    short *faceEdge = *faceEdges++;
+
     if (*faceFlags++ >= 0) {
       short n = face[-1] - 3;
 
@@ -106,10 +108,7 @@ static void UpdateEdgeVisibility(Object3D *object) {
         edgeFlags[*faceEdge++] = -1;
       } while (--n != -1);
     }
-
-    faceEdge = *faceEdges++;
-    face = *faces++;
-  } while (face);
+  }
 }
 
 #define MULVERTEX1(D, E) {            \
