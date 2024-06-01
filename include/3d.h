@@ -81,13 +81,13 @@ typedef struct Object3D {
   short edges;
 
   Point3D *point;
-  EdgeT *edge;
   /* '|' indicates 0 offset */
   short **face;       /* { #face => [#vertices | vertices...] } */
   short **faceEdge;   /* { #face => [#edge | edges...] } */
   Point3D *faceNormal;
 
   /* private */
+  EdgeT *edge;
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
   char *vertexFlags;   /* used by clipping */
   char *faceFlags;     /* e.g. visiblity flags */

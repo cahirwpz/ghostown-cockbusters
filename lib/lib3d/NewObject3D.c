@@ -13,8 +13,18 @@ Object3D *NewObject3D(Mesh3D *mesh) {
   object->edges = edges;
 
   object->point = mesh->vertex;
-  object->edge = mesh->edge;
   object->faceNormal = mesh->faceNormal;
+
+  object->edge = MemAlloc(sizeof(EdgeT) * edges, MEMF_PUBLIC);
+  {
+    short *in = (short *)mesh->edge;
+    short *out = (short *)object->edge;
+    short n = edges * 2;
+
+    while (--n >= 0) {
+      *out++ = *in++ * sizeof(Point3D);
+    }
+  }
 
   object->face = MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
   {

@@ -17,7 +17,7 @@ static short _{{ .Name }}_face[{{ .FaceDataCount }}] = {
 
 static short _{{ .Name }}_edge_data[{{ .EdgeCount }} * 2] = {
   {{- range .Edges }}
-  {{ range . }}{{ . }} * 8, {{ end -}}
+  {{ range . }}{{ . }}, {{ end -}}
 {{- end }}
 };
 
