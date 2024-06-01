@@ -5,19 +5,12 @@ static short _{{ .Name }}_pnts[{{ .VertexCount }} * 4] = {
 {{- end }}
 };
 
-static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
+static short _{{ .Name }}_face[{{ .FaceDataCount }}] = {
   /* #vertices, vertices... */
   {{- range .Faces }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
   0 
-};
-
-static short *_{{ .Name }}_face[{{ .FaceCount }} + 1] = {
-  {{- range .FaceIndices }}
-  &_{{ $.Name }}_face_data[{{ . }}],
-{{- end }}
-  NULL
 };
 
 {{- if .Edges }}
@@ -28,19 +21,12 @@ static short _{{ .Name }}_edge_data[{{ .EdgeCount }} * 2] = {
 {{- end }}
 };
 
-static short _{{ .Name }}_face_edge_data[{{ .FaceDataCount }}] = {
+static short _{{ .Name }}_face_edge[{{ .FaceDataCount }}] = {
   /* #edge, edges... */
   {{- range .FaceEdges }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
   0 
-};
-
-static short *_{{ .Name }}_face_edge[{{ .FaceCount }} + 1] = {
-  {{- range .FaceIndices }}
-  &_{{ $.Name }}_face_edge_data[{{ . }}],
-{{- end }}
-  NULL
 };
 {{- end }}
 

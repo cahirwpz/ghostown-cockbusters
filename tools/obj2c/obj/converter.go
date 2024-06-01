@@ -19,20 +19,16 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		ps.VertexCount += 1
 	}
 
-	faceOffset := 1
+	ps.FaceDataCount = 1
 	for _, f := range obj.Faces {
 		of := []int{len(f)}
 		for _, fi := range f {
 			of = append(of, fi.Vertex-1)
 		}
 		ps.Faces = append(ps.Faces, of)
-		ps.FaceIndices = append(ps.FaceIndices, faceOffset)
-
-		faceOffset += len(of)
+		ps.FaceDataCount += len(f) + 1
 		ps.FaceCount += 1
 	}
-
-	ps.FaceDataCount = faceOffset
 
 	if cp.FaceNormals {
 		faceNormals, err := CalculateFaceNormals(obj)
@@ -87,7 +83,6 @@ type TemplateParams struct {
 
 	Vertices    [][]int
 	Faces       [][]int
-	FaceIndices []int
 	FaceNormals [][]int
 	Edges       []Edge
 	FaceEdges   [][]int

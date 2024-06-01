@@ -58,9 +58,8 @@ typedef struct Mesh3D {
   Point3D *vertex;
   Point3D *faceNormal;
   EdgeT *edge;
-  /* '|' indicates 0 offset */
-  short **face;       /* { #face => [#vertices | vertices...] } */
-  short **faceEdge;   /* { #face => [#edge | edges...] } */
+  short *face;       /* [#vertices vertices...] */
+  short *faceEdge;   /* [#edge edges...] */
 } Mesh3D;
 
 /* 3D object representation */
@@ -73,7 +72,8 @@ typedef struct Object3D {
   Matrix3D objectToWorld; /* object -> world transformation */
   Matrix3D worldToObject; /* world -> object transformation */
 
-  Point3D camera;      /* camera position in object space */
+  /* camera position in object space */
+  Point3D camera;
 
   /* potentially shared between objects, copied from mesh */
   short faces;
@@ -82,6 +82,7 @@ typedef struct Object3D {
 
   Point3D *point;
   EdgeT *edge;
+  /* '|' indicates 0 offset */
   short **face;       /* { #face => [#vertices | vertices...] } */
   short **faceEdge;   /* { #face => [#edge | edges...] } */
   Point3D *faceNormal;
