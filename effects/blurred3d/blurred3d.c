@@ -188,7 +188,7 @@ static void DrawLine(short x0, short y0, short x1, short y1) {
 static void DrawObject(Object3D *object) {
   void *outbuf = carry->planes[0];
   void *tmpbuf = scratchpad->planes[0];
-  Point3D *point = object->vertex;
+  Point3D *vertex = object->vertex;
   char *faceFlags = object->faceFlags;
   short **faceEdges = object->faceEdge;
   short **faces = object->face;
@@ -207,14 +207,14 @@ static void DrawObject(Object3D *object) {
       /* Estimate the size of rectangle that contains a face. */
       {
         short n = face[-1] - 2;
-        Point3D *p = &point[*face++];
+        Point3D *p = &vertex[*face++];
         short minX = p->x;
         short minY = p->y;
         short maxX = minX; 
         short maxY = minY;
 
         do {
-          p = &point[*face++];
+          p = &vertex[*face++];
 
           if (p->x < minX)
             minX = p->x;
@@ -245,14 +245,14 @@ static void DrawObject(Object3D *object) {
 
       /* Draw face. */
       {
-        EdgeT *edges = object->edge;
+        Pair3D *edges = object->edge;
         short m = faceEdge[-1];
 
         while (--m >= 0) {
-          short *edge = (short *)&edges[*faceEdge++];
+          short **edge = (short **)&edges[*faceEdge++];
 
-          short *p0 = (void *)point + *edge++;
-          short *p1 = (void *)point + *edge++;
+          short *p0 = *edge++;
+          short *p1 = *edge++;
 
           short x0 = *p0++;
           short y0 = *p0++;

@@ -150,9 +150,8 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(void *planes, Object3D *object,
                        CustomPtrT custom_ asm("a6"))
 {
-  short *edge = (short *)object->edge;
+  short **edge = (short **)object->edge;
   char *edgeFlags = object->edgeFlags;
-  Point3D *point = object->vertex;
   short n = object->edges - 1;
 
   WaitBlitter();
@@ -173,15 +172,15 @@ static void DrawObject(void *planes, Object3D *object,
         short dmin, dmax, derr;
 
         {
-          short *p0 = (void *)point + *edge++;
-          x0 = *p0++;
-          y0 = *p0++;
+          short *p = *edge++;
+          x0 = *p++;
+          y0 = *p++;
         }
 
         {
-          short *p1 = (void *)point + *edge++;
-          x1 = *p1++;
-          y1 = *p1++;
+          short *p = *edge++;
+          x1 = *p++;
+          y1 = *p++;
         }
 
         if (y0 == y1) {
