@@ -109,37 +109,34 @@ static bool ghostUp = false;
 
 
 /* MOVEMENTS */
-static void MoveTrees(short layer) {
-  u_short* tab = treeTab[layer];
-  u_short tail = (tab[23] & 1) * 0x8000;
+static void MoveTrees(u_int* arg) {
+  short i = 0;
+  register u_int* tab  asm("a0") = &arg[11];
+  register u_int* tab2 asm("a1") = &arg[10];
+  u_int tail = (*tab & 1) * 0x80000000;
 
-  tab[23] = (tab[23] / 2) | ((tab[23-1] & 1) * 0x8000);
-  tab[22] = (tab[22] / 2) | ((tab[22-1] & 1) * 0x8000);
-  tab[21] = (tab[21] / 2) | ((tab[21-1] & 1) * 0x8000);
-  tab[20] = (tab[20] / 2) | ((tab[20-1] & 1) * 0x8000);
+  for (i = 0; i < 11; ++i) {
+    *tab /= 2;
+    if (*(tab2--) & 1) {
+      *tab += 0x80000000;
+    }
+    tab--;
+  }
 
-  tab[19] = (tab[19] / 2) | ((tab[19-1] & 1) * 0x8000);
-  tab[18] = (tab[18] / 2) | ((tab[18-1] & 1) * 0x8000);
-  tab[17] = (tab[17] / 2) | ((tab[17-1] & 1) * 0x8000);
-  tab[16] = (tab[16] / 2) | ((tab[16-1] & 1) * 0x8000);
-  tab[15] = (tab[15] / 2) | ((tab[15-1] & 1) * 0x8000);
-  tab[14] = (tab[14] / 2) | ((tab[14-1] & 1) * 0x8000);
-  tab[13] = (tab[13] / 2) | ((tab[13-1] & 1) * 0x8000);
-  tab[12] = (tab[12] / 2) | ((tab[12-1] & 1) * 0x8000);
-  tab[11] = (tab[11] / 2) | ((tab[11-1] & 1) * 0x8000);
-  tab[10] = (tab[10] / 2) | ((tab[10-1] & 1) * 0x8000);
 
-  tab[9] = (tab[9] / 2) | ((tab[9-1] & 1) * 0x8000);
-  tab[8] = (tab[8] / 2) | ((tab[8-1] & 1) * 0x8000);
-  tab[7] = (tab[7] / 2) | ((tab[7-1] & 1) * 0x8000);
-  tab[6] = (tab[6] / 2) | ((tab[6-1] & 1) * 0x8000);
-  tab[5] = (tab[5] / 2) | ((tab[5-1] & 1) * 0x8000);
-  tab[4] = (tab[4] / 2) | ((tab[4-1] & 1) * 0x8000);
-  tab[3] = (tab[3] / 2) | ((tab[3-1] & 1) * 0x8000);
-  tab[2] = (tab[2] / 2) | ((tab[2-1] & 1) * 0x8000);
-  tab[1] = (tab[1] / 2) | ((tab[1-1] & 1) * 0x8000);
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
+  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
 
-  tab[0] = (tab[0] / 2) | tail;
+  *tab = (*tab / 2) | tail;
 }
 
 static void MoveSprites(void) {
@@ -211,7 +208,7 @@ static void MoveForest(short l) {
 
   if (speed[l] == 0) {
     speed[l] = l + 1;
-    MoveTrees(l);
+    MoveTrees((u_int*)treeTab[l]);
 
     groundBitOffset[l] += 1;
     if (groundBitOffset[l] >= 16) {
