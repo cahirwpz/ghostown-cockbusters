@@ -192,23 +192,22 @@ static void DrawObject(Object3D *object, void *bplpt,
   do {
     if (edge->flags) {
       void *data;
-      short **point;
       short x0, y0, x1, y1;
 
-      edge->flags = 0;
-      point = (short **)edge->point;
-
       {
-        short *p = *point++;
+        short *p = &edge->point[0]->x;
         x0 = *p++;
         y0 = *p++;
       }
       
       {
-        short *p = *point++;
+        short *p = &edge->point[1]->x;
         x1 = *p++;
         y1 = *p++;
       }
+
+      /* clear visibility */
+      edge->flags = 0;
 
       if (y0 > y1) {
         swapr(x0, x1);

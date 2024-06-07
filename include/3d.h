@@ -11,14 +11,14 @@ extern char SqrtTab8[256];
 
 typedef struct {
   short x, y, z;
-  char pad;
   char flags; /* remember to reset after use */
+  char pad;
 } Point3D;  /* sizeof(Point3D) = 8, for easy indexing */
 
 typedef struct Edge {
+  Point3D *point[2];
   char flags; /* remember to reset after use */
   char pad[7];
-  Point3D *point[2];
 } EdgeT; /* sizeof(EdgeT) = 16, for easy indexing */
 
 typedef struct {
