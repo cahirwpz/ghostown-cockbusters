@@ -42,10 +42,19 @@ static void Kill(void) {
   DeleteObject3D(cube);
 }
 
+static void SetFaceVisibility(Object3D *object) {
+  short **vertexIndexList = object->faceVertexIndexList;
+  short n = object->faces - 1;
+
+  do {
+    short *vertexIndex = *vertexIndexList++;
+    vertexIndex[FV_FLAGS] = 0;
+  } while (--n != -1);
+}
+
 static void UpdateFaceVisibilityFast(Object3D *object) {
   short *src = (short *)object->faceNormal;
   short **vertexIndexList = object->faceVertexIndexList;
-  char *faceFlags = object->faceFlags;
   void *point = object->point;
   short n = object->faces - 1;
 
@@ -73,7 +82,7 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
     }
 
     /* This depends on condition codes set by previous calculations! */
-    asm volatile("smi %0@+" : "+a" (faceFlags) : "d" (f));
+    vertexIndex[FV_FLAGS] = (f < 0) ? f : 0;
 
     src++;
   } while (--n != -1);
@@ -82,7 +91,6 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
 static void UpdateEdgeVisibility(Object3D *object) {
   char *vertexFlags = &object->vertex[0].flags;
   char *edgeFlags = &object->edge[0].flags;
-  char *faceFlags = object->faceFlags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
   short f = object->faces;
@@ -91,7 +99,7 @@ static void UpdateEdgeVisibility(Object3D *object) {
     short *vertexIndex = *vertexIndexList++;
     short *edgeIndex = *edgeIndexList++;
 
-    if (*faceFlags++ >= 0) {
+    if (vertexIndex[FV_FLAGS] >= 0) {
       short n = vertexIndex[FV_COUNT] - 3;
       short i;
 
@@ -284,7 +292,7 @@ static void Render(void) {
 
     UpdateObjectTransformation(cube);
     if (RightMouseButton())
-      bzero(cube->faceFlags, cube->faces);
+      SetFaceVisibility(cube);
     else
       UpdateFaceVisibilityFast(cube);
     UpdateEdgeVisibility(cube);

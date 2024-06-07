@@ -116,7 +116,6 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
   short **vertexIndexList = object->faceVertexIndexList;
   SortItemT *item = object->visibleFace;
-  char *faceFlags = object->faceFlags;
   short n = object->visibleFaces;
   void *vertex = object->vertex;
   void *temp = buffer->planes[0];
@@ -127,6 +126,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
   for (; --n >= 0; item++) {
     short faceIndex = item->index;
     short *vertexIndex = vertexIndexList[faceIndex];
+    char color = vertexIndex[FV_FLAGS];
 
     short minX, minY, maxX, maxY;
 
@@ -263,7 +263,6 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
         void **dstbpl = &screen[active]->planes[DEPTH];
         void *src = temp + bltstart;
         char mask = 1 << (DEPTH - 1);
-        char color = faceFlags[faceIndex];
         short n = DEPTH;
 
         while (--n >= 0) {

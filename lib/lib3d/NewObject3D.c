@@ -34,12 +34,12 @@ Object3D *NewObject3D(Mesh3D *mesh) {
     MemAlloc((sizeof(short *) + 1) * faces, MEMF_PUBLIC);
   {
     short **indexListPtr = object->faceVertexIndexList;
-    short *list = mesh->faceVertex;
+    short *list = mesh->faceVertex + 1;
     short n;
 
     while ((n = *list++)) {
       *indexListPtr++ = list;
-      list += n;
+      list += n + 1;
     }
 
     *indexListPtr = NULL;
@@ -60,7 +60,6 @@ Object3D *NewObject3D(Mesh3D *mesh) {
     *indexListPtr = NULL;
   }
 
-  object->faceFlags = MemAlloc(faces, MEMF_PUBLIC);
   object->visibleFace = MemAlloc(sizeof(SortItemT) * faces, MEMF_PUBLIC);
 
   object->scale.x = fx12f(1.0);

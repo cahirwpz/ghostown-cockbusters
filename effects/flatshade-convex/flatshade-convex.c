@@ -45,20 +45,20 @@ static void Kill(void) {
 static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = &object->vertex[0].flags;
   char *edgeFlags = &object->edge[0].flags;
-  char *faceFlags = object->faceFlags;
-  short **vertexIndexList = object->faceVertexIndexList;
+  register short **vertexIndexList asm("a6") = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
   short *vertexIndex;
 
-  register char s asm("d7") = -1;
+  register short s asm("d7") = -1;
 
   while ((vertexIndex = *vertexIndexList++)) {
     short *edgeIndex = *edgeIndexList++;
-    char f = *faceFlags++;
-
+    short f = vertexIndex[FV_FLAGS];
+    
     if (f >= 0) {
-      short n = vertexIndex[FV_COUNT] - 3;
-      short i;
+      short i, n;
+
+      n = vertexIndex[FV_COUNT] - 3;
 
       /* Face has at least (and usually) three vertices / edges. */
       i = *vertexIndex++ << 3; vertexFlags[i] = s;

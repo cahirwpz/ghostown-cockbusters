@@ -189,7 +189,6 @@ static void DrawObject(Object3D *object) {
   void *outbuf = carry->planes[0];
   void *tmpbuf = scratchpad->planes[0];
   Point3D *vertex = object->vertex;
-  char *faceFlags = object->faceFlags;
   short **edgeIndexList = object->faceEdgeIndexList;
   short **vertexIndexList = object->faceVertexIndexList;
   short *vertexIndex;
@@ -200,7 +199,7 @@ static void DrawObject(Object3D *object) {
   while ((vertexIndex = *vertexIndexList++)) {
     short *faceEdge = *edgeIndexList++;
 
-    if (*faceFlags++) {
+    if (vertexIndex[FV_FLAGS] >= 0) {
       u_short bltmod, bltsize;
       short bltstart, bltend;
 

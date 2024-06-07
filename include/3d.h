@@ -51,6 +51,8 @@ typedef struct Mesh3D {
 
 /* 3D object representation */
 
+/* '|' indicates 0 offset */
+#define FV_FLAGS -2 /* offset to flags in faceVertexIndexList */
 #define FV_COUNT -1 /* offset to #vertices in faceVertexIndexList */
 #define FE_COUNT -1 /* offset to #edges in faceEdgeIndexList */
 
@@ -71,7 +73,6 @@ typedef struct Object3D {
   short edges;
 
   Point3D *point;
-  /* '|' indicates 0 offset */
   short **faceVertexIndexList; /* [#vertices | vertex-indices...] */
   short **faceEdgeIndexList;   /* [#edges | edge-indices...] */
   Point3D *faceNormal;
@@ -79,7 +80,6 @@ typedef struct Object3D {
   /* private */
   EdgeT *edge;
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
-  char *faceFlags;     /* e.g. visiblity flags */
 
   SortItemT *visibleFace;
   short visibleFaces;
