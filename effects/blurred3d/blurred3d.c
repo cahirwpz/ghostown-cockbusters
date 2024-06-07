@@ -206,7 +206,7 @@ static void DrawObject(Object3D *object) {
 
       /* Estimate the size of rectangle that contains a face. */
       {
-        short n = vertexIndex[-1] - 2;
+        short n = vertexIndex[FV_COUNT] - 2;
         Point3D *p = &vertex[*vertexIndex++];
         short minX = p->x;
         short minY = p->y;

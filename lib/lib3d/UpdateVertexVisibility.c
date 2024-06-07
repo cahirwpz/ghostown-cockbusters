@@ -11,7 +11,7 @@ void UpdateVertexVisibility(Object3D *object) {
     short *vertexIndex = *vertexIndexList++;
 
     if (*faceFlags++ >= 0) {
-      short count = vertexIndex[-1];
+      short count = vertexIndex[FV_COUNT];
       short i;
 
       /* Face has at least (and usually) three vertices. */

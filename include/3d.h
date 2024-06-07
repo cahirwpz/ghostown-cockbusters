@@ -51,6 +51,9 @@ typedef struct Mesh3D {
 
 /* 3D object representation */
 
+#define FV_COUNT -1 /* offset to #vertices in faceVertexIndexList */
+#define FE_COUNT -1 /* offset to #edges in faceEdgeIndexList */
+
 typedef struct Object3D {
   Point3D rotate;
   Point3D scale;
@@ -70,7 +73,7 @@ typedef struct Object3D {
   Point3D *point;
   /* '|' indicates 0 offset */
   short **faceVertexIndexList; /* [#vertices | vertex-indices...] */
-  short **faceEdgeIndexList;   /* [#edge | edge-indices...] */
+  short **faceEdgeIndexList;   /* [#edges | edge-indices...] */
   Point3D *faceNormal;
 
   /* private */

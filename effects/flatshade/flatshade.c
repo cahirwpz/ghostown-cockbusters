@@ -132,7 +132,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
 
     /* Draw edges and calculate bounding box. */
     {
-      register short m asm("d7") = vertexIndex[-1] - 1;
+      register short m asm("d7") = vertexIndex[FV_COUNT] - 1;
       short *ptr = (short *)(vertex + (short)(vertexIndex[m] << 3));
       short xs = *ptr++;
       short ys = *ptr++;

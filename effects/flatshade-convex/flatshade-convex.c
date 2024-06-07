@@ -57,7 +57,7 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
     char f = *faceFlags++;
 
     if (f >= 0) {
-      short n = vertexIndex[-1] - 3;
+      short n = vertexIndex[FV_COUNT] - 3;
       short i;
 
       /* Face has at least (and usually) three vertices / edges. */
