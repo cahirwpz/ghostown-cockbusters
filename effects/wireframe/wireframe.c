@@ -80,15 +80,13 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
 }
 
 static void UpdateEdgeVisibility(Object3D *object) {
-  char *vertexFlags = object->vertexFlags;
-  char *edgeFlags = (char *)object->edge;
+  char *vertexFlags = &object->vertex[0].flags;
+  char *edgeFlags = &object->edge[0].flags;
   char *faceFlags = object->faceFlags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
   short f = object->faces;
   
-  bzero(vertexFlags, object->vertices);
-
   while (--f >= 0) {
     short *vertexIndex = *vertexIndexList++;
     short *edgeIndex = *edgeIndexList++;
@@ -98,41 +96,40 @@ static void UpdateEdgeVisibility(Object3D *object) {
       short i;
 
       /* Face has at least (and usually) three vertices / edges. */
-      vertexFlags[*vertexIndex++] = -1;
+      i = *vertexIndex++ << 3; vertexFlags[i] = -1;
       i = *edgeIndex++ << 4; edgeFlags[i] = -1;
-      vertexFlags[*vertexIndex++] = -1;
+      i = *vertexIndex++ << 3; vertexFlags[i] = -1;
       i = *edgeIndex++ << 4; edgeFlags[i] = -1;
 
       do {
-        vertexFlags[*vertexIndex++] = -1;
+        i = *vertexIndex++ << 3; vertexFlags[i] = -1;
         i = *edgeIndex++ << 4; edgeFlags[i] = -1;
       } while (--n != -1);
     }
   }
 }
 
-#define MULVERTEX1(D, E) {            \
-  short t0 = (*v++) + y;               \
-  short t1 = (*v++) + x;               \
-  int t2 = (*v++) * z;               \
-  v++;                                \
-  D = ((t0 * t1 + t2 - xy) >> 4) + E; \
+#define MULVERTEX1(D, E) {              \
+  short t0 = (*v++) + y;                \
+  short t1 = (*v++) + x;                \
+  int t2 = (*v++) * z;                  \
+  v++;                                  \
+  D = ((t0 * t1 + t2 - xy) >> 4) + E;   \
 }
 
-#define MULVERTEX2(D) {               \
-  short t0 = (*v++) + y;               \
-  short t1 = (*v++) + x;               \
-  int t2 = (*v++) * z;               \
-  short t3 = (*v++);                   \
-  D = normfx(t0 * t1 + t2 - xy) + t3; \
+#define MULVERTEX2(D) {                 \
+  short t0 = (*v++) + y;                \
+  short t1 = (*v++) + x;                \
+  int t2 = (*v++) * z;                  \
+  short t3 = (*v++);                    \
+  D = normfx(t0 * t1 + t2 - xy) + t3;   \
 }
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *v = (short *)M;
+  short *mx = (short *)M;
   short *src = (short *)object->point;
   short *dst = (short *)object->vertex;
-  char *flags = object->vertexFlags;
   register short n asm("d7") = object->vertices - 1;
 
   int m0 = (M->x - normfx(M->m00 * M->m01)) << 8;
@@ -152,26 +149,25 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (*flags++) {
+    if (((Point3D *)dst)->flags) {
       short x = *src++;
       short y = *src++;
       short z = *src++;
+      short *v = mx;
       int xy = x * y;
       int xp, yp;
       short zp;
 
-      pushl(v);
       MULVERTEX1(xp, m0);
       MULVERTEX1(yp, m1);
       MULVERTEX2(zp);
-      popl(v);
 
       *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
       *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
       *dst++ = zp;
 
       src++;
-      dst++;
+      *dst++ = 0;
     } else {
       src += 4;
       dst += 4;

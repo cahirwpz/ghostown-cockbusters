@@ -60,7 +60,6 @@ Object3D *NewObject3D(Mesh3D *mesh) {
     *indexListPtr = NULL;
   }
 
-  object->vertexFlags = MemAlloc(vertices, MEMF_PUBLIC);
   object->faceFlags = MemAlloc(faces, MEMF_PUBLIC);
   object->visibleFace = MemAlloc(sizeof(SortItemT) * faces, MEMF_PUBLIC);
 

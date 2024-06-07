@@ -65,10 +65,9 @@ static void Kill(void) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *v = (short *)M;
+  short *mx = (short *)M;
   short *src = (short *)object->point;
   short *dst = (short *)object->vertex;
-  char *flags = object->vertexFlags;
   register short n asm("d7") = object->vertices - 1;
 
   int m0 = (M->x << 8) - ((M->m00 * M->m01) >> 4);
@@ -89,25 +88,24 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (*flags++) {
+    if (((Point3D *)dst)->flags) {
       short x = *src++;
       short y = *src++;
       short z = *src++;
+      short *v = mx;
       int xp, yp;
       short zp;
 
-      pushl(v);
       MULVERTEX1(xp, m0);
       MULVERTEX1(yp, m1);
       MULVERTEX2(zp);
-      popl(v);
 
       *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
       *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
       *dst++ = zp;
 
       src++;
-      dst++;
+      *dst++ = 0;
     } else {
       src += 4;
       dst += 4;

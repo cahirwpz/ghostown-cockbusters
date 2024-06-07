@@ -8,7 +8,6 @@ void DeleteObject3D(Object3D *object) {
     MemFree(object->faceEdgeIndexList);
     MemFree(object->visibleFace);
     MemFree(object->faceFlags);
-    MemFree(object->vertexFlags);
     MemFree(object->vertex);
     MemFree(object);
   }

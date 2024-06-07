@@ -12,11 +12,11 @@ extern char SqrtTab8[256];
 typedef struct {
   short x, y, z;
   char pad;
-  char flags;
+  char flags; /* remember to reset after use */
 } Point3D;  /* sizeof(Point3D) = 8, for easy indexing */
 
 typedef struct Edge {
-  char flags;
+  char flags; /* remember to reset after use */
   char pad[7];
   Point3D *point[2];
 } EdgeT; /* sizeof(EdgeT) = 16, for easy indexing */
@@ -76,7 +76,6 @@ typedef struct Object3D {
   /* private */
   EdgeT *edge;
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
-  char *vertexFlags;   /* used by clipping */
   char *faceFlags;     /* e.g. visiblity flags */
 
   SortItemT *visibleFace;
