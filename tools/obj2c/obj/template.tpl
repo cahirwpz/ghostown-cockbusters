@@ -50,7 +50,7 @@ Mesh3D {{ .Name }} = {
 {{- else }}
   .faceNormal = NULL,{{ end }}
 {{- if .Edges }}
-  .edge = (EdgeT *)&_{{ .Name }}_edges,
+  .edge = _{{ .Name }}_edges,
 {{- else }}
   .edge = NULL,{{ end }}
   .faceVertex = _{{ .Name }}_face_vertex,

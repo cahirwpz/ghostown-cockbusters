@@ -57,7 +57,7 @@ typedef struct Mesh3D {
 
   Point3D *vertex;
   Point3D *faceNormal;
-  EdgeT *edge;
+  short *edge;       /* [vertex_0 vertex_1] */
   short *faceVertex; /* [#vertices vertices...] */
   short *faceEdge;   /* [#edge edges...] */
 } Mesh3D;

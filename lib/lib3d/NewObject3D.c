@@ -18,7 +18,7 @@ Object3D *NewObject3D(Mesh3D *mesh) {
   object->vertex = MemAlloc(sizeof(Point3D) * vertices, MEMF_PUBLIC);
   object->edge = MemAlloc(sizeof(Point3D *) * 2 * edges, MEMF_PUBLIC);
   {
-    short *in = (short *)mesh->edge;
+    short *in = mesh->edge;
     Point3D **out = &object->edge[0].p0;
     short n = edges * 2;
 
