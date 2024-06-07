@@ -12,8 +12,8 @@ Object3D *NewObject3D(Mesh3D *mesh) {
   object->faces = faces;
   object->edges = edges;
 
-  object->point = mesh->vertex;
-  object->faceNormal = mesh->faceNormal;
+  object->point = (Point3D *)mesh->vertex;
+  object->faceNormal = (Point3D *)mesh->faceNormal;
 
   object->vertex = MemAlloc(sizeof(Point3D) * vertices, MEMF_PUBLIC);
   object->edge = MemAlloc(sizeof(EdgeT) * edges, MEMF_PUBLIC);

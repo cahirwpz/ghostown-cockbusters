@@ -44,9 +44,9 @@ Mesh3D {{ .Name }} = {
   .vertices = {{ .VertexCount }},
   .faces = {{ .FaceCount }},
   .edges = {{ .EdgeCount }},
-  .vertex = (Point3D *)&_{{ .Name }}_vertex,
+  .vertex = _{{ .Name }}_vertex,
 {{- if .FaceNormals }}
-  .faceNormal = (Point3D *)&_{{ .Name }}_face_normals,
+  .faceNormal = _{{ .Name }}_face_normals,
 {{- else }}
   .faceNormal = NULL,{{ end }}
 {{- if .Edges }}

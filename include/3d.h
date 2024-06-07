@@ -10,13 +10,16 @@ extern char SqrtTab8[256];
 /* 3D transformations */
 
 typedef struct {
-  short u, v;
-} UVCoord;
-
-typedef struct {
   short x, y, z;
-  short pad;
-} Point3D;
+  char pad;
+  char flags;
+} Point3D;  /* sizeof(Point3D) = 8, for easy indexing */
+
+typedef struct Edge {
+  char flags;
+  char pad[7];
+  Point3D *point[2];
+} EdgeT; /* sizeof(EdgeT) = 16, for easy indexing */
 
 typedef struct {
   short m00, m01, m02, x;
@@ -32,22 +35,6 @@ void LoadReverseRotate3D(Matrix3D *M, short ax, short ay, short az);
 void Compose3D(Matrix3D *md, Matrix3D *ma, Matrix3D *mb);
 void Transform3D(Matrix3D *M, Point3D *out, Point3D *in, short n);
 
-/* 3D polygon and line clipping */
-
-#define PF_NEAR 16
-#define PF_FAR  32
-
-typedef struct {
-  short near;
-  short far;
-} Frustum3D;
-
-extern Frustum3D ClipFrustum;
-
-void PointsInsideFrustum(Point3D *in, u_char *flags, u_short n);
-u_short ClipPolygon3D(Point3D *in, Point3D **outp, u_short n,
-                      u_short clipFlags);
-
 /* 3D mesh representation */
 
 typedef struct Mesh3D {
@@ -55,20 +42,14 @@ typedef struct Mesh3D {
   short faces;
   short edges;
 
-  Point3D *vertex;
-  Point3D *faceNormal;
+  short *vertex;
+  short *faceNormal;
   short *edge;       /* [vertex_0 vertex_1] */
   short *faceVertex; /* [#vertices vertices...] */
   short *faceEdge;   /* [#edge edges...] */
 } Mesh3D;
 
 /* 3D object representation */
-
-typedef struct Edge {
-  char flags;
-  char pad[7];
-  Point3D *point[2];
-} EdgeT;
 
 typedef struct Object3D {
   Point3D rotate;
