@@ -64,9 +64,11 @@ typedef struct Mesh3D {
 
 /* 3D object representation */
 
-typedef struct Pair3D {
-  Point3D *p0, *p1;
-} Pair3D;
+typedef struct Edge {
+  char flags;
+  char pad[7];
+  Point3D *point[2];
+} EdgeT;
 
 typedef struct Object3D {
   Point3D rotate;
@@ -91,11 +93,10 @@ typedef struct Object3D {
   Point3D *faceNormal;
 
   /* private */
-  Pair3D *edge;
+  EdgeT *edge;
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
   char *vertexFlags;   /* used by clipping */
   char *faceFlags;     /* e.g. visiblity flags */
-  char *edgeFlags;
 
   SortItemT *visibleFace;
   short visibleFaces;

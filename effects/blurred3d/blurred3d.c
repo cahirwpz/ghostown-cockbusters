@@ -245,11 +245,11 @@ static void DrawObject(Object3D *object) {
 
       /* Draw face. */
       {
-        Pair3D *edges = object->edge;
+        EdgeT *edges = object->edge;
         short m = faceEdge[-1];
 
         while (--m >= 0) {
-          short **edge = (short **)&edges[*faceEdge++];
+          short **edge = (short **)edges[*faceEdge++].point;
 
           short *p0 = *edge++;
           short *p1 = *edge++;

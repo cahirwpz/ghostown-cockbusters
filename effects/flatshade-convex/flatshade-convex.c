@@ -44,7 +44,7 @@ static void Kill(void) {
 
 static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = object->vertexFlags;
-  char *edgeFlags = object->edgeFlags;
+  char *edgeFlags = (char *)object->edge;
   char *faceFlags = object->faceFlags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
@@ -53,7 +53,6 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
   register char s asm("d7") = -1;
 
   bzero(vertexFlags, object->vertices);
-  bzero(edgeFlags, object->edges);
 
   while ((vertexIndex = *vertexIndexList++)) {
     short *edgeIndex = *edgeIndexList++;
@@ -61,16 +60,17 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
 
     if (f >= 0) {
       short n = vertexIndex[-1] - 3;
+      short i;
 
       /* Face has at least (and usually) three vertices / edges. */
       vertexFlags[*vertexIndex++] = s;
-      edgeFlags[*edgeIndex++] ^= f;
+      i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
       vertexFlags[*vertexIndex++] = s;
-      edgeFlags[*edgeIndex++] ^= f;
+      i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
 
       do {
         vertexFlags[*vertexIndex++] = s;
-        edgeFlags[*edgeIndex++] ^= f;
+        i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
       } while (--n != -1);
     }
   }
@@ -150,8 +150,7 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(void *planes, Object3D *object,
                        CustomPtrT custom_ asm("a6"))
 {
-  short **edge = (short **)object->edge;
-  char *edgeFlags = object->edgeFlags;
+  EdgeT *edge = object->edge;
   short n = object->edges - 1;
 
   WaitBlitter();
@@ -163,7 +162,9 @@ static void DrawObject(void *planes, Object3D *object,
   custom_->bltdmod = WIDTH / 8;
 
   do {
-    if (*edgeFlags) {
+    short edgeColor = edge->flags;
+    
+    if (edgeColor) {
       short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
       int bltapt, bltcpt;
 
@@ -171,22 +172,24 @@ static void DrawObject(void *planes, Object3D *object,
         short x0, y0, x1, y1;
         short dmin, dmax, derr;
 
+        /* clear visibility */
+        edge->flags = 0;
+
         {
-          short *p = *edge++;
+          short *p = &edge->point[0]->x;
           x0 = *p++;
           y0 = *p++;
         }
 
         {
-          short *p = *edge++;
+          short *p = &edge->point[1]->x;
           x1 = *p++;
           y1 = *p++;
         }
 
-        if (y0 == y1) {
-          edgeFlags++;
-          continue;
-        }
+        if (y0 == y1)
+          goto next;
+
         if (y0 > y1) {
           swapr(x0, x1);
           swapr(y0, y1);
@@ -235,21 +238,17 @@ static void DrawObject(void *planes, Object3D *object,
       custom_->bltamod = bltamod;               \
       custom_->bltsize = bltsize;
 
-      {
-        char edgeColor = *edgeFlags++;
-
-        if (edgeColor & 1) { DRAWLINE(); }
-        bltcpt += WIDTH * HEIGHT / 8;
-        if (edgeColor & 2) { DRAWLINE(); }
-        bltcpt += WIDTH * HEIGHT / 8;
-        if (edgeColor & 4) { DRAWLINE(); }
-        bltcpt += WIDTH * HEIGHT / 8;
-        if (edgeColor & 8) { DRAWLINE(); }
-      }
-    } else {
-      edge += 2;
-      edgeFlags++;
+      if (edgeColor & 1) { DRAWLINE(); }
+      bltcpt += WIDTH * HEIGHT / 8;
+      if (edgeColor & 2) { DRAWLINE(); }
+      bltcpt += WIDTH * HEIGHT / 8;
+      if (edgeColor & 4) { DRAWLINE(); }
+      bltcpt += WIDTH * HEIGHT / 8;
+      if (edgeColor & 8) { DRAWLINE(); }
     }
+
+next:
+    edge++;
   } while (--n != -1);
 }
 
