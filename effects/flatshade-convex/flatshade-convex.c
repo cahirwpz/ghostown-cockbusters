@@ -143,6 +143,7 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(void *planes, Object3D *object,
                        CustomPtrT custom_ asm("a6"))
 {
+  void *vertex = object->vertex;
   EdgeT *edge = object->edge;
   short n = object->edges - 1;
 
@@ -164,13 +165,15 @@ static void DrawObject(void *planes, Object3D *object,
         short dmin, dmax, derr;
 
         {
-          short *p = &edge->point[0]->x;
+          short i = edge->point[0];
+          short *p = (short *)(vertex + i);
           x0 = *p++;
           y0 = *p++;
         }
 
         {
-          short *p = &edge->point[1]->x;
+          short i = edge->point[1];
+          short *p = (short *)(vertex + i);
           x1 = *p++;
           y1 = *p++;
         }

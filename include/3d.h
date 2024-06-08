@@ -15,17 +15,15 @@ typedef struct {
    * otherwise set to zero,
    * remember to set to 0 after use */
   char flags;
-  char pad;
-} Point3D;  /* sizeof(Point3D) = 8, for easy indexing */
+} Point3D;
 
 typedef struct Edge {
-  Point3D *point[2];
+  short point[2];
   /* negative if edge belongs to a face that is not visible,
    * otherwise it's an edge color in range 0..15
    * remember to set to -1 after use */
   char flags;
-  char pad[7];
-} EdgeT; /* sizeof(EdgeT) = 16, for easy indexing */
+} EdgeT;
 
 typedef struct {
   short m00, m01, m02, x;

@@ -24,8 +24,8 @@ Object3D *NewObject3D(Mesh3D *mesh) {
 
     while (--n >= 0) {
       out->flags = 0;
-      out->point[0] = &object->vertex[*in++];
-      out->point[1] = &object->vertex[*in++];
+      out->point[0] = *in++ * sizeof(Point3D);
+      out->point[1] = *in++ * sizeof(Point3D);
       out++;
     }
   }

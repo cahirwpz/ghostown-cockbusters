@@ -186,10 +186,11 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(Object3D *object, void *bplpt,
                        CustomPtrT custom_ asm("a6"))
 {
+  void *vertex = object->vertex;
   EdgeT *edge = object->edge;
   short n = object->edges - 1;
 
-  WaitBlitter();
+  _WaitBlitter(custom_);
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;
   custom_->bltadat = 0x8000;
@@ -203,13 +204,15 @@ static void DrawObject(Object3D *object, void *bplpt,
       short x0, y0, x1, y1;
 
       {
-        short *p = &edge->point[0]->x;
+        short i = edge->point[0];
+        short *p = (short *)(vertex + i);
         x0 = *p++;
         y0 = *p++;
       }
       
       {
-        short *p = &edge->point[1]->x;
+        short i = edge->point[1];
+        short *p = (short *)(vertex + i);
         x1 = *p++;
         y1 = *p++;
       }
@@ -262,8 +265,7 @@ static void DrawObject(Object3D *object, void *bplpt,
           u_short bltsize = (dmax << 6) + 66;
           void *bltapt = (void *)(int)derr;
 
-          WaitBlitter();
-
+          _WaitBlitter(custom_);
           custom_->bltcon0 = bltcon0;
           custom_->bltcon1 = bltcon1;
           custom_->bltamod = bltamod;
