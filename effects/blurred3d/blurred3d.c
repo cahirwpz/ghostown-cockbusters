@@ -246,19 +246,23 @@ static void DrawObject(Object3D *object) {
 
       /* Draw face. */
       {
-        EdgeT *edges = object->edge;
+        void *edges = object->edge;
         short m = faceEdge[-1];
 
         while (--m >= 0) {
-          short **edge = (short **)edges[*faceEdge++].point;
+          short x0, y0, x1, y1, i;
+          short *edge;
 
-          short *p0 = *edge++;
-          short *p1 = *edge++;
+          i = *faceEdge++;
+          edge = (short *)(edges + i + 2);
 
-          short x0 = *p0++;
-          short y0 = *p0++;
-          short x1 = *p1++;
-          short y1 = *p1++;
+          i = *edge++;
+          x0 = ((Point3D *)(vertex + i))->x;
+          y0 = ((Point3D *)(vertex + i))->y;
+
+          i = *edge++;
+          x1 = ((Point3D *)(vertex + i))->x;
+          y1 = ((Point3D *)(vertex + i))->y;
 
           if (y0 > y1) {
             swapr(x0, x1);
