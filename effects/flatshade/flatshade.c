@@ -202,7 +202,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
             u_short bltbmod = dy + dy;
             u_short bltsize = (dx << 6) + 66;
 
-            WaitBlitter();
+            _WaitBlitter(custom_);
 
             custom_->bltbdat = 0xffff;
             custom_->bltadat = 0x8000;
@@ -246,7 +246,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
       {
         void *src = temp + bltend;
 
-        WaitBlitter();
+        _WaitBlitter(custom_);
 
         custom_->bltcon0 = (SRCA | DEST) | A_TO_D;
         custom_->bltcon1 = BLITREVERSE | FILL_XOR;
@@ -274,7 +274,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
            else
             bltcon0 = (SRCA | SRCB | DEST) | (NABC | NABNC);
 
-          WaitBlitter();
+          _WaitBlitter(custom_);
 
           custom_->bltcon0 = bltcon0;
           custom_->bltcon1 = 0;
@@ -291,7 +291,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
       {
         void *data = temp + bltstart;
 
-        WaitBlitter();
+        _WaitBlitter(custom_);
 
         custom_->bltcon0 = (DEST | A_TO_D);
         custom_->bltadat = 0;
