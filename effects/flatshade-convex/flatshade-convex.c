@@ -44,12 +44,12 @@ static void Kill(void) {
 
 static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = &object->vertex[0].flags;
-  char *edgeFlags = &object->edge[0].flags;
+  void *edgeFlags = &object->edge[0].flags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
 
   register short m asm("d2") = object->faces - 1;
-  register char s asm("d3") = 1;
+  register short s asm("d3") = 1;
 
   do {
     short *vertexIndex = *vertexIndexList++;
@@ -62,13 +62,13 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
 
       /* Face has at least (and usually) three vertices / edges. */
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; edgeFlags[i] ^= f;
+      i = *edgeIndex++; *(short *)(edgeFlags + i) ^= f;
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; edgeFlags[i] ^= f;
+      i = *edgeIndex++; *(short *)(edgeFlags + i) ^= f;
 
       do {
         i = *vertexIndex++; vertexFlags[i] = s;
-        i = *edgeIndex++; edgeFlags[i] ^= f;
+        i = *edgeIndex++; *(short *)(edgeFlags + i) ^= f;
       } while (--n != -1);
     }
   } while (--m != -1);
@@ -163,19 +163,17 @@ static void DrawObject(void *planes, Object3D *object,
       {
         short x0, y0, x1, y1;
         short dmin, dmax, derr;
-
+        
         {
-          short i = edge->point[0];
-          short *p = (short *)(vertex + i);
-          x0 = *p++;
-          y0 = *p++;
-        }
+          short i;
 
-        {
-          short i = edge->point[1];
-          short *p = (short *)(vertex + i);
-          x1 = *p++;
-          y1 = *p++;
+          i = edge->point[0];
+          x0 = ((Point3D *)(vertex + i))->x;
+          y0 = ((Point3D *)(vertex + i))->y;
+
+          i = edge->point[1];
+          x1 = ((Point3D *)(vertex + i))->x;
+          y1 = ((Point3D *)(vertex + i))->y;
         }
 
         if (y0 == y1)

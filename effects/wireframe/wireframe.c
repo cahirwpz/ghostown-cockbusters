@@ -88,12 +88,12 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
 
 static void UpdateEdgeVisibility(Object3D *object) {
   char *vertexFlags = &object->vertex[0].flags;
-  char *edgeFlags = &object->edge[0].flags;
+  void *edgeFlags = &object->edge[0].flags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
 
   register short m asm("d2") = object->faces - 1;
-  register char s asm("d3") = 1;
+  register short s asm("d3") = 1;
   
   do {
     short *vertexIndex = *vertexIndexList++;
@@ -105,13 +105,13 @@ static void UpdateEdgeVisibility(Object3D *object) {
 
       /* Face has at least (and usually) three vertices / edges. */
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; edgeFlags[i] = s;
+      i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; edgeFlags[i] = s;
+      i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
 
       do {
         i = *vertexIndex++; vertexFlags[i] = s;
-        i = *edgeIndex++; edgeFlags[i] = s;
+        i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
       } while (--n != -1);
     }
   } while (--m != -1);
@@ -187,7 +187,7 @@ static void DrawObject(Object3D *object, void *bplpt,
                        CustomPtrT custom_ asm("a6"))
 {
   void *vertex = object->vertex;
-  EdgeT *edge = object->edge;
+  short *edge = (short *)object->edge;
   short n = object->edges - 1;
 
   _WaitBlitter(custom_);
@@ -199,26 +199,24 @@ static void DrawObject(Object3D *object, void *bplpt,
   custom_->bltdmod = WIDTH / 8;
 
   do {
-    if (edge->flags) {
+    if (*edge) {
       void *data;
       short x0, y0, x1, y1;
 
-      {
-        short i = edge->point[0];
-        short *p = (short *)(vertex + i);
-        x0 = *p++;
-        y0 = *p++;
-      }
-      
-      {
-        short i = edge->point[1];
-        short *p = (short *)(vertex + i);
-        x1 = *p++;
-        y1 = *p++;
-      }
-
       /* clear visibility */
-      edge->flags = 0;
+      *edge++ = 0;
+
+      {
+        short i;
+
+        i = *edge++;
+        x0 = ((Point3D *)(vertex + i))->x;
+        y0 = ((Point3D *)(vertex + i))->y;
+
+        i = *edge++;
+        x1 = ((Point3D *)(vertex + i))->x;
+        y1 = ((Point3D *)(vertex + i))->y;
+      }
 
       if (y0 > y1) {
         swapr(x0, x1);
@@ -276,9 +274,9 @@ static void DrawObject(Object3D *object, void *bplpt,
           custom_->bltsize = bltsize;
         }
       }
+    } else {
+      edge += sizeof(EdgeT) / sizeof(short);
     }
-
-    edge++;
   } while (--n != -1);
 }
 

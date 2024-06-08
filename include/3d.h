@@ -18,11 +18,11 @@ typedef struct {
 } Point3D;
 
 typedef struct Edge {
-  short point[2];
   /* negative if edge belongs to a face that is not visible,
    * otherwise it's an edge color in range 0..15
    * remember to set to -1 after use */
-  char flags;
+  short flags;
+  short point[2];
 } EdgeT;
 
 typedef struct {
