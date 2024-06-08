@@ -39,7 +39,9 @@ Object3D *NewObject3D(Mesh3D *mesh) {
 
     while ((n = *list++)) {
       *indexListPtr++ = list;
-      list += n + 1;
+      while (n--)
+        *list++ *= sizeof(Point3D);
+      list++;
     }
 
     *indexListPtr = NULL;

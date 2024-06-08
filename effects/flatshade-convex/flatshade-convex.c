@@ -61,13 +61,13 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
       n = vertexIndex[FV_COUNT] - 3;
 
       /* Face has at least (and usually) three vertices / edges. */
-      i = *vertexIndex++ << 3; vertexFlags[i] = s;
+      i = *vertexIndex++; vertexFlags[i] = s;
       i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
-      i = *vertexIndex++ << 3; vertexFlags[i] = s;
+      i = *vertexIndex++; vertexFlags[i] = s;
       i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
 
       do {
-        i = *vertexIndex++ << 3; vertexFlags[i] = s;
+        i = *vertexIndex++; vertexFlags[i] = s;
         i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
       } while (--n != -1);
     }

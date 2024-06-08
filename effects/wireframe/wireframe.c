@@ -66,7 +66,8 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
     int f;
 
     {
-      short *p = (short *)(point + (short)(vertexIndex[0] << 3));
+      short i = *vertexIndex;
+      short *p = (short *)(point + i);
       px = cx - *p++;
       py = cy - *p++;
       pz = cz - *p++;
@@ -103,13 +104,13 @@ static void UpdateEdgeVisibility(Object3D *object) {
       short i;
 
       /* Face has at least (and usually) three vertices / edges. */
-      i = *vertexIndex++ << 3; vertexFlags[i] = s;
+      i = *vertexIndex++; vertexFlags[i] = s;
       i = *edgeIndex++ << 4; edgeFlags[i] = s;
-      i = *vertexIndex++ << 3; vertexFlags[i] = s;
+      i = *vertexIndex++; vertexFlags[i] = s;
       i = *edgeIndex++ << 4; edgeFlags[i] = s;
 
       do {
-        i = *vertexIndex++ << 3; vertexFlags[i] = s;
+        i = *vertexIndex++; vertexFlags[i] = s;
         i = *edgeIndex++ << 4; edgeFlags[i] = s;
       } while (--n != -1);
     }

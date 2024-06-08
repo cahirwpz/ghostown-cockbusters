@@ -12,20 +12,16 @@ void UpdateVertexVisibility(Object3D *object) {
     short *vertexIndex = *vertexIndexList++;
 
     if (vertexIndex[FV_FLAGS] >= 0) {
-      short count = vertexIndex[FV_COUNT];
+      short n = vertexIndex[FV_COUNT] - 3;
       short i;
 
-      /* Face has at least (and usually) three vertices. */
-      switch (count) {
-        case 6: i = *vertexIndex++ << 3; vertexFlags[i] = s;
-        case 5: i = *vertexIndex++ << 3; vertexFlags[i] = s;
-        case 4: i = *vertexIndex++ << 3; vertexFlags[i] = s;
-        case 3: i = *vertexIndex++ << 3; vertexFlags[i] = s;
-                i = *vertexIndex++ << 3; vertexFlags[i] = s;
-                i = *vertexIndex++ << 3; vertexFlags[i] = s;
-                i = *vertexIndex++ << 3; vertexFlags[i] = s;
-        default: break;
-      }
+      /* Face has at least (and usually) three vertices / edges. */
+      i = *vertexIndex++; vertexFlags[i] = s;
+      i = *vertexIndex++; vertexFlags[i] = s;
+
+      do {
+        i = *vertexIndex++; vertexFlags[i] = s;
+      } while (--n != -1);
     }
   }
 }

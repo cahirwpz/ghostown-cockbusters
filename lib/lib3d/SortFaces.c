@@ -16,11 +16,11 @@ void SortFaces(Object3D *object) {
       short z;
       short i;
 
-      i = *vertexIndex++ << 3;
+      i = *vertexIndex++;
       z = ((Point3D *)(vertex + i))->z;
-      i = *vertexIndex++ << 3;
+      i = *vertexIndex++;
       z += ((Point3D *)(vertex + i))->z;
-      i = *vertexIndex++ << 3;
+      i = *vertexIndex++;
       z += ((Point3D *)(vertex + i))->z;
 
       *item++ = z;
