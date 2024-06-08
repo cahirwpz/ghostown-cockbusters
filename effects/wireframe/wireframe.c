@@ -91,11 +91,11 @@ static void UpdateEdgeVisibility(Object3D *object) {
   char *edgeFlags = &object->edge[0].flags;
   short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
-  short f = object->faces;
 
-  register char s asm("d7") = 1;
+  register short m asm("d2") = object->faces - 1;
+  register char s asm("d3") = 1;
   
-  while (--f >= 0) {
+  do {
     short *vertexIndex = *vertexIndexList++;
     short *edgeIndex = *edgeIndexList++;
 
@@ -105,16 +105,16 @@ static void UpdateEdgeVisibility(Object3D *object) {
 
       /* Face has at least (and usually) three vertices / edges. */
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++ << 4; edgeFlags[i] = s;
+      i = *edgeIndex++; edgeFlags[i] = s;
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++ << 4; edgeFlags[i] = s;
+      i = *edgeIndex++; edgeFlags[i] = s;
 
       do {
         i = *vertexIndex++; vertexFlags[i] = s;
-        i = *edgeIndex++ << 4; edgeFlags[i] = s;
+        i = *edgeIndex++; edgeFlags[i] = s;
       } while (--n != -1);
     }
-  }
+  } while (--m != -1);
 }
 
 #define MULVERTEX1(D, E) {              \

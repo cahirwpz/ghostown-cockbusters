@@ -56,7 +56,8 @@ Object3D *NewObject3D(Mesh3D *mesh) {
 
     while ((n = *list++)) {
       *indexListPtr++ = list;
-      list += n;
+      while (n--)
+        *list++ *= sizeof(EdgeT);
     }
 
     *indexListPtr = NULL;

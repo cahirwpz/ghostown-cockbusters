@@ -45,33 +45,33 @@ static void Kill(void) {
 static void UpdateEdgeVisibilityConvex(Object3D *object) {
   char *vertexFlags = &object->vertex[0].flags;
   char *edgeFlags = &object->edge[0].flags;
-  register short **vertexIndexList asm("a6") = object->faceVertexIndexList;
+  short **vertexIndexList = object->faceVertexIndexList;
   short **edgeIndexList = object->faceEdgeIndexList;
-  short *vertexIndex;
 
-  register char s asm("d7") = 1;
+  register short m asm("d2") = object->faces - 1;
+  register char s asm("d3") = 1;
 
-  while ((vertexIndex = *vertexIndexList++)) {
+  do {
+    short *vertexIndex = *vertexIndexList++;
     short *edgeIndex = *edgeIndexList++;
     short f = vertexIndex[FV_FLAGS];
     
     if (f >= 0) {
-      short i, n;
-
-      n = vertexIndex[FV_COUNT] - 3;
+      short n = vertexIndex[FV_COUNT] - 3;
+      short i;
 
       /* Face has at least (and usually) three vertices / edges. */
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
+      i = *edgeIndex++; edgeFlags[i] ^= f;
       i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
+      i = *edgeIndex++; edgeFlags[i] ^= f;
 
       do {
         i = *vertexIndex++; vertexFlags[i] = s;
-        i = *edgeIndex++ << 4; edgeFlags[i] ^= f;
+        i = *edgeIndex++; edgeFlags[i] ^= f;
       } while (--n != -1);
     }
-  }
+  } while (--m != -1);
 }
 
 #define MULVERTEX1(D, E) {                      \
