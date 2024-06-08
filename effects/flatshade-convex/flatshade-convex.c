@@ -146,7 +146,7 @@ static void DrawObject(void *planes, Object3D *object,
   EdgeT *edge = object->edge;
   short n = object->edges - 1;
 
-  WaitBlitter();
+  _WaitBlitter(custom_);
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;
   custom_->bltadat = 0x8000;
@@ -216,7 +216,7 @@ static void DrawObject(void *planes, Object3D *object,
       }
 
 #define DRAWLINE()                              \
-      WaitBlitter();                            \
+      _WaitBlitter(custom_);                    \
       custom_->bltcon0 = bltcon0;               \
       custom_->bltcon1 = bltcon1;               \
       custom_->bltcpt = (void *)bltcpt;         \
@@ -228,7 +228,6 @@ static void DrawObject(void *planes, Object3D *object,
 
       {
         char edgeColor = edge->flags;
-
 
         if (edgeColor & 1) { DRAWLINE(); }
         bltcpt += WIDTH * HEIGHT / 8;
