@@ -87,8 +87,8 @@ typedef struct Object3D {
   EdgeT *edge;
   Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
 
+  /* ends with guard element */
   SortItemT *visibleFace;
-  short visibleFaces;
 } Object3D;
 
 Object3D *NewObject3D(Mesh3D *mesh);

@@ -67,7 +67,7 @@ Object3D *NewObject3D(Mesh3D *mesh) {
     }
   }
 
-  object->visibleFace = MemAlloc(sizeof(SortItemT) * faces, MEMF_PUBLIC);
+  object->visibleFace = MemAlloc(sizeof(SortItemT) * (faces + 1), MEMF_PUBLIC);
 
   object->scale.x = fx12f(1.0);
   object->scale.y = fx12f(1.0);
