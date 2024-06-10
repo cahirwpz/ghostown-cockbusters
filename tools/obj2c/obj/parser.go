@@ -15,6 +15,18 @@ type FaceIndices struct {
 	Vertex   int
 	TexCoord int
 	Normal   int
+	Edge     int
+}
+
+type Face struct {
+	Material int
+	Indices  []FaceIndices
+}
+
+type Group struct {
+	Index       int
+	Name        string
+	FaceIndices []int
 }
 
 type WavefrontObj struct {
@@ -22,8 +34,9 @@ type WavefrontObj struct {
 	Vertices  []Vector
 	TexCoords []Vector
 	Normals   []Vector
-	Faces     [][]FaceIndices
-	Materials map[string]Material
+	Faces     []Face
+	Groups    []Group
+	Materials []Material
 }
 
 type Color struct {
@@ -31,6 +44,7 @@ type Color struct {
 }
 
 type Material struct {
+	Index            int
 	Name             string
 	AmbientColor     Color
 	DiffuseColor     Color
@@ -51,6 +65,7 @@ func ParseWavefrontMtl(filename string) (map[string]Material, error) {
 	scanner := bufio.NewScanner(file)
 
 	mtls := make(map[string]Material)
+	idx := 0
 	var mtl *Material
 
 	lc := 1
@@ -69,7 +84,8 @@ func ParseWavefrontMtl(filename string) (map[string]Material, error) {
 			if mtl != nil {
 				mtls[mtl.Name] = *mtl
 			}
-			mtl = &Material{Name: fields[0]}
+			mtl = &Material{Index: idx, Name: fields[0]}
+			idx++
 		case "Ka":
 		case "Ks":
 		case "Kd":
@@ -109,9 +125,12 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	var vs []Vector
 	var vts []Vector
 	var vns []Vector
-	var fs [][]FaceIndices
-	var mtls map[string]Material
+	var fs []Face
+	var curmtl Material
+	var curgrps []string
 
+	mtls := make(map[string]Material)
+	grps := make(map[string]Group)
 	lc := 1
 
 	for scanner.Scan() {
@@ -155,7 +174,7 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 
 			for _, field := range fields {
 				indices := strings.Split(field, "/")
-				fi := FaceIndices{Vertex: -1, TexCoord: -1, Normal: -1}
+				fi := FaceIndices{Vertex: -1, TexCoord: -1, Normal: -1, Edge: -1}
 
 				for i, index := range indices {
 					if index == "" {
@@ -181,7 +200,14 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 				f = append(f, fi)
 			}
 
-			fs = append(fs, f)
+			for _, grpname := range curgrps {
+				if grp, ok := grps[grpname]; ok {
+					grp.FaceIndices = append(grp.FaceIndices, len(fs))
+					grps[grpname] = grp
+				}
+			}
+
+			fs = append(fs, Face{Material: curmtl.Index, Indices: f})
 		case "mtllib":
 			path := filepath.Join(filepath.Dir(file.Name()), fields[0])
 			mtls, err = ParseWavefrontMtl(path)
@@ -194,10 +220,16 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 		case "l":
 			/* Line element */
 		case "g":
+			curgrps = fields
+			for _, grpname := range fields {
+				if _, ok := grps[grpname]; !ok {
+					grps[grpname] = Group{Index: len(grps), Name: grpname, FaceIndices: []int{}}
+				}
+			}
 		case "o":
 			name = fields[0]
 		case "usemtl":
-			/* not implemented, skipped */
+			curmtl = mtls[fields[0]]
 		default:
 			return nil, fmt.Errorf("unknown command '%s' in line %d", cmd, lc)
 		}
@@ -207,8 +239,22 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error while reading object: %v", err)
 	}
+	fmt.Printf("%v\n", grps)
 	obj := &WavefrontObj{
-		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs, Materials: mtls}
+		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs}
+
+	mtlarr := make([]Material, len(mtls))
+	for _, mtl := range mtls {
+		mtlarr[mtl.Index] = mtl
+	}
+	obj.Materials = mtlarr
+
+	grparr := make([]Group, len(grps))
+	for _, grp := range grps {
+		grparr[grp.Index] = grp
+	}
+	obj.Groups = grparr
+
 	return obj, nil
 }
 
