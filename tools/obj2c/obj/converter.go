@@ -23,6 +23,13 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 	ps.EdgeCount = len(edges)
 	ps.Edges = edges
 
+	for i := 0; i < len(edges); i++ {
+		for j := 0; j < len(edges[i]); j++ {
+			/* pre-compute vertex indices */
+			edges[i][j] *= cp.VertexSize
+		}
+	}
+
 	s = cp.Scale * 16
 	for _, v := range obj.Vertices {
 		ov := []int{int(v[0] * s), int(v[1] * s), int(v[2] * s)}
@@ -30,20 +37,21 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		ps.VertexCount += 1
 	}
 
+	var faceIndices []int
+
 	ps.FaceDataCount = 2
 	for _, f := range obj.Faces {
-		of := []int{f.Material, len(f.Indices)}
+		of := []int{len(f.Indices), f.Material}
+		faceIndices = append(faceIndices, ps.FaceDataCount)
 		for _, fi := range f.Indices {
-			of = append(of, fi.Vertex-1)
-			of = append(of, fi.Edge)
+			/* precompute vertex / edge indices */
+			of = append(of, (fi.Vertex-1)*cp.VertexSize)
+			of = append(of, fi.Edge*cp.EdgeSize)
 		}
 		ps.FaceData = append(ps.FaceData, of)
 		ps.FaceDataCount += len(f.Indices)*2 + 2
 		ps.FaceCount += 1
 	}
-
-	/* append guard element */
-	ps.FaceData = append(ps.FaceData, []int{-1, 0})
 
 	s = 4096.0
 	for _, fn := range faceNormals {
@@ -56,13 +64,14 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 
 	ps.GroupDataCount = 1
 	for _, grp := range obj.Groups {
-		og := append([]int{len(grp.FaceIndices)}, grp.FaceIndices...)
-		ps.GroupDataCount += len(og)
+		og := []int{}
+		for _, fi := range grp.FaceIndices {
+			og = append(og, faceIndices[fi])
+		}
+		ps.GroupIndices = append(ps.GroupIndices, ps.GroupDataCount)
+		ps.GroupDataCount += len(og)*2 + 1
 		ps.GroupData = append(ps.GroupData, og)
 	}
-
-	/* append guard element */
-	ps.GroupData = append(ps.GroupData, []int{0})
 
 	tmpl, err := template.New("template").Parse(tpl)
 	if err != nil {
@@ -79,7 +88,9 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 }
 
 type ConverterParams struct {
-	Scale float64
+	Scale      float64
+	VertexSize int
+	EdgeSize   int
 }
 
 type TemplateParams struct {
@@ -93,9 +104,10 @@ type TemplateParams struct {
 	GroupCount     int
 	GroupDataCount int
 
-	Vertices    [][]int
-	FaceData    [][]int
-	GroupData   [][]int
-	FaceNormals [][]int
-	Edges       []Edge
+	Vertices     [][]int
+	FaceData     [][]int
+	GroupData    [][]int
+	GroupIndices []int
+	FaceNormals  [][]int
+	Edges        []Edge
 }

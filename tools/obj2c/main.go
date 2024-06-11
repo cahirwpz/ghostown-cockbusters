@@ -10,12 +10,18 @@ import (
 
 var printHelp bool
 var scaleFactor float64
+var vertexSize int
+var edgeSize int
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
 		"print help message and exit")
 	flag.Float64Var(&scaleFactor, "scale", 1.0,
 		"the object will be scaled by this factor")
+	flag.IntVar(&vertexSize, "vertex-size", 8,
+		"vertex structure size in bytes")
+	flag.IntVar(&edgeSize, "edge-size", 6,
+		"edge structure size in bytes")
 }
 
 func main() {
@@ -31,7 +37,10 @@ func main() {
 		log.Fatalf("failed to parse file: %v", err)
 	}
 
-	cp := obj.ConverterParams{Scale: scaleFactor}
+	cp := obj.ConverterParams{
+		Scale:      scaleFactor,
+		VertexSize: vertexSize,
+		EdgeSize:   edgeSize}
 
 	output, err := obj.Convert(object, cp)
 	if err != nil {

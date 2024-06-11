@@ -239,7 +239,6 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error while reading object: %v", err)
 	}
-	fmt.Printf("%v\n", grps)
 	obj := &WavefrontObj{
 		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs}
 

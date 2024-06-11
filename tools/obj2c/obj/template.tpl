@@ -1,34 +1,46 @@
 static short _{{ .Name }}_vertex[{{ .VertexCount }} * 4] = {
-  /* x, y, z, pad */
+  /* x y z flags/pad */
   {{- range .Vertices }}
   {{ range . }}{{ . }}, {{ end -}} 0,
-{{- end }}
+{{- end }} 
 };
 
-static short _{{ .Name }}_edges[{{ .EdgeCount }} * 2] = {
+static short _{{ .Name }}_edge[{{ .EdgeCount }} * 3] = {
+  /* flags point_0 point_1 */
   {{- range .Edges }}
-  {{ range . }}{{ . }}, {{ end -}}
+  0, {{ range . }}{{ . }}, {{ end -}}
 {{- end }}
 };
 
-static short _{{ .Name }}_face_normals[{{ .FaceCount }} * 4] = {
-  /* x, y, z, pad */
+static short _{{ .Name }}_face_normal[{{ .FaceCount }} * 4] = {
+  /* x y z flags/pad */
   {{- range .FaceNormals }}
   {{ range . }}{{ . }}, {{ end -}} 0,
 {{- end }}
 };
 
 static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
-  /* material, #indices, [vertex-index edge-index]... */
+  /* #indices material [vertex-index edge-index]... */
   {{- range .FaceData }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
+  0
 };
 
 static short _{{ .Name }}_group_data[{{ .GroupDataCount }}] = {
-  {{- range .GroupData}}
-  {{range . }}{{ . }}, {{ end -}}
+  /* #faces [flags face-index]... */
+  {{- range .GroupData }}
+  {{ len . }}, {{range . }}0, {{ . }}, {{ end -}}
 {{- end}}
+  0,
+};
+
+static short _{{ .Name }}_group[{{ .GroupCount }}] = {
+  /* group-index */
+  {{- range .GroupIndices }}
+  {{ . }},
+{{- end}}
+  0,
 };
 
 Mesh3D {{ .Name }} = {
@@ -38,8 +50,9 @@ Mesh3D {{ .Name }} = {
   .groups = {{ .GroupCount }},
   .materials = {{ .MaterialCount }},
   .vertex = _{{ .Name }}_vertex,
-  .faceNormal = _{{ .Name }}_face_normals,
-  .edge = _{{ .Name }}_edges,
+  .faceNormal = _{{ .Name }}_face_normal,
+  .edge = _{{ .Name }}_edge,
   .faceData = _{{ .Name }}_face_data,
   .groupData = _{{ .Name }}_group_data,
+  .group = _{{ .Name }}_group,
 };
