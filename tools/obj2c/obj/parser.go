@@ -128,6 +128,7 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	var fs []Face
 	var curmtl Material
 	var curgrps []string
+	var ok bool
 
 	mtls := make(map[string]Material)
 	grps := make(map[string]Group)
@@ -222,14 +223,16 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 		case "g":
 			curgrps = fields
 			for _, grpname := range fields {
-				if _, ok := grps[grpname]; !ok {
+				if _, ok = grps[grpname]; !ok {
 					grps[grpname] = Group{Index: len(grps), Name: grpname, FaceIndices: []int{}}
 				}
 			}
 		case "o":
 			name = fields[0]
 		case "usemtl":
-			curmtl = mtls[fields[0]]
+			if curmtl, ok = mtls[fields[0]]; !ok {
+				return nil, fmt.Errorf("unknown material '%s' in line %d", fields[0], lc)
+			}
 		default:
 			return nil, fmt.Errorf("unknown command '%s' in line %d", cmd, lc)
 		}

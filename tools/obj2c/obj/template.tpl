@@ -35,13 +35,13 @@ static short _{{ .Name }}_group_data[{{ .GroupDataCount }}] = {
   0,
 };
 
-static short _{{ .Name }}_group[{{ .GroupCount }}] = {
-  /* group-index */
-  {{- range .GroupIndices }}
-  {{ . }},
+{{ range .Groups }}
+#define {{ $.Name }}_grp_{{ .Name }} {{ .Index }}
 {{- end}}
-  0,
-};
+
+{{ range .Materials }}
+#define {{ $.Name }}_mtl_{{ .Name }} {{ .Index }}
+{{- end}}
 
 Mesh3D {{ .Name }} = {
   .vertices = {{ .VertexCount }},
@@ -54,5 +54,4 @@ Mesh3D {{ .Name }} = {
   .edge = _{{ .Name }}_edge,
   .faceData = _{{ .Name }}_face_data,
   .groupData = _{{ .Name }}_group_data,
-  .group = _{{ .Name }}_group,
 };

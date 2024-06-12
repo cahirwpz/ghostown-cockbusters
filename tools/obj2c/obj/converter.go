@@ -68,9 +68,21 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		for _, fi := range grp.FaceIndices {
 			og = append(og, faceIndices[fi])
 		}
-		ps.GroupIndices = append(ps.GroupIndices, ps.GroupDataCount)
+		ps.Groups = append(ps.Groups,
+			FaceGroup{
+				Name:  grp.Name,
+				Index: ps.GroupDataCount,
+			})
 		ps.GroupDataCount += len(og)*2 + 1
 		ps.GroupData = append(ps.GroupData, og)
+	}
+
+	for _, mtl := range obj.Materials {
+		ps.Materials = append(ps.Materials,
+			FaceMaterial{
+				Name:  mtl.Name,
+				Index: mtl.Index,
+			})
 	}
 
 	tmpl, err := template.New("template").Parse(tpl)
@@ -92,6 +104,15 @@ type ConverterParams struct {
 	VertexSize int
 	EdgeSize   int
 }
+type FaceGroup struct {
+	Name  string
+	Index int
+}
+
+type FaceMaterial struct {
+	Name  string
+	Index int
+}
 
 type TemplateParams struct {
 	Name string
@@ -104,10 +125,11 @@ type TemplateParams struct {
 	GroupCount     int
 	GroupDataCount int
 
-	Vertices     [][]int
-	FaceData     [][]int
-	GroupData    [][]int
-	GroupIndices []int
-	FaceNormals  [][]int
-	Edges        []Edge
+	Vertices    [][]int
+	FaceData    [][]int
+	GroupData   [][]int
+	Groups      []FaceGroup
+	FaceNormals [][]int
+	Edges       []Edge
+	Materials   []FaceMaterial
 }
