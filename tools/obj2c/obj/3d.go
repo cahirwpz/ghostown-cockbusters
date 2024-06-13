@@ -20,6 +20,10 @@ func CalculateFaceNormals(obj *WavefrontObj) ([]Vector, error) {
 	var ns []Vector
 
 	for i, face := range obj.Faces {
+		if len(face.Indices) < 3 {
+			ns = append(ns, Vector{})
+			continue
+		}
 		p1 := obj.Vertices[face.Indices[0].Vertex-1]
 		p2 := obj.Vertices[face.Indices[1].Vertex-1]
 		p3 := obj.Vertices[face.Indices[2].Vertex-1]
@@ -67,6 +71,9 @@ func CalculateEdges(obj *WavefrontObj) []Edge {
 
 	/* Create all edges. */
 	for i, face := range obj.Faces {
+		if len(face.Indices) < 3 {
+			continue
+		}
 		for j := 0; j < len(face.Indices); j++ {
 			k := j + 1
 			if k == len(face.Indices) {

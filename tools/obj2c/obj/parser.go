@@ -166,7 +166,9 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 				return nil, err
 			}
 			vns = append(vns, vn)
-		case "f":
+		case "p", "l", "f":
+			/* Point and line elements will be converted to degenerate face */
+
 			/* Faces are defined using lists of vertex, texture and normal
 			 * indices in the format vertex_index/texture_index/normal_index for
 			 * which each index starts at 1 and increases corresponding to the
@@ -217,9 +219,6 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 			}
 		case "s":
 			/* Smooth group, ignore */
-		case "p":
-		case "l":
-			/* Line element */
 		case "g":
 			curgrps = fields
 			for _, grpname := range fields {

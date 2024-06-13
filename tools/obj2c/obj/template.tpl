@@ -12,15 +12,8 @@ static short _{{ .Name }}_edge[{{ .EdgeCount }} * 3] = {
 {{- end }}
 };
 
-static short _{{ .Name }}_face_normal[{{ .FaceCount }} * 4] = {
-  /* x y z flags/pad */
-  {{- range .FaceNormals }}
-  {{ range . }}{{ . }}, {{ end -}} 0,
-{{- end }}
-};
-
 static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
-  /* #indices material [vertex-index edge-index]... */
+  /* #indices material face-normal{x y z} [vertex-index edge-index]... */
   {{- range .FaceData }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
@@ -48,9 +41,7 @@ Mesh3D {{ .Name }} = {
   .faces = {{ .FaceCount }},
   .edges = {{ .EdgeCount }},
   .groups = {{ .GroupCount }},
-  .materials = {{ .MaterialCount }},
   .vertex = _{{ .Name }}_vertex,
-  .faceNormal = _{{ .Name }}_face_normal,
   .edge = _{{ .Name }}_edge,
   .faceData = _{{ .Name }}_face_data,
   .groupData = _{{ .Name }}_group_data,

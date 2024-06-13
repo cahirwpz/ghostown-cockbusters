@@ -39,26 +39,27 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 
 	var faceIndices []int
 
-	ps.FaceDataCount = 2
-	for _, f := range obj.Faces {
+	for i, f := range obj.Faces {
+		poly := bool(len(f.Indices) >= 3)
 		of := []int{len(f.Indices), f.Material}
+		if poly {
+			fn := faceNormals[i]
+			x, y, z := fn[0]*4096, fn[1]*4096, fn[2]*4096
+			of = append(of, int(x), int(y), int(z))
+		}
 		faceIndices = append(faceIndices, ps.FaceDataCount)
 		for _, fi := range f.Indices {
 			/* precompute vertex / edge indices */
 			of = append(of, (fi.Vertex-1)*cp.VertexSize)
-			of = append(of, fi.Edge*cp.EdgeSize)
+			if poly {
+				of = append(of, fi.Edge*cp.EdgeSize)
+			}
 		}
 		ps.FaceData = append(ps.FaceData, of)
-		ps.FaceDataCount += len(f.Indices)*2 + 2
-		ps.FaceCount += 1
+		ps.FaceDataCount += len(of) * 2
 	}
 
-	s = 4096.0
-	for _, fn := range faceNormals {
-		ofn := []int{int(fn[0] * s), int(fn[1] * s), int(fn[2] * s)}
-		ps.FaceNormals = append(ps.FaceNormals, ofn)
-	}
-
+	ps.FaceCount = len(obj.Faces)
 	ps.MaterialCount = len(obj.Materials)
 	ps.GroupCount = len(obj.Groups)
 
