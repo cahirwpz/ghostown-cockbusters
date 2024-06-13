@@ -126,10 +126,10 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	var vts []Vector
 	var vns []Vector
 	var fs []Face
-	var curmtl Material
-	var curgrps []string
 	var ok bool
 
+	curgrps := []string{}
+	curmtl := Material{Index: 0, Name: "default"}
 	mtls := make(map[string]Material)
 	grps := make(map[string]Group)
 	lc := 1
@@ -207,6 +207,8 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 				if grp, ok := grps[grpname]; ok {
 					grp.FaceIndices = append(grp.FaceIndices, len(fs))
 					grps[grpname] = grp
+				} else {
+					return nil, fmt.Errorf("unknown group '%s' in line %d", grpname, lc)
 				}
 			}
 
@@ -243,6 +245,11 @@ func ParseWavefrontObj(filename string) (*WavefrontObj, error) {
 	}
 	obj := &WavefrontObj{
 		Name: name, Vertices: vs, TexCoords: vts, Normals: vns, Faces: fs}
+
+	/* if no materials were defined add default one */
+	if len(mtls) == 0 {
+		mtls["default"] = curmtl
+	}
 
 	mtlarr := make([]Material, len(mtls))
 	for _, mtl := range mtls {

@@ -1,48 +1,44 @@
-static short _{{ .Name }}_vertex[{{ .VertexCount }} * 4] = {
-  /* x y z flags/pad */
+/* all indices are offsets in bytes from the beginning of data array */
+
+static short _{{ .Name }}_data[] = {
+  /* vertices: [x y z pad] */
   {{- range .Vertices }}
-  {{ range . }}{{ . }}, {{ end -}} 0,
-{{- end }} 
-};
+  {{ range . }}{{ . }}, {{ end -}}
+{{ end }} 
 
-static short _{{ .Name }}_edge[{{ .EdgeCount }} * 3] = {
-  /* flags point_0 point_1 */
+  /* edges: [flags vertex-index-0 vertex-index-1] */
   {{- range .Edges }}
-  0, {{ range . }}{{ . }}, {{ end -}}
+  {{ range . }}{{ . }}, {{ end -}}
 {{- end }}
-};
 
-static short _{{ .Name }}_face_data[{{ .FaceDataCount }}] = {
-  /* #indices material face-normal{x y z} [vertex-index edge-index]... */
+  /* faces: [face-normal{x y z} flags material #indices | {vertex-index edge-index}...] */
+  /* lines/points: [material #indices | vertex-index...] */
   {{- range .FaceData }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
+
+  /* groups: [#faces face-index...] */
+  {{- range .Groups }}
+  /* {{ .Name }} */
+  {{ len .Indices }}, {{range .Indices }}{{ . }}, {{ end -}}
+{{- end}}
+  /* end */
   0
 };
-
-static short _{{ .Name }}_group_data[{{ .GroupDataCount }}] = {
-  /* #faces [flags face-index]... */
-  {{- range .GroupData }}
-  {{ len . }}, {{range . }}0, {{ . }}, {{ end -}}
-{{- end}}
-  0,
-};
-
 {{ range .Groups }}
-#define {{ $.Name }}_grp_{{ .Name }} {{ .Index }}
+#define {{ $.Name }}_grp_{{ .Name }} {{ .Offset }}
 {{- end}}
-
 {{ range .Materials }}
 #define {{ $.Name }}_mtl_{{ .Name }} {{ .Index }}
 {{- end}}
 
 Mesh3D {{ .Name }} = {
-  .vertices = {{ .VertexCount }},
-  .faces = {{ .FaceCount }},
-  .edges = {{ .EdgeCount }},
-  .groups = {{ .GroupCount }},
-  .vertex = _{{ .Name }}_vertex,
-  .edge = _{{ .Name }}_edge,
-  .faceData = _{{ .Name }}_face_data,
-  .groupData = _{{ .Name }}_group_data,
+  .vertices = {{ len .Vertices }},
+  .faces = {{ len .FaceData }},
+  .edges = {{ len .Edges }},
+  .groups = {{ len .Groups }},
+  .materials = {{ len .Materials }}
+  .vertex = _{{ .Name }}_data,
+  .edge = (void *)_{{ .Name }}_data + {{ .EdgeOffset }},
+  .group = (void *)_{{ .Name }}_data + {{ .GroupDataOffset }},
 };

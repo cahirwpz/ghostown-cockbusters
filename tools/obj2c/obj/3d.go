@@ -52,7 +52,7 @@ func CalculateFaceNormals(obj *WavefrontObj) ([]Vector, error) {
 	return ns, nil
 }
 
-type Edge [2]int
+type Edge []int
 
 type FaceEdge struct {
 	Edge Edge

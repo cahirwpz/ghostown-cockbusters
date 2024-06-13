@@ -12,58 +12,66 @@ var tpl string
 func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 	var s float64
 
-	ps := TemplateParams{Name: obj.Name, MaterialCount: len(obj.Materials)}
-
 	faceNormals, err := CalculateFaceNormals(obj)
 	if err != nil {
 		return "", err
 	}
 
 	edges := CalculateEdges(obj)
-	ps.EdgeCount = len(edges)
-	ps.Edges = edges
+
+	ps := TemplateParams{
+		Name:  obj.Name,
+		Edges: edges,
+	}
+
+	/* vertices */
+	s = cp.Scale * 16
+	for _, v := range obj.Vertices {
+		ov := []int{int(v[0] * s), int(v[1] * s), int(v[2] * s), 0}
+		ps.Vertices = append(ps.Vertices, ov)
+	}
+
+	/* edges */
+	ps.EdgeOffset = len(ps.Vertices) * cp.VertexSize
 
 	for i := 0; i < len(edges); i++ {
 		for j := 0; j < len(edges[i]); j++ {
 			/* pre-compute vertex indices */
 			edges[i][j] *= cp.VertexSize
 		}
+		edges[i] = append([]int{0}, edges[i]...)
 	}
 
-	s = cp.Scale * 16
-	for _, v := range obj.Vertices {
-		ov := []int{int(v[0] * s), int(v[1] * s), int(v[2] * s)}
-		ps.Vertices = append(ps.Vertices, ov)
-		ps.VertexCount += 1
-	}
+	/* faces */
+	ps.FaceDataOffset = ps.EdgeOffset + len(ps.Edges)*cp.EdgeSize
 
 	var faceIndices []int
 
 	for i, f := range obj.Faces {
 		poly := bool(len(f.Indices) >= 3)
-		of := []int{len(f.Indices), f.Material}
+		of := []int{}
 		if poly {
 			fn := faceNormals[i]
 			x, y, z := fn[0]*4096, fn[1]*4096, fn[2]*4096
-			of = append(of, int(x), int(y), int(z))
+			of = append(of, int(x), int(y), int(z), 0)
 		}
-		faceIndices = append(faceIndices, ps.FaceDataCount)
+		of = append(of, f.Material, len(f.Indices))
+		faceIndices = append(faceIndices, ps.FaceDataCount+len(of))
 		for _, fi := range f.Indices {
 			/* precompute vertex / edge indices */
 			of = append(of, (fi.Vertex-1)*cp.VertexSize)
 			if poly {
-				of = append(of, fi.Edge*cp.EdgeSize)
+				of = append(of, fi.Edge*cp.EdgeSize+ps.EdgeOffset)
 			}
 		}
 		ps.FaceData = append(ps.FaceData, of)
 		ps.FaceDataCount += len(of) * 2
 	}
 
-	ps.FaceCount = len(obj.Faces)
-	ps.MaterialCount = len(obj.Materials)
-	ps.GroupCount = len(obj.Groups)
+	/* groups */
+	ps.GroupDataOffset = ps.FaceDataOffset + ps.FaceDataCount*2
+	ps.GroupDataCount = 0
 
-	ps.GroupDataCount = 1
 	for _, grp := range obj.Groups {
 		og := []int{}
 		for _, fi := range grp.FaceIndices {
@@ -71,11 +79,11 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		}
 		ps.Groups = append(ps.Groups,
 			FaceGroup{
-				Name:  grp.Name,
-				Index: ps.GroupDataCount,
+				Name:    grp.Name,
+				Offset:  ps.GroupDataCount,
+				Indices: og,
 			})
-		ps.GroupDataCount += len(og)*2 + 1
-		ps.GroupData = append(ps.GroupData, og)
+		ps.GroupDataCount += len(og) + 1
 	}
 
 	for _, mtl := range obj.Materials {
@@ -106,8 +114,9 @@ type ConverterParams struct {
 	EdgeSize   int
 }
 type FaceGroup struct {
-	Name  string
-	Index int
+	Name    string
+	Offset  int
+	Indices []int
 }
 
 type FaceMaterial struct {
@@ -118,19 +127,16 @@ type FaceMaterial struct {
 type TemplateParams struct {
 	Name string
 
-	VertexCount    int
-	FaceCount      int
 	FaceDataCount  int
-	EdgeCount      int
-	MaterialCount  int
-	GroupCount     int
 	GroupDataCount int
 
-	Vertices    [][]int
-	FaceData    [][]int
-	GroupData   [][]int
-	Groups      []FaceGroup
-	FaceNormals [][]int
-	Edges       []Edge
-	Materials   []FaceMaterial
+	EdgeOffset      int
+	FaceDataOffset  int
+	GroupDataOffset int
+
+	Vertices  [][]int
+	Edges     []Edge
+	FaceData  [][]int
+	Groups    []FaceGroup
+	Materials []FaceMaterial
 }
