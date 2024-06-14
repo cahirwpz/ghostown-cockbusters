@@ -40,7 +40,9 @@ func main() {
 	cp := obj.ConverterParams{
 		Scale:      scaleFactor,
 		VertexSize: vertexSize,
-		EdgeSize:   edgeSize}
+		EdgeSize:   edgeSize,
+		IndexSize:  2,
+	}
 
 	output, err := obj.Convert(object, cp)
 	if err != nil {

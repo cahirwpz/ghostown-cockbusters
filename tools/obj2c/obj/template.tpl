@@ -2,22 +2,26 @@
 
 static short _{{ .Name }}_data[] = {
   /* vertices: [x y z pad] */
+  /* offset: 0 */
   {{- range .Vertices }}
   {{ range . }}{{ . }}, {{ end -}}
 {{ end }} 
 
   /* edges: [flags vertex-index-0 vertex-index-1] */
+  /* offset: {{ .EdgeOffset }} */
   {{- range .Edges }}
   {{ range . }}{{ . }}, {{ end -}}
 {{- end }}
 
-  /* faces: [face-normal{x y z} flags material #indices | {vertex-index edge-index}...] */
-  /* lines/points: [material #indices | vertex-index...] */
+  /* faces: [face-normal{x y z} {flags:8 material:8} #indices | {vertex-index edge-index}...] */
+  /* lines/points: [{flags:8 material:8} #indices | vertex-index...] */
+  /* offset: {{ .FaceDataOffset }} */
   {{- range .FaceData }}
   {{range . }}{{ . }}, {{ end -}}
 {{- end}}
 
   /* groups: [#faces face-index...] */
+  /* offset: {{ .GroupDataOffset }} */
   {{- range .Groups }}
   /* {{ .Name }} */
   {{ len .Indices }}, {{range .Indices }}{{ . }}, {{ end -}}

@@ -53,10 +53,10 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		if poly {
 			fn := faceNormals[i]
 			x, y, z := fn[0]*4096, fn[1]*4096, fn[2]*4096
-			of = append(of, int(x), int(y), int(z), 0)
+			of = append(of, int(x), int(y), int(z))
 		}
 		of = append(of, f.Material, len(f.Indices))
-		faceIndices = append(faceIndices, ps.FaceDataCount+len(of))
+		faceIndices = append(faceIndices, ps.FaceDataCount+len(of)*cp.IndexSize+ps.FaceDataOffset)
 		for _, fi := range f.Indices {
 			/* precompute vertex / edge indices */
 			of = append(of, (fi.Vertex-1)*cp.VertexSize)
@@ -65,11 +65,11 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 			}
 		}
 		ps.FaceData = append(ps.FaceData, of)
-		ps.FaceDataCount += len(of) * 2
+		ps.FaceDataCount += len(of) * cp.IndexSize
 	}
 
 	/* groups */
-	ps.GroupDataOffset = ps.FaceDataOffset + ps.FaceDataCount*2
+	ps.GroupDataOffset = ps.FaceDataOffset + ps.FaceDataCount*cp.IndexSize
 	ps.GroupDataCount = 0
 
 	for _, grp := range obj.Groups {
@@ -112,6 +112,7 @@ type ConverterParams struct {
 	Scale      float64
 	VertexSize int
 	EdgeSize   int
+	IndexSize  int
 }
 type FaceGroup struct {
 	Name    string
