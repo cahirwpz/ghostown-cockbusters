@@ -12,17 +12,7 @@ var tpl string
 func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 	var s float64
 
-	faceNormals, err := CalculateFaceNormals(obj)
-	if err != nil {
-		return "", err
-	}
-
-	edges := CalculateEdges(obj)
-
-	ps := TemplateParams{
-		Name:  obj.Name,
-		Edges: edges,
-	}
+	ps := TemplateParams{Name: obj.Name}
 
 	/* vertices */
 	s = cp.Scale * 16
@@ -34,12 +24,11 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 	/* edges */
 	ps.EdgeOffset = len(ps.Vertices) * cp.VertexSize
 
-	for i := 0; i < len(edges); i++ {
-		for j := 0; j < len(edges[i]); j++ {
-			/* pre-compute vertex indices */
-			edges[i][j] *= cp.VertexSize
-		}
-		edges[i] = append([]int{0}, edges[i]...)
+	edges := CalculateEdges(obj)
+	for _, e := range edges {
+		/* pre-compute vertex indices */
+		oe := []int{0, e[0] * cp.VertexSize, e[1] * cp.VertexSize}
+		ps.Edges = append(ps.Edges, oe)
 	}
 
 	/* faces */
@@ -51,9 +40,8 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 		poly := bool(len(f.Indices) >= 3)
 		of := []int{}
 		if poly {
-			fn := faceNormals[i]
-			x, y, z := fn[0]*4096, fn[1]*4096, fn[2]*4096
-			of = append(of, int(x), int(y), int(z))
+			fn := CalculateFaceNormal(obj, i)
+			of = append(of, int(fn[0]*4096), int(fn[1]*4096), int(fn[2]*4096))
 		}
 		of = append(of, f.Material, len(f.Indices))
 		faceIndices = append(faceIndices, ps.FaceDataCount+len(of)*cp.IndexSize+ps.FaceDataOffset)
