@@ -9,77 +9,99 @@ import (
 //go:embed template.tpl
 var tpl string
 
-func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
+func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 	var s float64
 
-	ps := TemplateParams{Name: obj.Name}
+	geom := Geometry{Name: cp.Name}
 
-	/* vertices */
-	s = cp.Scale * 16
-	for _, v := range obj.Vertices {
-		ov := []int{int(v[0] * s), int(v[1] * s), int(v[2] * s), 0}
-		ps.Vertices = append(ps.Vertices, ov)
-	}
+	/* dump geometry data from all the objects */
+	for _, obj := range data.Objects {
+		vertexBegin := len(geom.Vertices)
+		edgeBegin := len(geom.Edges)
 
-	/* edges */
-	ps.EdgeOffset = len(ps.Vertices) * cp.VertexSize
-
-	edges := CalculateEdges(obj)
-	for _, e := range edges {
-		/* pre-compute vertex indices */
-		oe := []int{0, e[0] * cp.VertexSize, e[1] * cp.VertexSize}
-		ps.Edges = append(ps.Edges, oe)
-	}
-
-	/* faces */
-	ps.FaceDataOffset = ps.EdgeOffset + len(ps.Edges)*cp.EdgeSize
-
-	var faceIndices []int
-
-	for i, f := range obj.Faces {
-		poly := bool(len(f.Indices) >= 3)
-		of := []int{}
-		if poly {
-			fn := CalculateFaceNormal(obj, i)
-			of = append(of, int(fn[0]*4096), int(fn[1]*4096), int(fn[2]*4096))
+		/* vertices */
+		s = cp.Scale * 16
+		for _, v := range obj.Vertices {
+			geom.Vertices = append(geom.Vertices,
+				Vector{int(v[0] * s), int(v[1] * s), int(v[2] * s), 0})
 		}
-		of = append(of, f.Material, len(f.Indices))
-		faceIndices = append(faceIndices, ps.FaceDataCount+len(of)*cp.IndexSize+ps.FaceDataOffset)
-		for _, fi := range f.Indices {
-			/* precompute vertex / edge indices */
-			of = append(of, (fi.Vertex-1)*cp.VertexSize)
+
+		/* edges */
+		edges := CalculateEdges(obj)
+		for _, e := range edges {
+			/* pre-compute vertex indices */
+			e.Point[0] = (e.Point[0] + edgeBegin) * cp.VertexSize
+			e.Point[1] = (e.Point[1] + edgeBegin) * cp.VertexSize
+			geom.Edges = append(geom.Edges, e)
+		}
+
+		/* faces */
+		var faceIndices []int
+
+		for i, f := range obj.Faces {
+			poly := bool(len(f.Indices) >= 3)
+			of := Face{Material: f.Material, Count: len(f.Indices)}
+			sz := 2
 			if poly {
-				of = append(of, fi.Edge*cp.EdgeSize+ps.EdgeOffset)
+				fn := CalculateFaceNormal(obj, i)
+				of.Normal = Vector{int(fn[0] * 4096), int(fn[1] * 4096), int(fn[2] * 4096)}
+				sz += 3
+			}
+			faceIndices = append(faceIndices, (geom.FaceDataCount+sz)*cp.IndexSize)
+			for _, fi := range f.Indices {
+				/* precompute vertex / edge indices */
+				of.Indices = append(of.Indices, (fi.Vertex-1+vertexBegin)*cp.VertexSize)
+				if poly {
+					of.Indices = append(of.Indices, (fi.Edge+edgeBegin)*cp.EdgeSize)
+				}
+			}
+			geom.Faces = append(geom.Faces, of)
+			geom.FaceDataCount += sz + len(f.Indices)
+		}
+
+		/* objects & groups */
+		object := Object{Name: obj.Name, Offset: geom.ObjectDataCount}
+		for _, g := range obj.Groups {
+			geom.ObjectDataCount += 1
+			og := FaceGroup{Name: g.Name, Offset: geom.ObjectDataCount}
+			for _, fi := range g.Indices {
+				og.Faces = append(og.Faces, faceIndices[fi])
+			}
+			object.Groups = append(object.Groups, og)
+			geom.ObjectDataCount += len(og.Faces) + 1
+		}
+		geom.Objects = append(geom.Objects, object)
+	}
+
+	/* terminate objects */
+	geom.Objects = append(geom.Objects, Object{Name: "end", Offset: geom.ObjectDataCount})
+	geom.ObjectDataCount += 1
+
+	/* determine subarrays position after merging into single array */
+	geom.EdgeOffset = len(geom.Vertices) * cp.VertexSize
+	geom.FaceDataOffset = geom.EdgeOffset + len(geom.Edges)*cp.EdgeSize
+	geom.ObjectDataOffset = geom.FaceDataOffset + geom.FaceDataCount*cp.IndexSize
+
+	/* relocate edge indices in faces */
+	for i, face := range geom.Faces {
+		if len(face.Indices) >= 3 {
+			for j := 1; j < len(face.Indices); j += 2 {
+				geom.Faces[i].Indices[j] += geom.EdgeOffset
 			}
 		}
-		ps.FaceData = append(ps.FaceData, of)
-		ps.FaceDataCount += len(of) * cp.IndexSize
 	}
 
-	/* groups */
-	ps.GroupDataOffset = ps.FaceDataOffset + ps.FaceDataCount*cp.IndexSize
-	ps.GroupDataCount = 0
-
-	for _, grp := range obj.Groups {
-		og := []int{}
-		for _, fi := range grp.FaceIndices {
-			og = append(og, faceIndices[fi])
+	/* relocate face indices in groups */
+	for i, object := range geom.Objects {
+		for j, group := range object.Groups {
+			for k := 0; k < len(group.Faces); k++ {
+				geom.Objects[i].Groups[j].Faces[k] += geom.FaceDataOffset
+			}
 		}
-		ps.Groups = append(ps.Groups,
-			FaceGroup{
-				Name:    grp.Name,
-				Offset:  ps.GroupDataCount,
-				Indices: og,
-			})
-		ps.GroupDataCount += len(og) + 1
 	}
 
-	for _, mtl := range obj.Materials {
-		ps.Materials = append(ps.Materials,
-			FaceMaterial{
-				Name:  mtl.Name,
-				Index: mtl.Index,
-			})
+	for i, mtl := range data.Materials {
+		geom.Materials = append(geom.Materials, FaceMaterial{Name: mtl.Name, Index: i})
 	}
 
 	tmpl, err := template.New("template").Parse(tpl)
@@ -88,7 +110,7 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 	}
 
 	var buf strings.Builder
-	err = tmpl.Execute(&buf, ps)
+	err = tmpl.Execute(&buf, geom)
 	if err != nil {
 		return "", err
 	}
@@ -97,15 +119,37 @@ func Convert(obj *WavefrontObj, cp ConverterParams) (string, error) {
 }
 
 type ConverterParams struct {
+	Name       string
 	Scale      float64
 	VertexSize int
 	EdgeSize   int
 	IndexSize  int
 }
+
+type Vector []int
+
+type Edge struct {
+	Flags int
+	Point [2]int
+}
+
+type Face struct {
+	Normal   Vector
+	Material int
+	Count    int
+	Indices  []int
+}
+
 type FaceGroup struct {
-	Name    string
-	Offset  int
-	Indices []int
+	Name   string
+	Offset int
+	Faces  []int
+}
+
+type Object struct {
+	Name   string
+	Offset int
+	Groups []FaceGroup
 }
 
 type FaceMaterial struct {
@@ -113,19 +157,19 @@ type FaceMaterial struct {
 	Index int
 }
 
-type TemplateParams struct {
+type Geometry struct {
 	Name string
 
-	FaceDataCount  int
-	GroupDataCount int
+	FaceDataCount   int
+	ObjectDataCount int
 
-	EdgeOffset      int
-	FaceDataOffset  int
-	GroupDataOffset int
+	EdgeOffset       int
+	FaceDataOffset   int
+	ObjectDataOffset int
 
-	Vertices  [][]int
+	Vertices  []Vector
 	Edges     []Edge
-	FaceData  [][]int
-	Groups    []FaceGroup
+	Faces     []Face
+	Objects   []Object
 	Materials []FaceMaterial
 }

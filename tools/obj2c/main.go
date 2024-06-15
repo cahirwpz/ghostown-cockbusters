@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -12,6 +13,8 @@ var printHelp bool
 var scaleFactor float64
 var vertexSize int
 var edgeSize int
+var meshName string
+var indexSize int
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
@@ -22,6 +25,10 @@ func init() {
 		"vertex structure size in bytes")
 	flag.IntVar(&edgeSize, "edge-size", 6,
 		"edge structure size in bytes")
+	flag.IntVar(&indexSize, "index-size", 2,
+		"index size in byte")
+	flag.StringVar(&meshName, "mesh-name", "",
+		"mesh C identifier")
 }
 
 func main() {
@@ -32,19 +39,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	object, err := obj.ParseWavefrontObj(flag.Arg(0))
+	if meshName == "" {
+		fmt.Println("Mesh name was not provided!")
+		os.Exit(1)
+	}
+
+	data, err := obj.ParseWavefrontObj(flag.Arg(0))
 	if err != nil {
 		log.Fatalf("failed to parse file: %v", err)
 	}
 
 	cp := obj.ConverterParams{
+		Name:       meshName,
 		Scale:      scaleFactor,
 		VertexSize: vertexSize,
 		EdgeSize:   edgeSize,
-		IndexSize:  2,
+		IndexSize:  indexSize,
 	}
 
-	output, err := obj.Convert(object, cp)
+	output, err := obj.Convert(data, cp)
 	if err != nil {
 		log.Fatalf("failed to convert file: %v", err)
 	}
