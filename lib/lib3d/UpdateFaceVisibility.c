@@ -1,7 +1,9 @@
 #include <3d.h>
 
 void UpdateFaceVisibility(Object3D *object) {
-  short *camera = (short *)&object->camera;
+  short cx = object->camera.x;
+  short cy = object->camera.y;
+  short cz = object->camera.z;
   char *sqrt = SqrtTab8;
 
   void *_objdat = object->objdat;
@@ -17,10 +19,9 @@ void UpdateFaceVisibility(Object3D *object) {
       {
         short i = FACE(f)->indices[0].vertex;
         short *p = (short *)POINT(i);
-        short *c = camera;
-        px = *c++ - *p++;
-        py = *c++ - *p++;
-        pz = *c++ - *p++;
+        px = cx - *p++;
+        py = cy - *p++;
+        pz = cz - *p++;
       }
 
       {
@@ -48,7 +49,7 @@ void UpdateFaceVisibility(Object3D *object) {
         s = px;
 #endif
         v = swap16(v); /* f >>= 16, ignore upper word */
-        l = div16((short)f * (short)f, s);
+        l = div16((short)v * (short)v, s);
         if (l >= 256)
           l = 15;
         else
