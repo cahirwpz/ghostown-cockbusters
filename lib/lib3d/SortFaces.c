@@ -5,6 +5,7 @@ void SortFaces(Object3D *object) {
   short count = 0;
 
   void *_objdat = object->objdat;
+  void *_vertex = object->vertex;
   short *group = object->group;
   short f;
 
@@ -15,11 +16,11 @@ void SortFaces(Object3D *object) {
         short i;
 
         i = FACE(f)->indices[0].vertex;
-        z = POINT(i)->z;
+        z = VERTEX(i)->z;
         i = FACE(f)->indices[1].vertex;
-        z += POINT(i)->z;
+        z += VERTEX(i)->z;
         i = FACE(f)->indices[2].vertex;
-        z += POINT(i)->z;
+        z += VERTEX(i)->z;
 
         *item++ = z;
         *item++ = f;

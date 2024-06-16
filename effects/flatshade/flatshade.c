@@ -170,9 +170,6 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
             y1 = VERTEX(i)->y;
           }
 
-          if (y0 == y1)
-            goto next;
-
           if (y0 > y1) {
             swapr(x0, x1);
             swapr(y0, y1);
@@ -203,6 +200,8 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
 
           dmin <<= 1;
           derr = dmin - dmax;
+          if (derr < 0)
+            bltcon1 |= SIGNFLAG;
 
           bltamod = derr - dmax;
           bltbmod = dmin;
@@ -224,7 +223,6 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
           custom_->bltdmod = WIDTH / 8;
           custom_->bltsize = bltsize;
         }
-next:
       } while (--m != -1);
     }
 
