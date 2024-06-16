@@ -16,10 +16,10 @@ static BitmapT *buffer;
 static int active = 0;
 
 #include "data/flatshade-pal.c"
-#include "data/pilka.c"
+#include "data/codi.c"
 
 static void Init(void) {
-  cube = NewObject3D(&pilka);
+  cube = NewObject3D(&codi);
   cube->translate.z = fx4i(-250);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -86,13 +86,15 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (((Point3D *)dst)->flags) {
+    if (((Point3D *)src)->flags) {
       short x = *src++;
       short y = *src++;
       short z = *src++;
       short *v = mx;
       int xp, yp;
       short zp;
+
+      *src++ = 0; /* reset flags */
 
       MULVERTEX1(xp, m0);
       MULVERTEX1(yp, m1);
@@ -101,9 +103,7 @@ static void TransformVertices(Object3D *object) {
       *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
       *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
       *dst++ = zp;
-      *dst++ = 0; /* reset flags */
-
-      src++;
+      dst++;
     } else {
       src += 4;
       dst += 4;
@@ -112,113 +112,119 @@ static void TransformVertices(Object3D *object) {
 }
 
 static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
-  short **vertexIndexList = object->faceVertexIndexList;
   SortItemT *item = object->visibleFace;
-  void *vertex = object->vertex;
-  void *temp = buffer->planes[0];
+  void *planes = buffer->planes[0];
+
+  void *_objdat = object->objdat;
+  void *_vertex = object->vertex;
 
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;
 
   for (; item->index >= 0; item++) {
-    short faceIndex = item->index;
-    short *vertexIndex = vertexIndexList[faceIndex];
-    char color = vertexIndex[FV_FLAGS];
-
-    short minX, minY, maxX, maxY;
+    short minX = 32767;
+    short minY = 32767;
+    short maxX = -32768;
+    short maxY = -32768;
 
     /* Draw edges and calculate bounding box. */
     {
-      register short m asm("d7") = vertexIndex[FV_COUNT] - 1;
-      short i = vertexIndex[m];
-      short *ptr = (short *)(vertex + i);
-      short xs = *ptr++;
-      short ys = *ptr++;
-      short xe, ye;
-
-      minX = xs;
-      minY = ys;
-      maxX = xs;
-      maxY = ys;
+      register short *index asm("a3") = (short *)(FACE(item->index)->indices);
+      register short m asm("d7") = FACE(item->index)->count - 1;
 
       do {
-        i = *vertexIndex++;
-        ptr = (short *)(vertex + i);
-        xe = *ptr++;
-        ye = *ptr++;
-
-        /* Estimate the size of rectangle that contains a face. */
-        if (xe < minX)
-          minX = xe;
-        else if (xe > maxX)
-          maxX = xe;
-        if (ye < minY)
-          minY = ye;
-        else if (ye > maxY)
-          maxY = ye;
-
-        /* Draw an edge. */
+        /* Calculate area. */
         {
-          short x0, y0, dx, dy, derr;
-          u_short bltcon1;
+          short i = *index++; /* vertex */
+          short x = VERTEX(i)->x;
+          short y = VERTEX(i)->y;
 
-          if (ys < ye) {
-            x0 = xs; y0 = ys;
-            dx = xe - xs;
-            dy = ye - ys;
-          } else {
-            x0 = xe; y0 = ye;
-            dx = xs - xe;
-            dy = ys - ye;
-          }
+          if (x < minX)
+            minX = x;
+          if (x > maxX)
+            maxX = x;
 
-          if (dx < 0) {
-            dx = -dx;
-            if (dx >= dy) {
-              bltcon1 = AUL | SUD | LINEMODE | ONEDOT;
-            } else {
-              bltcon1 = SUL | LINEMODE | ONEDOT;
-              swapr(dx, dy);
-            }
-          } else {
-            if (dx >= dy) {
-              bltcon1 = SUD | LINEMODE | ONEDOT;
-            } else {
-              bltcon1 = LINEMODE | ONEDOT;
-              swapr(dx, dy);
-            }
-          }
-
-          derr = dy + dy - dx;
-          if (derr < 0)
-            bltcon1 |= SIGNFLAG;
-
-          {
-            short start = ((y0 << 5) + (x0 >> 3)) & ~1;
-            void *dst = temp + start;
-            u_short bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_EOR;
-            u_short bltamod = derr - dx;
-            u_short bltbmod = dy + dy;
-            u_short bltsize = (dx << 6) + 66;
-
-            _WaitBlitter(custom_);
-
-            custom_->bltbdat = 0xffff;
-            custom_->bltadat = 0x8000;
-            custom_->bltcon0 = bltcon0;
-            custom_->bltcon1 = bltcon1;
-            custom_->bltcpt = dst;
-            custom_->bltapt = (void *)(int)derr;
-            custom_->bltdpt = temp;
-            custom_->bltcmod = WIDTH / 8;
-            custom_->bltbmod = bltbmod;
-            custom_->bltamod = bltamod;
-            custom_->bltdmod = WIDTH / 8;
-            custom_->bltsize = bltsize;
-          }
+          if (y < minY)
+            minY = y;
+          if (y > maxY)
+            maxY = y;
         }
 
-        xs = xe; ys = ye;
+        /* Draw edge. */
+        {
+          short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
+          int bltapt, bltcpt;
+          short x0, y0, x1, y1;
+          short dmin, dmax, derr;
+            
+          {
+            short j = *index++; /* edge */
+            short i;
+
+            i = EDGE(j)->point[0];
+            x0 = VERTEX(i)->x;
+            y0 = VERTEX(i)->y;
+
+            i = EDGE(j)->point[1];
+            x1 = VERTEX(i)->x;
+            y1 = VERTEX(i)->y;
+          }
+
+          if (y0 == y1)
+            goto next;
+
+          if (y0 > y1) {
+            swapr(x0, x1);
+            swapr(y0, y1);
+          }
+
+          dmax = x1 - x0;
+          if (dmax < 0)
+            dmax = -dmax;
+
+          dmin = y1 - y0;
+          if (dmax >= dmin) {
+            if (x0 >= x1)
+              bltcon1 = AUL | SUD | LINEMODE | ONEDOT;
+            else
+              bltcon1 = SUD | LINEMODE | ONEDOT;
+          } else {
+            if (x0 >= x1)
+              bltcon1 = SUL | LINEMODE | ONEDOT;
+            else
+              bltcon1 = LINEMODE | ONEDOT;
+            swapr(dmax, dmin);
+          }
+
+          bltcpt = (int)planes + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
+
+          bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_EOR;
+          bltcon1 |= rorw(x0 & 15, 4);
+
+          dmin <<= 1;
+          derr = dmin - dmax;
+
+          bltamod = derr - dmax;
+          bltbmod = dmin;
+          bltsize = (dmax << 6) + 66;
+          bltapt = derr;
+
+          _WaitBlitter(custom_);
+
+          custom_->bltbdat = 0xffff;
+          custom_->bltadat = 0x8000;
+          custom_->bltcon0 = bltcon0;
+          custom_->bltcon1 = bltcon1;
+          custom_->bltcpt = (void *)bltcpt;
+          custom_->bltapt = (void *)bltapt;
+          custom_->bltdpt = planes;
+          custom_->bltcmod = WIDTH / 8;
+          custom_->bltbmod = bltbmod;
+          custom_->bltamod = bltamod;
+          custom_->bltdmod = WIDTH / 8;
+          custom_->bltsize = bltsize;
+        }
+next:
       } while (--m != -1);
     }
 
@@ -243,7 +249,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
 
       /* Fill face. */
       {
-        void *src = temp + bltend;
+        void *src = planes + bltend;
 
         _WaitBlitter(custom_);
 
@@ -260,8 +266,9 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
       /* Copy filled face to screen. */
       {
         void **dstbpl = &screen[active]->planes[DEPTH];
-        void *src = temp + bltstart;
+        void *src = planes + bltstart;
         char mask = 1 << (DEPTH - 1);
+        char color = FACE(item->index)->flags;
         short n = DEPTH;
 
         while (--n >= 0) {
@@ -288,7 +295,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
 
       /* Clear working area. */
       {
-        void *data = temp + bltstart;
+        void *data = planes + bltstart;
 
         _WaitBlitter(custom_);
 
