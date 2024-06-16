@@ -282,7 +282,7 @@ func parseVector(fields []string, length int) (vec ObjVector, err error) {
 
 func findMtlIndex(mtls []*WavefrontMtl, name string) int {
 	for i, mtl := range mtls {
-		if mtl.Name == name {
+		if mtl != nil && mtl.Name == name {
 			return i
 		}
 	}

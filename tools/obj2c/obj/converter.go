@@ -47,7 +47,8 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 				of.Normal = Vector{int(fn[0] * 4096), int(fn[1] * 4096), int(fn[2] * 4096)}
 				sz += 3
 			}
-			faceIndices = append(faceIndices, (geom.FaceDataCount+sz)*cp.IndexSize)
+			/* the index is set up as if the normal was always present */
+			faceIndices = append(faceIndices, (geom.FaceDataCount+sz-5)*cp.IndexSize)
 			for _, fi := range f.Indices {
 				/* precompute vertex / edge indices */
 				of.Indices = append(of.Indices, (fi.Vertex-1+vertexBegin)*cp.VertexSize)
@@ -56,7 +57,7 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 				}
 			}
 			geom.Faces = append(geom.Faces, of)
-			geom.FaceDataCount += sz + len(f.Indices)
+			geom.FaceDataCount += sz + len(of.Indices)
 		}
 
 		/* objects & groups */
@@ -70,6 +71,12 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 			object.Groups = append(object.Groups, og)
 			geom.ObjectDataCount += len(og.Faces) + 1
 		}
+
+		/* terminate groups */
+		object.Groups = append(object.Groups, FaceGroup{Name: "end", Offset: geom.ObjectDataCount})
+		geom.ObjectDataCount += 1
+
+		/* add object */
 		geom.Objects = append(geom.Objects, object)
 	}
 

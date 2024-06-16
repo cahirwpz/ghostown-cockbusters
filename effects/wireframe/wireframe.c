@@ -41,80 +41,78 @@ static void Kill(void) {
 }
 
 static void SetFaceVisibility(Object3D *object) {
-  short **vertexIndexList = object->faceVertexIndexList;
-  short n = object->faces - 1;
+  void *_objdat = object->objdat;
+  short *group = object->group;
+  short f;
 
-  do {
-    short *vertexIndex = *vertexIndexList++;
-    vertexIndex[FV_FLAGS] = 0;
-  } while (--n != -1);
+  while (*group++)
+    while ((f = *group++))
+      FACE(f)->flags = 0;
 }
 
 static void UpdateFaceVisibilityFast(Object3D *object) {
-  short *src = (short *)object->faceNormal;
-  short **vertexIndexList = object->faceVertexIndexList;
-  void *point = object->point;
-  short n = object->faces - 1;
-
   short cx = object->camera.x;
   short cy = object->camera.y;
   short cz = object->camera.z;
 
-  do {
-    short *vertexIndex = *vertexIndexList++;
-    short px, py, pz;
-    int f;
+  void *_objdat = object->objdat;
+  short *group = object->group;
+  short f;
 
-    {
-      short i = *vertexIndex;
-      short *p = (short *)(point + i);
-      px = cx - *p++;
-      py = cy - *p++;
-      pz = cz - *p++;
+  while (*group++) {
+    while ((f = *group++)) {
+      short px, py, pz;
+      int v;
+
+      {
+        short i = FACE(f)->indices[0].vertex;
+        short *p = (short *)POINT(i);
+        px = cx - *p++;
+        py = cy - *p++;
+        pz = cz - *p++;
+      }
+
+      {
+        short *fn = FACE(f)->normal;
+        int x = *fn++ * px;
+        int y = *fn++ * py;
+        int z = *fn++ * pz;
+        v = x + y + z;
+      }
+
+      FACE(f)->flags = v >= 0 ? 0 : -1;
     }
-
-    {
-      int x = *src++ * px;
-      int y = *src++ * py;
-      int z = *src++ * pz;
-      f = x + y + z;
-    }
-
-    vertexIndex[FV_FLAGS] = f >= 0 ? 0 : -1;
-
-    src++;
-  } while (--n != -1);
+  }
 }
 
 static void UpdateEdgeVisibility(Object3D *object) {
-  char *vertexFlags = &object->vertex[0].flags;
-  void *edgeFlags = &object->edge[0].flags;
-  short **vertexIndexList = object->faceVertexIndexList;
-  short **edgeIndexList = object->faceEdgeIndexList;
+  register short s asm("d2") = 1;
 
-  register short m asm("d2") = object->faces - 1;
-  register short s asm("d3") = 1;
-  
-  do {
-    short *vertexIndex = *vertexIndexList++;
-    short *edgeIndex = *edgeIndexList++;
+  void *_objdat = object->objdat;
+  short *group = object->group;
+  short f;
 
-    if (vertexIndex[FV_FLAGS] >= 0) {
-      short n = vertexIndex[FV_COUNT] - 3;
-      short i;
+  while (*group++) {
+    while ((f = *group++)) {
+      if (FACE(f)->flags >= 0) {
+        register short *index asm("a3") = (short *)(FACE(f)->indices);
+        short vertices = FACE(f)->count - 3;
+        short i;
 
-      /* Face has at least (and usually) three vertices / edges. */
-      i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
-      i = *vertexIndex++; vertexFlags[i] = s;
-      i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
+        /* Face has at least (and usually) three vertices / edges. */
+        i = *index++; POINT(i)->flags = s;
+        i = *index++; EDGE(i)->flags = s;
 
-      do {
-        i = *vertexIndex++; vertexFlags[i] = s;
-        i = *edgeIndex++; *(short *)(edgeFlags + i) = s;
-      } while (--n != -1);
+        i = *index++; POINT(i)->flags = s;
+        i = *index++; EDGE(i)->flags = s;
+
+        do {
+          i = *index++; POINT(i)->flags = s;
+          i = *index++; EDGE(i)->flags = s;
+        } while (--vertices != -1);
+      }
     }
-  } while (--m != -1);
+  }
 }
 
 #define MULVERTEX1(D, E) {              \
@@ -157,7 +155,7 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (((Point3D *)dst)->flags) {
+    if (((Point3D *)src)->flags) {
       short x = *src++;
       short y = *src++;
       short z = *src++;
@@ -166,6 +164,8 @@ static void TransformVertices(Object3D *object) {
       int xp, yp;
       short zp;
 
+      *src++ = 0;
+
       MULVERTEX1(xp, m0);
       MULVERTEX1(yp, m1);
       MULVERTEX2(zp);
@@ -173,9 +173,7 @@ static void TransformVertices(Object3D *object) {
       *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
       *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
       *dst++ = zp;
-      *dst++ = 0;
-
-      src++;
+      dst++;
     } else {
       src += 4;
       dst += 4;

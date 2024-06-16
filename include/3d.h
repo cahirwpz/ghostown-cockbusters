@@ -39,29 +39,53 @@ void LoadReverseRotate3D(Matrix3D *M, short ax, short ay, short az);
 void Compose3D(Matrix3D *md, Matrix3D *ma, Matrix3D *mb);
 void Transform3D(Matrix3D *M, Point3D *out, Point3D *in, short n);
 
-/* 3D mesh representation */
-
+/*
+ * 3D mesh representation
+ *
+ * Please read the output from obj2c to understand it.
+ */
 typedef struct Mesh3D {
   short vertices;
-  short faces;
   short edges;
+  short faces;
+  short materials;
 
-  short *vertex;
-  short *faceNormal;
-  short *edge;       /* [vertex_0 vertex_1] */
-  short *faceVertex; /* [#vertices vertices...] */
-  short *faceEdge;   /* [#edge edges...] */
+  /* these arrays are shared with Object3D */
+  short *vertex;        /* [x y z flags/pad] */
+  short *edge;          /* [flags point_0 point_1] */
+  short *object;
 } Mesh3D;
 
 /* 3D object representation */
 
-/* Flags store negative value when face is not visible,
- * or a color of face normalized to 0..15 range. */
-#define FV_FLAGS -2 /* offset to flags in faceVertexIndexList */
-#define FV_COUNT -1 /* offset to #vertices in faceVertexIndexList */
-#define FE_COUNT -1 /* offset to #edges in faceEdgeIndexList */
+typedef struct FaceIndex {
+  short vertex;
+  short edge;
+} FaceIndexT; 
+
+typedef struct Face {
+  /* Face normal - absent for points and lines. */
+  short normal[3];
+  /* Flags store negative value when face is not visible,
+   * or a color of face normalized to 0..15 range. */
+  char flags;
+  char material;
+  short count;
+  FaceIndexT indices[0];
+} FaceT;
 
 typedef struct Object3D {
+  /* copied from mesh */
+  short vertices;
+  short edges;
+
+  Point3D *point;
+  EdgeT *edge;
+  short *group;
+
+  void *objdat;
+
+  /* private */
   Point3D rotate;
   Point3D scale;
   Point3D translate;
@@ -72,24 +96,18 @@ typedef struct Object3D {
   /* camera position in object space */
   Point3D camera;
 
-  /* potentially shared between objects, copied from mesh */
-  short faces;
-  short vertices;
-  short edges;
-
-  Point3D *point;
-  /* '|' indicates 0 offset */
-  short **faceVertexIndexList; /* [flags #vertices | vertex-indices...] */
-  short **faceEdgeIndexList;   /* [#edges | edge-indices...] */
-  Point3D *faceNormal;
-
-  /* private */
-  EdgeT *edge;
-  Point3D *vertex;     /* camera coordinates or screen coordinates + depth */
+  /* camera coordinates or screen coordinates + depth */
+  Point3D *vertex;
 
   /* ends with guard element */
   SortItemT *visibleFace;
 } Object3D;
+
+/* The environment has to define `_data` and `_vertex`. */
+#define POINT(i) ((Point3D *)(_objdat + (i)))
+#define VERTEX(i) ((Point3D *)(_vertex + (i)))
+#define EDGE(i) ((EdgeT *)(_objdat + (i)))
+#define FACE(i) ((FaceT *)(_objdat + (i)))
 
 Object3D *NewObject3D(Mesh3D *mesh);
 void DeleteObject3D(Object3D *object);

@@ -20,7 +20,7 @@ static short _{{ .Name }}_data[] = {
   {{range .Normal }}{{ . }}, {{ end -}}{{.Material}}, {{.Count}}, {{ range .Indices }}{{ . }}, {{ end -}}
 {{- end}}
 
-  /* object [#groups groups...]
+  /* object [#groups groups...] */
   /* groups: [#faces face-index...] */
   /* offset: {{ .ObjectDataOffset }}, count: {{ .ObjectDataCount }} */
   {{- range .Objects }}
@@ -29,7 +29,7 @@ static short _{{ .Name }}_data[] = {
   {{ len .Groups }},
     {{- range .Groups }}
     /* {{ .Name }} */
-    {{ len .Faces }}, {{range .Faces }}{{ . }}, {{ end -}}
+    {{range .Faces }}{{ . }}, {{ end -}}0, 
 {{- end}}
 {{- end}}
 };
@@ -45,11 +45,10 @@ static short _{{ .Name }}_data[] = {
 
 Mesh3D {{ .Name }} = {
   .vertices = {{ len .Vertices }},
-  .faces = {{ len .Faces }},
   .edges = {{ len .Edges }},
-  .objects = {{ len .Objects }}-1,
+  .faces = {{ len .Faces }},
   .materials = {{ len .Materials }},
   .vertex = _{{ .Name }}_data,
   .edge = (void *)_{{ .Name }}_data + {{ .EdgeOffset }},
-  .objects = (void *)_{{ .Name }}_data + {{ .ObjectDataOffset }},
+  .object = (void *)_{{ .Name }}_data + {{ .ObjectDataOffset }},
 };
