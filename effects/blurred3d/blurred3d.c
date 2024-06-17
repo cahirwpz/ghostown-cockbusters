@@ -195,7 +195,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         short minX = 32767;
@@ -317,7 +317,7 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
         }
       }
     }
-  }
+  } while (*group);
 }
 
 static void BitmapDecSaturatedFast(BitmapT *dstbm, BitmapT *srcbm) {

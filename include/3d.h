@@ -21,7 +21,8 @@ typedef struct Edge {
   /* negative if edge belongs to a face that is not visible,
    * otherwise it's an edge color in range 0..15
    * remember to set to -1 after use */
-  short flags;
+  char flags;
+  char pad;
   short point[2];
 } EdgeT;
 

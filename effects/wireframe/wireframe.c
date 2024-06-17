@@ -45,9 +45,10 @@ static void SetFaceVisibility(Object3D *object) {
   short *group = object->group;
   short f;
 
-  while (*group++)
+  do {
     while ((f = *group++))
       FACE(f)->flags = 0;
+  } while (*group);
 }
 
 static void UpdateFaceVisibilityFast(Object3D *object) {
@@ -59,7 +60,7 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
   short *group = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       short px, py, pz;
       int v;
@@ -82,7 +83,7 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
 
       FACE(f)->flags = v >= 0 ? 0 : -1;
     }
-  }
+  } while (*group);
 }
 
 static void UpdateEdgeVisibility(Object3D *object) {
@@ -92,7 +93,7 @@ static void UpdateEdgeVisibility(Object3D *object) {
   short *group = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         register short *index asm("a3") = (short *)(FACE(f)->indices);
@@ -112,7 +113,7 @@ static void UpdateEdgeVisibility(Object3D *object) {
         } while (--vertices != -1);
       }
     }
-  }
+  } while (*group);
 }
 
 #define MULVERTEX1(D, E) {              \

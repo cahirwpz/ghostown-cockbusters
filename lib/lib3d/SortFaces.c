@@ -9,7 +9,7 @@ void SortFaces(Object3D *object) {
   short *group = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         short z;
@@ -27,7 +27,7 @@ void SortFaces(Object3D *object) {
         count++;
       }
     }
-  }
+  } while (*group);
 
   /* guard element */
   *item++ = 0;

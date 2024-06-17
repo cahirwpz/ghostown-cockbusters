@@ -5,10 +5,10 @@ void UpdateVertexVisibility(Object3D *object) {
   register char s asm("d3") = 1;
 
   void *_objdat = object->objdat;
-  short *group = object->group;
+  register short *group asm("a2") = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         register FaceIndexT *index asm("a3") = FACE(f)->indices;
@@ -24,5 +24,5 @@ void UpdateVertexVisibility(Object3D *object) {
         } while (--vertices != -1);
       }
     }
-  }
+  } while (*group);
 }

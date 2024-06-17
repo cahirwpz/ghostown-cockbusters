@@ -10,10 +10,9 @@ void UpdateFaceVisibility(Object3D *object) {
   short *group = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
       short px, py, pz;
-      short l;
       int v;
 
       {
@@ -33,6 +32,7 @@ void UpdateFaceVisibility(Object3D *object) {
       }
 
       if (v >= 0) {
+        short l;
         /* normalize dot product */
 #if 0
         int s = px * px + py * py + pz * pz;
@@ -50,15 +50,10 @@ void UpdateFaceVisibility(Object3D *object) {
 #endif
         v = swap16(v); /* f >>= 16, ignore upper word */
         l = div16((short)v * (short)v, s);
-        if (l >= 256)
-          l = 15;
-        else
-          l = sqrt[l];
+        FACE(f)->flags = (l >= 256) ? 15 : sqrt[l];
       } else {
-        l = -1;
+        FACE(f)->flags = -1;
       }
-
-      FACE(f)->flags = l;
     }
-  }
+  } while (*group);
 }

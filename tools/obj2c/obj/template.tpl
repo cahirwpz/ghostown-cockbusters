@@ -20,22 +20,21 @@ static short _{{ .Name }}_data[] = {
   {{range .Normal }}{{ . }}, {{ end -}}{{.Material}}, {{.Count}}, {{ range .Indices }}{{ . }}, {{ end -}}
 {{- end}}
 
-  /* object [#groups groups...] */
-  /* groups: [#faces face-index...] */
+  /* face-groups: [face-index... 0] 0 */
   /* offset: {{ .ObjectDataOffset }}, count: {{ .ObjectDataCount }} */
-  {{- range .Objects }}
+  {{- range $obj := .Objects }}
 
-  /* {{ .Name }} */
-  {{ len .Groups }},
-    {{- range .Groups }}
-    /* {{ .Name }} */
-    {{range .Faces }}{{ . }}, {{ end -}}0, 
+  {{- range .FaceGroups }}
+  /* {{ $obj.Name }}:{{ .Name }} */
+  {{ range .Indices }}{{ . }}, {{ end -}}0, 
 {{- end}}
 {{- end}}
+  /* end */
+  0
 };
 {{ range $obj := .Objects }}
 #define {{ $.Name }}_obj_{{ $obj.Name }} {{ $obj.Offset }}
-{{- range $grp := $obj.Groups }}
+{{- range $grp := $obj.FaceGroups }}
 #define {{ $obj.Name }}_grp_{{ $grp.Name }} {{ $grp.Offset }}
 {{- end}}
 {{- end}}

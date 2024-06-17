@@ -43,19 +43,19 @@ static void Kill(void) {
 }
 
 static void UpdateEdgeVisibilityConvex(Object3D *object) {
-  register short s asm("d2") = 1;
+  register char s asm("d2") = 1;
 
   void *_objdat = object->objdat;
   short *group = object->group;
   short f;
 
-  while (*group++) {
+  do {
     while ((f = *group++)) {
-      register short flags asm("d3") = FACE(f)->flags;
+      register char flags asm("d3") = FACE(f)->flags;
 
       if (flags >= 0) {
-        register short *index asm("a3") = (short *)(FACE(f)->indices);
-        short vertices = FACE(f)->count - 3;
+        register short *index asm("a3") = (short *)(&FACE(f)->count);
+        short vertices = *index++ - 3;
         short i;
 
         /* Face has at least (and usually) three vertices / edges. */
@@ -71,7 +71,7 @@ static void UpdateEdgeVisibilityConvex(Object3D *object) {
         } while (--vertices != -1);
       }
     }
-  }
+  } while (*group);
 }
 
 #define MULVERTEX1(D, E) {                      \

@@ -64,16 +64,15 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 		object := Object{Name: obj.Name, Offset: geom.ObjectDataCount}
 		for _, g := range obj.Groups {
 			geom.ObjectDataCount += 1
-			og := FaceGroup{Name: g.Name, Offset: geom.ObjectDataCount}
+			og := Group{Name: g.Name, Offset: geom.ObjectDataCount}
 			for _, fi := range g.Indices {
-				og.Faces = append(og.Faces, faceIndices[fi])
+				og.Indices = append(og.Indices, faceIndices[fi])
 			}
-			object.Groups = append(object.Groups, og)
-			geom.ObjectDataCount += len(og.Faces) + 1
+			object.FaceGroups = append(object.FaceGroups, og)
+			geom.ObjectDataCount += len(og.Indices) + 1
 		}
 
-		/* terminate groups */
-		object.Groups = append(object.Groups, FaceGroup{Name: "end", Offset: geom.ObjectDataCount})
+		/* terminate groups with single 0 */
 		geom.ObjectDataCount += 1
 
 		/* add object */
@@ -100,9 +99,9 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 
 	/* relocate face indices in groups */
 	for i, object := range geom.Objects {
-		for j, group := range object.Groups {
-			for k := 0; k < len(group.Faces); k++ {
-				geom.Objects[i].Groups[j].Faces[k] += geom.FaceDataOffset
+		for j, group := range object.FaceGroups {
+			for k := 0; k < len(group.Indices); k++ {
+				geom.Objects[i].FaceGroups[j].Indices[k] += geom.FaceDataOffset
 			}
 		}
 	}
@@ -147,16 +146,16 @@ type Face struct {
 	Indices  []int
 }
 
-type FaceGroup struct {
-	Name   string
-	Offset int
-	Faces  []int
+type Group struct {
+	Name    string
+	Offset  int
+	Indices []int
 }
 
 type Object struct {
-	Name   string
-	Offset int
-	Groups []FaceGroup
+	Name       string
+	Offset     int
+	FaceGroups []Group
 }
 
 type FaceMaterial struct {
