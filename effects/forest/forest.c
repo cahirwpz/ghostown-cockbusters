@@ -24,11 +24,14 @@
 #define GROUND_HEIGHT 16
 
 
+static SpriteT batspr[2][2];
+static SpriteT ghostspr[2][2];
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
 static CopInsPairT *sprptr;
 static CopListT *cp;
 static short active = 0;
+static short spract = 0;
 
 
 static __data_chip u_short treeTab[6][24] = {
@@ -83,201 +86,185 @@ static short branchesPos[4][2] = {
   {248, 299},
 };
 
-static short speed[6] = {
-  // Trees move speed in pixels per frame
-  // 1, 4, 2, 5, 3, 6
-  2, 8, 4, 10, 6, 12
-};
-
-static short groundWordOffset[6] = {
-  19, 19, 19, 19, 19, 19
-};
-
-static short groundBitOffset[6] = {
-  0, 0, 0, 0, 0, 0
-};
-
 static short batPos[2] = {
   320, 56
 };
 
-static short ghostPos[2] = {
-  -32, 116
+static short ghostData[2] = {
+  -32, 112
 };
 
-static bool ghostUp = false;
+static struct layer {
+  short speed;
+  short word;
+  short bit;
+} layers[6] = {
+  {  2, 19, 0 },
+  {  8, 19, 0 },
+  {  4, 19, 0 },
+  { 10, 19, 0 },
+  {  6, 19, 0 },
+  { 12, 19, 0 },
+};
 
 
 /* MOVEMENTS */
-static void MoveTrees(u_int* arg) {
-  short i = 0;
-  register u_int* tab  asm("a0") = &arg[11];
-  register u_int* tab2 asm("a1") = &arg[10];
-  u_int tail = (*tab & 1) * 0x80000000;
-
-  for (i = 0; i < 11; ++i) {
-    *tab /= 2;
-    if (*(tab2--) & 1) {
-      *tab += 0x80000000;
-    }
-    tab--;
+static void SwitchSprites(void) {
+  if (ghostData[0] & 0x10) {
+    spract = 0;
+    CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
+    CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
+    ghostData[1]--;
+  } else {
+    spract = 1;
+    CopInsSetSprite(&sprptr[6], &moonbatghost2[0]);
+    CopInsSetSprite(&sprptr[7], &moonbatghost2[1]);
+    ghostData[1]++;
   }
-
-
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-  // *tab /= 2; if (*(tab2--) & 1) { *tab += 0x80000000; } tab--;
-
-  *tab = (*tab / 2) | tail;
 }
 
-static void MoveSprites(void) {
+static void MoveTrees(u_int* arg) {
+  u_int a, d;
+  short i;
+
+  d = (arg[11] & 1) << 31;
+  for (i = 0; i < 12; i++) {
+    a = *arg;
+    *arg++ = d | (a >> 1);
+    d = a & 1;
+    asm volatile("ror.l #1,%0"
+               : "=d" (d)
+               : "0" (d));
+  }
+}
+
+static void MoveBranches(short bp[4][2]) {
   short i, j;
 
-  /* Move branches */
-  SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
-  SpriteUpdatePos(&tree1[1],   X(branchesPos[0][1]), Y(-16));
+  SpriteUpdatePos(&tree1[0],   X(bp[0][0]), Y(-16));
+  SpriteUpdatePos(&tree1[1],   X(bp[0][1]), Y(-16));
 
-  SpriteUpdatePos(&tree2[0],   X(branchesPos[1][0]), Y(-16));
-  SpriteUpdatePos(&tree2[1],   X(branchesPos[1][1]), Y(-16));
+  SpriteUpdatePos(&tree2[0],   X(bp[1][0]), Y(-16));
+  SpriteUpdatePos(&tree2[1],   X(bp[1][1]), Y(-16));
 
-  SpriteUpdatePos(&tree3[0],   X(branchesPos[2][0]), Y(-16));
-  SpriteUpdatePos(&tree3[1],   X(branchesPos[2][1]), Y(-16));
+  SpriteUpdatePos(&tree3[0],   X(bp[2][0]), Y(-16));
+  SpriteUpdatePos(&tree3[1],   X(bp[2][1]), Y(-16));
 
   for (i = 0; i <= 2; ++i) {
     for (j = 0; j <= 1; ++j) {
-      if (branchesPos[i][j] > 320) {
-        branchesPos[i][j] = -63;
+      if (bp[i][j] > 320) {
+        bp[i][j] = -63;
       }
-      branchesPos[i][j]++;
+      bp[i][j]++;
     }
   }
+}
 
-  // Moon Bat Ghost
-  /* Move bat */
-  moonbatghost1[0].sprdat->data[32][0] = SPRPOS(X(batPos[0]), Y(batPos[1]));
-  moonbatghost1[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 19);
-  moonbatghost1[1].sprdat->data[32][0] = SPRPOS(X(batPos[0]+16), Y(batPos[1]));
-  moonbatghost1[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 19);
-  moonbatghost2[0].sprdat->data[32][0] = SPRPOS(X(batPos[0]), Y(batPos[1]));
-  moonbatghost2[0].sprdat->data[32][1] = SPRCTL(X(batPos[0]), Y(batPos[1]), false, 19);
-  moonbatghost2[1].sprdat->data[32][0] = SPRPOS(X(batPos[0]+16), Y(batPos[1]));
-  moonbatghost2[1].sprdat->data[32][1] = SPRCTL(X(batPos[0]+16), Y(batPos[1]), false, 19);
-
-  /* Move ghost */
-  moonbatghost1[0].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
-  moonbatghost1[0].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 46);
-  moonbatghost1[1].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
-  moonbatghost1[1].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 46);
-  moonbatghost2[0].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]), Y(ghostPos[1]));
-  moonbatghost2[0].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]), Y(ghostPos[1]), false, 46);
-  moonbatghost2[1].sprdat->data[32+21][0] = SPRPOS(X(ghostPos[0]+16), Y(ghostPos[1]));
-  moonbatghost2[1].sprdat->data[32+21][1] = SPRCTL(X(ghostPos[0]+16), Y(ghostPos[1]), false, 46);
+static void MoveBat(SpriteT spr[2]) {
+  SpriteUpdatePos(&spr[0], X(batPos[0]), Y(batPos[1]));
+  SpriteUpdatePos(&spr[1], X(batPos[0]+16), Y(batPos[1]));
 
   batPos[0] -= 1;
   if (batPos[0] < -64) {
     batPos[0] = 360;
   }
-  ghostPos[0] += 2;
-  if (ghostUp) {
-    CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
-    CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
-    ghostPos[1]--;
-  } else {
-    CopInsSetSprite(&sprptr[6], &moonbatghost2[0]);
-    CopInsSetSprite(&sprptr[7], &moonbatghost2[1]);
-    ghostPos[1]++;
-  }
-  if (ghostPos[0] > 320) {
-    ghostPos[0] = -64;
-  }
-  if (ghostPos[1] >= 120 || ghostPos[1] <= 114) {
-    ghostUp = !ghostUp;
+}
+
+static void MoveGhost(SpriteT spr[2]) {
+  SpriteUpdatePos(&spr[0], X(ghostData[0]),    Y(ghostData[1]));
+  SpriteUpdatePos(&spr[1], X(ghostData[0]+16), Y(ghostData[1]));
+
+  ghostData[0] += 2;
+  if (ghostData[0] > 320) {
+    ghostData[0] = -64;
+    ghostData[1] = 112;
   }
 }
 
-static void MoveForest(short l) {
+static void MoveForest(struct layer* l, short s) {
+  if (l->speed == 0) {
+    l->speed = s + 1;
+    MoveTrees((u_int*)treeTab[s]);
 
-  if (speed[l] == 0) {
-    speed[l] = l + 1;
-    MoveTrees((u_int*)treeTab[l]);
-
-    groundBitOffset[l] += 1;
-    if (groundBitOffset[l] >= 16) {
-      groundBitOffset[l] = 0;
-      groundWordOffset[l] -= 1;
+    l->bit += 1;
+    if (l->bit >= 16) {
+      l->bit = 0;
+      l->word -= 1;
     }
-    if (groundWordOffset[l] < 0) {
-      groundWordOffset[l] = 19;
+    if (l->word < 0) {
+      l->word = 19;
     }
   } else {
-    speed[l] -= 1;
+    l->speed -= 1;
   }
 }
 
 /* BLITTER */
-static void VerticalFill(short layer, short h) {
-  void *srca = screen[active]->planes[layer];
-  void *srcb = screen[active]->planes[layer] + WIDTH/8;
-  void *dst  = screen[active]->planes[layer] + WIDTH/8;
-
+static void VerticalFill(void** planes) {
   WaitBlitter();
 
   custom->bltamod = 0;
   custom->bltbmod = 0;
   custom->bltdmod = 0;
-
   custom->bltcdat = -1;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  /* BITPLANE 0 */
+  custom->bltapt = planes[0];
+  custom->bltbpt = planes[0] + WIDTH/8;
+  custom->bltdpt = planes[0] + WIDTH/8;
+
+  custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
+  custom->bltsize = ((HEIGHT - GROUND_HEIGHT*2 - 1) << 6) | 20;
+
+  WaitBlitter();
+
+  /* BITPLANE 1 */
+  custom->bltapt = planes[1];
+  custom->bltbpt = planes[1] + WIDTH/8;
+  custom->bltdpt = planes[1] + WIDTH/8;
+
+  custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
+  custom->bltsize = ((HEIGHT - 1) << 6) | 20;
+  WaitBlitter();
+
+  /* BITPLANE 2 */
+  custom->bltapt = planes[2];
+  custom->bltbpt = planes[2] + WIDTH/8;
+  custom->bltdpt = planes[2] + WIDTH/8;
+
+  custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
+  custom->bltsize = ((HEIGHT - GROUND_HEIGHT*4 - 1) << 6) | 20;
+  WaitBlitter();
+
+  /* BITPLANE 3 */
+  custom->bltapt = planes[3];
+  custom->bltbpt = planes[3] + WIDTH/8;
+  custom->bltdpt = planes[3] + WIDTH/8;
+
+  custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
+  custom->bltsize = ((HEIGHT - GROUND_HEIGHT - 1) << 6) | 20;
+  WaitBlitter();
+}
+
+static void DrawForest(void **planes, u_short trees[6][24]) {
+  custom->bltamod = 0;
+  custom->bltbmod = 0;
+  custom->bltcmod = 0;
+  custom->bltdmod = 0;
 
   custom->bltafwm = -1;
   custom->bltalwm = -1;
 
-  custom->bltapt = srca;
-  custom->bltbpt = srcb;
-  custom->bltdpt = dst;
-
-  custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
-  custom->bltcon1 = 0;
-  custom->bltsize = ((h - 1) << 6) | 20;
-}
-
-static void DrawForest(void) {
-  /* This function takes 112 raster lines */
-  void *dst;
-  void *srca;
-  void *srcb;
-  void *srcc;
-
-  (void)MoveTrees;
-  (void)speed;
-
   { /* PLAYFIELD 1 */
     /* PLAYFIELD 1 BITPLANE 0 */
-    dst = screen[active]->planes[0];
-    srca = treeTab[3];
-    srcb = treeTab[4];
-    srcc = treeTab[5];
 
-    custom->bltamod = 0;
-    custom->bltbmod = 0;
-    custom->bltcmod = 0;
-    custom->bltdmod = 0;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
+    custom->bltapt = trees[3];
+    custom->bltbpt = trees[4];
+    custom->bltcpt = trees[5];
+    custom->bltdpt = planes[0];
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
@@ -286,23 +273,10 @@ static void DrawForest(void) {
     WaitBlitter();
 
     /* PLAYFIELD 1 BITPLANE 1 */
-    dst = screen[active]->planes[2];
-    srca = treeTab[3];
-    srcb = treeTab[4];
-    srcc = treeTab[5];
-
-    custom->bltamod = 0;
-    custom->bltbmod = 0;
-    custom->bltcmod = 0;
-    custom->bltdmod = 0;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
+    custom->bltapt = trees[3];
+    custom->bltbpt = trees[4];
+    custom->bltcpt = trees[5];
+    custom->bltdpt = planes[2];
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
@@ -313,23 +287,10 @@ static void DrawForest(void) {
 
   { /* PLAYFIELD 2 */
     /* PLAYFIELD 2 BITPLANE 0 */
-    dst = screen[active]->planes[1];
-    srca = treeTab[0];
-    srcb = treeTab[1];
-    srcc = treeTab[2];
-
-    custom->bltamod = 0;
-    custom->bltbmod = 0;
-    custom->bltcmod = 0;
-    custom->bltdmod = 0;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
+    custom->bltapt = trees[0];
+    custom->bltbpt = trees[1];
+    custom->bltcpt = trees[2];
+    custom->bltdpt = planes[1];
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
@@ -338,23 +299,10 @@ static void DrawForest(void) {
     WaitBlitter();
 
     /* PLAYFIELD 2 BITPLANE 1 */
-    dst = screen[active]->planes[3];
-    srca = treeTab[0];
-    srcb = treeTab[1];
-    srcc = treeTab[2];
-
-    custom->bltamod = 0;
-    custom->bltbmod = 0;
-    custom->bltcmod = 0;
-    custom->bltdmod = 0;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
+    custom->bltapt = trees[0];
+    custom->bltbpt = trees[1];
+    custom->bltcpt = trees[2];
+    custom->bltdpt = planes[3];
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
@@ -364,216 +312,127 @@ static void DrawForest(void) {
   }
 }
 
-static void DrawGround(void) {
-  void *dst;
-  void *srca;
-  void *srcb;
-  void *srcc;
+static void DrawGround(void **planes, struct layer lr[6]) {
+  struct layer* l = &lr[5];
+
+  custom->bltamod = 40;
+  custom->bltbmod = -40;
+  custom->bltcmod = -40;
+  custom->bltdmod = 0;
+
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+
+  custom->bltcdat = -1;
+  custom->bltbdat = -1;
+
+  custom->bltcon1 = 0;
 
   { /* 6th LAYER */
-    dst = screen[active]->planes[2] + 40;
-    srca = _ground_bpl + groundWordOffset[5];
-    srcb = screen[active]->planes[0];
+    custom->bltapt = _ground_bpl + l->word;
+    custom->bltbpt = planes[0];
+    custom->bltdpt = planes[2] + 40;
 
-    custom->bltamod = 40;
-    custom->bltbmod = -40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltcdat = -1;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(groundBitOffset[5]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1920 cycles
-
-    MoveForest(5);
+    MoveForest(l--, 5);
     WaitBlitter();
   }
 
   { /* 5th LAYER */
-    dst = screen[active]->planes[0] + 40 + 16*40;
-    srca = _ground_bpl + groundWordOffset[4];
+    custom->bltapt = _ground_bpl + l->word;
+    custom->bltdpt = planes[0] + 40 + 16*40;
 
-    custom->bltamod = 40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltbdat = -1;
-    custom->bltcdat = -1;
+    MoveForest(l--, 4);
 
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(groundBitOffset[4]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1280 cycles
-
-    MoveForest(4);
     WaitBlitter();
   }
 
   { /* 4th LAYER */
-    dst = screen[active]->planes[2] + 40 + 32*40;
-    srca = _ground2_bpl + groundWordOffset[3];
-    srcb = screen[active]->planes[0];
-    srcc = screen[active]->planes[2];
+    custom->bltapt = _ground2_bpl + l->word;
+    custom->bltbpt = planes[0];
+    custom->bltcpt = planes[2];
+    custom->bltdpt = planes[2] + 40 + 32*40;;
 
-    custom->bltamod = 40;
-    custom->bltbmod = -40;
-    custom->bltcmod = -40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(groundBitOffset[3]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 2560 cycles
-
-    MoveForest(3);
+    MoveForest(l--, 3);
     WaitBlitter();
   }
 
   { /* 3rd LAYER */
-    dst = screen[active]->planes[3] + 40 + 48*40;
-    srca = _ground_bpl + groundWordOffset[2];
-    srcb = screen[active]->planes[1];
+    custom->bltapt = _ground_bpl + l->word;
+    custom->bltbpt = planes[1];
+    custom->bltdpt = planes[3] + 40 + 48*40;
 
-    custom->bltamod = 40;
-    custom->bltbmod = -40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltcdat = -1;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(groundBitOffset[2]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1920 cycles
-
-    MoveForest(2);
+    MoveForest(l--, 2);
     WaitBlitter();
   }
 
   { /* 2nd LAYER */
-    dst = screen[active]->planes[1] + 40 + 64*40;
-    srca = _ground2_bpl + groundWordOffset[1];
+    custom->bltapt = _ground2_bpl + l->word;
+    custom->bltdpt = planes[1] + 40 + 64*40;
 
-    custom->bltamod = 40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltbdat = -1;
-    custom->bltcdat = -1;
-
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(groundBitOffset[1]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 1280 cycles
-
-    MoveForest(1);
+    MoveForest(l--, 1);
     WaitBlitter();
   }
 
   { /* 1st LAYER */
-    dst = screen[active]->planes[3] + 40 + 80*40;
-    srca = _ground_bpl + groundWordOffset[0];
-    srcb = screen[active]->planes[1];
-    srcc = screen[active]->planes[3];
+    custom->bltapt = _ground_bpl + l->word;
+    custom->bltbpt = planes[1];
+    custom->bltcpt = planes[3];
+    custom->bltdpt = planes[3] + 40 + 80*40;
 
-    custom->bltamod = 40;
-    custom->bltbmod = -40;
-    custom->bltcmod = -40;
-    custom->bltdmod = 0;
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(l->bit);
+    custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-
-    custom->bltapt = srca;
-    custom->bltbpt = srcb;
-    custom->bltcpt = srcc;
-    custom->bltdpt = dst;
-
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(groundBitOffset[0]);
-    custom->bltcon1 = 0;
-    custom->bltsize = (GROUND_HEIGHT << 6) | 20;  // 2560 cycles
-
-    MoveForest(0);
+    MoveForest(l, 0);
     // WaitBlitter();
   }
 }
 
-static void ClearBitplanes(void) {
-  void *dst = screen[active]->planes[0] + 40;
-
+static void ClearBitplanes(void **planes) {
+  /* const */
   custom->bltdmod = 0;
-
-  custom->bltdpt = dst;
-
   custom->bltcon0 = (DEST) | 0x0;
   custom->bltcon1 = 0;
-  custom->bltsize = (GROUND_HEIGHT << 6) | 20;
 
+  /* per blit */
+  custom->bltdpt = planes[0] + 40;
+  custom->bltsize = (GROUND_HEIGHT << 6) | 20;
   WaitBlitter();
 
-  dst = screen[active]->planes[2] + 40 + 16*40;
-
-  custom->bltdmod = 0;
-
-  custom->bltdpt = dst;
-
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
+  /* per blit */
+  custom->bltdpt = planes[2] + 40 + 16*40;
   custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
   WaitBlitter();
 
-  dst = screen[active]->planes[1] + 40;
-
-  custom->bltdmod = 0;
-
-  custom->bltdpt = dst;
-
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
+  /* per blit */
+  custom->bltdpt = planes[1] + 40;
   custom->bltsize = ((GROUND_HEIGHT*4) << 6) | 20;
-
   WaitBlitter();
 
-  dst = screen[active]->planes[3] + 40;
-
-  custom->bltdmod = 0;
-
-  custom->bltdpt = dst;
-
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
+  /* per blit */
+  custom->bltdpt = planes[3] + 40;
   custom->bltsize = ((GROUND_HEIGHT*5) << 6) | 20;
 
-  if (speed[0] == 0) {
-    MoveSprites();
+
+  if (layers[0].speed == 0) {
+    SwitchSprites();
+    MoveGhost(ghostspr[spract]);
+    MoveBat(batspr[spract]);
+    MoveBranches(branchesPos);
   }
   WaitBlitter();
 }
@@ -581,20 +440,27 @@ static void ClearBitplanes(void) {
 /* SETUP */
 static void SetupColors(void) {
   unsigned short colors[7] = {
-    0x111, // 1st layer
+    0x111, // 1st layer BLUE
     0x223,
     0x334,
     0x445,
     0x556,
     0x667,
     0x778, // background
-    // 0x111, // 1st layer
+    // 0x111, // 1st layer GREEN
     // 0x232,
     // 0x343,
     // 0x454,
     // 0x565,
     // 0x676,
     // 0x787, // background
+    // 0x111, // 1st layer RED
+    // 0x322,
+    // 0x433,
+    // 0x544,
+    // 0x655,
+    // 0x766,
+    // 0x877, // background
   };
 
   // TREES
@@ -637,9 +503,51 @@ static void SetupColors(void) {
 }
 
 static void SetupSprites(void) {
-  // CopInsPairT *sprptr;
+  SprDataT *dat;
   sprptr = CopSetupSprites(cp);
+  (void)spract;
 
+  /* Moon, bat, ghost */
+  dat = &moonbatghost10_sprdat;
+  MakeSprite(&dat, 32, false, &moonbatghost1[0]);
+  dat = &moonbatghost11_sprdat;
+  MakeSprite(&dat, 32, false, &moonbatghost1[1]);
+  dat = &moonbatghost20_sprdat;
+  MakeSprite(&dat, 32, false, &moonbatghost2[0]);
+  dat = &moonbatghost21_sprdat;
+  MakeSprite(&dat, 32, false, &moonbatghost2[1]);
+
+  /* Bat, active == 0 */
+  dat = (SprDataT*)moonbatghost1[0].sprdat->data[32];
+  MakeSprite(&dat, 19, false, &batspr[0][0]);
+  dat = (SprDataT*)moonbatghost1[1].sprdat->data[32];
+  MakeSprite(&dat, 19, false, &batspr[0][1]);
+  /* Bat, active == 1 */
+  dat = (SprDataT*)moonbatghost2[0].sprdat->data[32];
+  MakeSprite(&dat, 19, false, &batspr[1][0]);
+  dat = (SprDataT*)moonbatghost2[1].sprdat->data[32];
+  MakeSprite(&dat, 19, false, &batspr[1][1]);
+
+  /* Ghost, active == 0 */
+  dat = (SprDataT*)moonbatghost1[0].sprdat->data[52];
+  MakeSprite(&dat, 46, false, &ghostspr[0][0]);
+  dat = (SprDataT*)moonbatghost1[1].sprdat->data[52];
+  MakeSprite(&dat, 46, false, &ghostspr[0][1]);
+  /* Ghost, active == 1 */
+  dat = (SprDataT*)moonbatghost2[0].sprdat->data[52];
+  MakeSprite(&dat, 46, false, &ghostspr[1][0]);
+  dat = (SprDataT*)moonbatghost2[1].sprdat->data[52];
+  MakeSprite(&dat, 46, false, &ghostspr[1][1]);
+
+  CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
+  CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
+
+  SpriteUpdatePos(&moonbatghost1[0], X(16), Y(16));
+  SpriteUpdatePos(&moonbatghost1[1], X(32), Y(16));
+  SpriteUpdatePos(&moonbatghost2[0], X(16), Y(16));
+  SpriteUpdatePos(&moonbatghost2[1], X(32), Y(16));
+
+  /* Branches */
   CopInsSetSprite(&sprptr[0], &tree1[0]);
   CopInsSetSprite(&sprptr[1], &tree1[1]);
 
@@ -649,9 +557,6 @@ static void SetupSprites(void) {
   CopInsSetSprite(&sprptr[4], &tree3[0]);
   CopInsSetSprite(&sprptr[5], &tree3[1]);
 
-  CopInsSetSprite(&sprptr[6], &moonbatghost1[0]);
-  CopInsSetSprite(&sprptr[7], &moonbatghost1[1]);
-
   SpriteUpdatePos(&tree1[0],   X(branchesPos[0][0]), Y(-16));
   SpriteUpdatePos(&tree1[1],   X(branchesPos[0][1]), Y(-16));
 
@@ -660,16 +565,11 @@ static void SetupSprites(void) {
 
   SpriteUpdatePos(&tree3[0],   X(branchesPos[2][0]), Y(-16));
   SpriteUpdatePos(&tree3[1],   X(branchesPos[2][1]), Y(-16));
-
-  SpriteUpdatePos(&moonbatghost1[0], X(16), Y(16));
-  SpriteUpdatePos(&moonbatghost1[1], X(32), Y(16));
-  SpriteUpdatePos(&moonbatghost2[0], X(16), Y(16));
-  SpriteUpdatePos(&moonbatghost2[1], X(32), Y(16));
 }
 
 static CopListT *MakeCopperList(void) {
   short i;
-  unsigned short backgroundGradient[12] = {
+  static unsigned short backgroundGradient[12] = {
     0x222, 0x222, 0x223, 0x223,
     0x233, 0x334, 0x334, 0x435,
     0x445, 0x446, 0x456, 0x557
@@ -683,7 +583,7 @@ static CopListT *MakeCopperList(void) {
     30,   // 1st LAYER (min. 16)
   };
 
-  cp = NewCopList(1200);
+  cp = NewCopList(128);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
 
   // Sprites
@@ -723,6 +623,7 @@ static CopListT *MakeCopperList(void) {
   // Ghost between playfields
   CopMove16(cp, bplcon2, BPLCON2_PF2PRI | BPLCON2_PF2P0 | BPLCON2_PF2P1 | BPLCON2_PF1P2);
 
+  // Duplicate lines
   for (i = 0; i < 6; ++i) {
     CopWaitSafe(cp, Y(256 - groundLevel[i]), 0);
     CopMove16(cp, bpl1mod, 0);
@@ -738,23 +639,11 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-  EnableDMA(DMAF_RASTER);
-  EnableDMA(DMAF_SPRITE);
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER | DMAF_SPRITE);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_DUALPF, DEPTH, X(0), Y(0), WIDTH, 256);
-
-  moonbatghost1[0].height = 32;
-  moonbatghost1[1].height = 32;
-  moonbatghost1[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
-  moonbatghost1[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
-
-  moonbatghost2[0].height = 32;
-  moonbatghost2[1].height = 32;
-  moonbatghost2[0].sprdat->ctl = SPRCTL(0, 0, false, 32);
-  moonbatghost2[1].sprdat->ctl = SPRCTL(0, 0, false, 32);
 
   SetupColors();
 
@@ -773,21 +662,12 @@ static void Kill(void) {
 PROFILE(Forest);
 
 static void Render(void) {
-  (void)MoveForest;
-  (void)DrawForest;
-  (void)DrawGround;
-  (void)ClearBitplanes;
-  (void)MoveSprites;
   ProfilerStart(Forest);
   {
-    ClearBitplanes();
-    DrawForest();
-    DrawGround();
-
-    VerticalFill(0, HEIGHT - GROUND_HEIGHT*2);
-    VerticalFill(1, HEIGHT);
-    VerticalFill(2, HEIGHT - GROUND_HEIGHT*4);
-    VerticalFill(3, HEIGHT - GROUND_HEIGHT);
+    ClearBitplanes(screen[active]->planes);
+    DrawForest(screen[active]->planes, treeTab);
+    DrawGround(screen[active]->planes, layers);
+    VerticalFill(screen[active]->planes);
 
     ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
   }
