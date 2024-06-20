@@ -1,6 +1,7 @@
 #ifndef __3D_H__
 #define __3D_H__
 
+#include <cdefs.h>
 #include <sort.h>
 #include <2d.h>
 #include <pixmap.h>
@@ -9,13 +10,18 @@ extern char SqrtTab8[256];
 
 /* 3D transformations */
 
-typedef struct {
+typedef struct Point3D {
   short x, y, z;
+} Point3D;
+
+typedef struct Node3D {
   /* one if vertex belongs to a face that is visible,
    * otherwise set to zero,
    * remember to set to 0 after use */
   char flags;
-} Point3D;
+  Point3D point;
+  Point3D vertex;
+} Node3D;
 
 typedef struct Edge {
   /* negative if edge belongs to a face that is not visible,
@@ -52,9 +58,12 @@ typedef struct Mesh3D {
   short materials;
 
   /* these arrays are shared with Object3D */
-  short *vertex;        /* [x y z flags/pad] */
-  short *edge;          /* [flags point_0 point_1] */
-  short *object;
+  void *data;
+
+  short *vertexGroups;
+  short *edgeGroups;
+  short *faceGroups;
+  short *objects;
 } Mesh3D;
 
 /* 3D object representation */
@@ -77,14 +86,12 @@ typedef struct Face {
 
 typedef struct Object3D {
   /* copied from mesh */
-  short vertices;
-  short edges;
-
-  Point3D *point;
-  EdgeT *edge;
-  short *group;
-
   void *objdat;
+
+  short *vertexGroups;
+  short *edgeGroups;
+  short *faceGroups;
+  short *objects;
 
   /* private */
   Point3D rotate;
@@ -97,18 +104,21 @@ typedef struct Object3D {
   /* camera position in object space */
   Point3D camera;
 
-  /* camera coordinates or screen coordinates + depth */
-  Point3D *vertex;
-
   /* ends with guard element */
   SortItemT *visibleFace;
 } Object3D;
 
-/* The environment has to define `_data` and `_vertex`. */
-#define POINT(i) ((Point3D *)(_objdat + (i)))
-#define VERTEX(i) ((Point3D *)(_vertex + (i)))
-#define EDGE(i) ((EdgeT *)(_objdat + (i)))
-#define FACE(i) ((FaceT *)(_objdat + (i)))
+/* The environment has to define `_objdat`. */
+static inline void *_getptr(void *ptr, short i, const short o) {
+  ptr += i + o;
+  return ptr;
+}
+
+#define NODE3D(i) ((Node3D *)_getptr(_objdat, i, -2))
+#define POINT(i) ((Point3D *)_getptr(_objdat, i, offsetof(Node3D, point) - 2))
+#define VERTEX(i) ((Point3D *)_getptr(_objdat, i, offsetof(Node3D, vertex) - 2))
+#define EDGE(i) ((EdgeT *)_getptr(_objdat, i, 0))
+#define FACE(i) ((FaceT *)_getptr(_objdat, i, 0))
 
 Object3D *NewObject3D(Mesh3D *mesh);
 void DeleteObject3D(Object3D *object);

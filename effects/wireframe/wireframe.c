@@ -42,7 +42,7 @@ static void Kill(void) {
 
 static void SetFaceVisibility(Object3D *object) {
   void *_objdat = object->objdat;
-  short *group = object->group;
+  short *group = object->faceGroups;
   short f;
 
   do {
@@ -57,7 +57,7 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
   short cz = object->camera.z;
 
   void *_objdat = object->objdat;
-  short *group = object->group;
+  short *group = object->faceGroups;
   short f;
 
   do {
@@ -79,9 +79,9 @@ static void UpdateFaceVisibilityFast(Object3D *object) {
         int y = *fn++ * py;
         int z = *fn++ * pz;
         v = x + y + z;
-      }
 
-      FACE(f)->flags = v >= 0 ? 0 : -1;
+        *(char *)fn = v >= 0 ? 0 : -1;
+      }
     }
   } while (*group);
 }
@@ -90,7 +90,7 @@ static void UpdateEdgeVisibility(Object3D *object) {
   register short s asm("d2") = 1;
 
   void *_objdat = object->objdat;
-  short *group = object->group;
+  short *group = object->faceGroups;
   short f;
 
   do {
@@ -101,14 +101,14 @@ static void UpdateEdgeVisibility(Object3D *object) {
         short i;
 
         /* Face has at least (and usually) three vertices / edges. */
-        i = *index++; POINT(i)->flags = s;
+        i = *index++; NODE3D(i)->flags = s;
         i = *index++; EDGE(i)->flags = s;
 
-        i = *index++; POINT(i)->flags = s;
+        i = *index++; NODE3D(i)->flags = s;
         i = *index++; EDGE(i)->flags = s;
 
         do {
-          i = *index++; POINT(i)->flags = s;
+          i = *index++; NODE3D(i)->flags = s;
           i = *index++; EDGE(i)->flags = s;
         } while (--vertices != -1);
       }
@@ -134,10 +134,8 @@ static void UpdateEdgeVisibility(Object3D *object) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *mx = (short *)M;
-  short *src = (short *)object->point;
-  short *dst = (short *)object->vertex;
-  register short n asm("d7") = object->vertices - 1;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
 
   int m0 = (M->x - normfx(M->m00 * M->m01)) << 8;
   int m1 = (M->y - normfx(M->m10 * M->m11)) << 8;
@@ -156,38 +154,40 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (((Point3D *)src)->flags) {
-      short x = *src++;
-      short y = *src++;
-      short z = *src++;
-      short *v = mx;
-      int xy = x * y;
-      int xp, yp;
-      short zp;
+    short i;
 
-      *src++ = 0;
+    while ((i = *group++)) {
+      if (NODE3D(i)->flags) {
+        short *pt = (short *)NODE3D(i);
+        short *v = (short *)M;
+        short x, y, z, zp;
+        int xy, xp, yp;
 
-      MULVERTEX1(xp, m0);
-      MULVERTEX1(yp, m1);
-      MULVERTEX2(zp);
+        /* clear flags */
+        *pt++ = 0;
 
-      *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
-      *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
-      *dst++ = zp;
-      dst++;
-    } else {
-      src += 4;
-      dst += 4;
+        x = *pt++;
+        y = *pt++;
+        z = *pt++;
+        xy = x * y;
+
+        MULVERTEX1(xp, m0);
+        MULVERTEX1(yp, m1);
+        MULVERTEX2(zp);
+
+        *pt++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
+        *pt++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
+        *pt++ = zp;
+      }
     }
-  } while (--n != -1);
+  } while (*group);
 }
 
 static void DrawObject(Object3D *object, void *bplpt,
                        CustomPtrT custom_ asm("a6"))
 {
-  void *vertex = object->vertex;
-  short *edge = (short *)object->edge;
-  short n = object->edges - 1;
+  void *_objdat = object->objdat;
+  short *group = object->edgeGroups;
 
   _WaitBlitter(custom_);
   custom_->bltafwm = -1;
@@ -198,9 +198,16 @@ static void DrawObject(Object3D *object, void *bplpt,
   custom_->bltdmod = WIDTH / 8;
 
   do {
-    if (*edge) {
-      void *data;
+    short i;
+
+    while ((i = *group++)) {
+      short *edge = (short *)EDGE(i);
+
       short x0, y0, x1, y1;
+      void *data;
+
+      if (*edge == 0)
+        continue;
 
       /* clear visibility */
       *edge++ = 0;
@@ -209,12 +216,12 @@ static void DrawObject(Object3D *object, void *bplpt,
         short i;
 
         i = *edge++;
-        x0 = ((Point3D *)(vertex + i))->x;
-        y0 = ((Point3D *)(vertex + i))->y;
+        x0 = VERTEX(i)->x;
+        y0 = VERTEX(i)->y;
 
         i = *edge++;
-        x1 = ((Point3D *)(vertex + i))->x;
-        y1 = ((Point3D *)(vertex + i))->y;
+        x1 = VERTEX(i)->x;
+        y1 = VERTEX(i)->y;
       }
 
       if (y0 > y1) {
@@ -273,10 +280,8 @@ static void DrawObject(Object3D *object, void *bplpt,
           custom_->bltsize = bltsize;
         }
       }
-    } else {
-      edge += sizeof(EdgeT) / sizeof(short);
     }
-  } while (--n != -1);
+  } while (*group);
 }
 
 PROFILE(Transform);

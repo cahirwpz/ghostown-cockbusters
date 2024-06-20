@@ -7,7 +7,7 @@ void UpdateFaceVisibility(Object3D *object) {
   char *sqrt = SqrtTab8;
 
   void *_objdat = object->objdat;
-  short *group = object->group;
+  short *group = object->faceGroups;
   short f;
 
   do {

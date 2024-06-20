@@ -5,7 +5,7 @@ void UpdateVertexVisibility(Object3D *object) {
   register char s asm("d3") = 1;
 
   void *_objdat = object->objdat;
-  register short *group asm("a2") = object->group;
+  register short *group asm("a2") = object->faceGroups;
   short f;
 
   do {
@@ -16,11 +16,11 @@ void UpdateVertexVisibility(Object3D *object) {
         short i;
 
         /* Face has at least (and usually) three vertices / edges. */
-        i = index->vertex; index++; POINT(i)->flags = s;
-        i = index->vertex; index++; POINT(i)->flags = s;
+        i = index->vertex; index++; NODE3D(i)->flags = s;
+        i = index->vertex; index++; NODE3D(i)->flags = s;
 
         do {
-          i = index->vertex; index++; POINT(i)->flags = s;
+          i = index->vertex; index++; NODE3D(i)->flags = s;
         } while (--vertices != -1);
       }
     }

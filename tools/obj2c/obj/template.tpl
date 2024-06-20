@@ -1,7 +1,7 @@
 /* all indices are offsets in bytes from the beginning of data array */
 
 static short _{{ .Name }}_data[] = {
-  /* vertices: [x y z pad] */
+  /* vertices: [flags orig_x orig_y orig_z x y z] */
   /* offset: 0, count: {{ len .Vertices }} */
   {{- range .Vertices }}
   {{ range . }}{{ . }}, {{ end -}}
@@ -20,26 +20,65 @@ static short _{{ .Name }}_data[] = {
   {{range .Normal }}{{ . }}, {{ end -}}{{.Material}}, {{.Count}}, {{ range .Indices }}{{ . }}, {{ end -}}
 {{- end}}
 
-  /* face-groups: [face-index... 0] 0 */
-  /* offset: {{ .ObjectDataOffset }}, count: {{ .ObjectDataCount }} */
+  /* vertex-groups: [vertex-index... 0] */
   {{- range $obj := .Objects }}
 
-  {{- range .FaceGroups }}
-  /* {{ $obj.Name }}:{{ .Name }} */
-  {{ range .Indices }}{{ . }}, {{ end -}}0, 
+  {{- range .Groups }}
+  /* {{ $obj.Name }}:{{ .Name }}, offset: {{ .Vertex.Offset }} */
+  {{ range .Vertex.Indices }}{{ . }}, {{ end -}} 0,
 {{- end}}
 {{- end}}
   /* end */
-  0
+  0,
+
+  /* edge-groups: [edge-index... 0] */
+  {{- range $obj := .Objects }}
+
+  {{- range .Groups }}
+  {{- if len .Edge.Indices }}
+  /* {{ $obj.Name }}:{{ .Name }} offset: {{ .Edge.Offset }} */
+  {{ range .Edge.Indices }}{{ . }}, {{ end -}} 0,
+  {{- end }}
+{{- end}}
+{{- end}}
+  /* end */
+  0,
+
+  /* face-groups: [face-index... 0] */
+  {{- range $obj := .Objects }}
+
+  {{- range .Groups }}
+  /* {{ $obj.Name }}:{{ .Name }} offset: {{ .Face.Offset }} */
+  {{ range .Face.Indices }}{{ . }}, {{ end -}} 0,
+{{- end }}
+{{- end }}
+  /* end */
+  0,
+
+  /* object: [#groups [vertices-offset edge-offset faces-offset]] */
+  /* offset: {{ .ObjectDataOffset }} */
+  {{- range $obj := .Objects }}
+
+  /* object: {{ $obj.Name }} */
+  {{ len .Groups }},
+  {{- range .Groups }}
+    /* group: {{ .Name }} */
+    {{ .Vertex.Offset }}, {{ .Edge.Offset }}, {{ .Face.Offset }},
+{{- end}}
+{{- end}}
+
+  /* end */
+  0,
 };
+
 {{ range $obj := .Objects }}
-#define {{ $.Name }}_obj_{{ $obj.Name }} {{ $obj.Offset }}
-{{- range $grp := $obj.FaceGroups }}
-#define {{ $obj.Name }}_grp_{{ $grp.Name }} {{ $grp.Offset }}
+#define obj_{{ $obj.Name }} {{ $obj.Offset }}
+{{- range $grp := $obj.Groups }}
+#define grp_{{ $obj.Name }}_{{ $grp.Name }} {{ $grp.Offset }}
 {{- end}}
 {{- end}}
 {{ range .Materials }}
-#define {{ $.Name }}_mtl_{{ .Name }} {{ .Index }}
+#define mtl_{{ $.Name }}_{{ .Name }} {{ .Index }}
 {{- end}}
 
 Mesh3D {{ .Name }} = {
@@ -47,7 +86,9 @@ Mesh3D {{ .Name }} = {
   .edges = {{ len .Edges }},
   .faces = {{ len .Faces }},
   .materials = {{ len .Materials }},
-  .vertex = _{{ .Name }}_data,
-  .edge = (void *)_{{ .Name }}_data + {{ .EdgeOffset }},
-  .object = (void *)_{{ .Name }}_data + {{ .ObjectDataOffset }},
+  .data = _{{ .Name }}_data,
+  .vertexGroups = (void *)_{{ .Name }}_data + {{ .VertexGroupDataOffset }},
+  .edgeGroups = (void *)_{{ .Name }}_data + {{ .EdgeGroupDataOffset }},
+  .faceGroups = (void *)_{{ .Name }}_data + {{ .FaceGroupDataOffset }},
+  .objects = (void *)_{{ .Name }}_data + {{ .ObjectDataOffset }}
 };

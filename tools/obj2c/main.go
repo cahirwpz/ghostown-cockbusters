@@ -21,12 +21,6 @@ func init() {
 		"print help message and exit")
 	flag.Float64Var(&scaleFactor, "scale", 1.0,
 		"the object will be scaled by this factor")
-	flag.IntVar(&vertexSize, "vertex-size", 8,
-		"vertex structure size in bytes")
-	flag.IntVar(&edgeSize, "edge-size", 6,
-		"edge structure size in bytes")
-	flag.IntVar(&indexSize, "index-size", 2,
-		"index size in byte")
 	flag.StringVar(&meshName, "mesh-name", "",
 		"mesh C identifier")
 }
@@ -50,11 +44,8 @@ func main() {
 	}
 
 	cp := obj.ConverterParams{
-		Name:       meshName,
-		Scale:      scaleFactor,
-		VertexSize: vertexSize,
-		EdgeSize:   edgeSize,
-		IndexSize:  indexSize,
+		Name:  meshName,
+		Scale: scaleFactor,
 	}
 
 	output, err := obj.Convert(data, cp)

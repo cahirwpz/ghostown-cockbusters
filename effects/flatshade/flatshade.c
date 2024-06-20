@@ -63,10 +63,8 @@ static void Kill(void) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *mx = (short *)M;
-  short *src = (short *)object->point;
-  short *dst = (short *)object->vertex;
-  register short n asm("d7") = object->vertices - 1;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
 
   int m0 = (M->x << 8) - ((M->m00 * M->m01) >> 4);
   int m1 = (M->y << 8) - ((M->m10 * M->m11) >> 4);
@@ -86,29 +84,33 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    if (((Point3D *)src)->flags) {
-      short x = *src++;
-      short y = *src++;
-      short z = *src++;
-      short *v = mx;
-      int xp, yp;
-      short zp;
+    short i;
 
-      *src++ = 0; /* reset flags */
+    while ((i = *group++)) {
+      if (NODE3D(i)->flags) {
+        short *pt = (short *)NODE3D(i);
+        short *v = (short *)M;
+        short x, y, z, zp;
+        int xy, xp, yp;
 
-      MULVERTEX1(xp, m0);
-      MULVERTEX1(yp, m1);
-      MULVERTEX2(zp);
+        /* clear flags */
+        *pt++ = 0;
 
-      *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
-      *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
-      *dst++ = zp;
-      dst++;
-    } else {
-      src += 4;
-      dst += 4;
+        x = *pt++;
+        y = *pt++;
+        z = *pt++;
+        xy = x * y;
+
+        MULVERTEX1(xp, m0);
+        MULVERTEX1(yp, m1);
+        MULVERTEX2(zp);
+
+        *pt++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
+        *pt++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
+        *pt++ = zp;
+      }
     }
-  } while (--n != -1);
+  } while (*group);
 }
 
 static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
@@ -116,7 +118,6 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
   void *planes = buffer->planes[0];
 
   void *_objdat = object->objdat;
-  void *_vertex = object->vertex;
 
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;

@@ -93,9 +93,8 @@ static void Kill(void) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *src = (short *)object->point;
-  short *dst = (short *)object->vertex;
-  register short n asm("d7") = object->vertices - 1;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
 
   /* WARNING! This modifies camera matrix! */
   M->x -= normfx(M->m00 * M->m01);
@@ -114,22 +113,27 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    short *v = (short *)M;
-    short x = *src++;
-    short y = *src++;
-    short z = *src++;
-    short xp, yp, zp;
+    short i;
 
-    MULVERTEX(xp);
-    MULVERTEX(yp);
-    MULVERTEX(zp);
+    while ((i = *group++)) {
+      short *pt = (short *)POINT(i);
+      short *v = (short *)M;
+      short x, y, z;
+      int xp, yp, zp;
 
-    *dst++ = div16(xp << 8, zp) + WIDTH / 2;
-    *dst++ = div16(yp << 8, zp) + HEIGHT / 2;
-    *dst++ = zp;
+      x = *pt++;
+      y = *pt++;
+      z = *pt++;
 
-    src++; dst++;
-  } while (--n != -1);
+      MULVERTEX(xp);
+      MULVERTEX(yp);
+      MULVERTEX(zp);
+
+      *pt++ = div16(xp << 8, zp) + WIDTH / 2;
+      *pt++ = div16(yp << 8, zp) + HEIGHT / 2;
+      *pt++ = zp;
+    }
+  } while (*group);
 }
 
 static void DrawLine(short x0, short y0, short x1, short y1) {
@@ -188,14 +192,14 @@ static void DrawObject(Object3D *object, CustomPtrT custom_ asm("a6")) {
   void *tmpbuf = scratchpad->planes[0];
 
   void *_objdat = object->objdat;
-  void *_vertex = object->vertex;
-  short *group = object->group;
-  short f;
+  short *group = object->faceGroups;
 
   custom_->bltafwm = -1;
   custom_->bltalwm = -1;
 
   do {
+    short f;
+
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         short minX = 32767;

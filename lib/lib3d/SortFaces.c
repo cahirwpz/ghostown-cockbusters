@@ -5,11 +5,11 @@ void SortFaces(Object3D *object) {
   short count = 0;
 
   void *_objdat = object->objdat;
-  void *_vertex = object->vertex;
-  short *group = object->group;
-  short f;
+  short *group = object->faceGroups;
 
   do {
+    short f;
+
     while ((f = *group++)) {
       if (FACE(f)->flags >= 0) {
         short z;

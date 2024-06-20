@@ -5,15 +5,12 @@
 Object3D *NewObject3D(Mesh3D *mesh) {
   Object3D *object = MemAlloc(sizeof(Object3D), MEMF_PUBLIC|MEMF_CLEAR);
 
-  object->vertices = mesh->vertices;
-  object->edges = mesh->edges;
+  object->objdat = (void *)mesh->data;
+  object->vertexGroups= mesh->vertexGroups;
+  object->edgeGroups = mesh->edgeGroups;
+  object->faceGroups = mesh->faceGroups;
+  object->objects = mesh->objects;
 
-  object->objdat = (void *)mesh->vertex;
-  object->point = (Point3D *)mesh->vertex;
-  object->edge = (EdgeT *)mesh->edge;
-  object->group = mesh->object;
-
-  object->vertex = MemAlloc(sizeof(Point3D) * mesh->vertices, MEMF_PUBLIC);
   object->visibleFace =
     MemAlloc(sizeof(SortItemT) * (mesh->faces + 1), MEMF_PUBLIC);
 
