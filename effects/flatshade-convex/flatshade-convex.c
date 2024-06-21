@@ -160,28 +160,37 @@ static void DrawObject(void *planes, Object3D *object,
     short e;
 
     while ((e = *group++)) {
-      if (EDGE(e)->flags > 0) {
+      char edgeColor = EDGE(e)->flags;
+      short *edge = (short *)EDGE(e);
+
+      if (edgeColor > 0) {
         short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
         int bltapt, bltcpt;
+
+        /* clear visibility */
+        *edge++ = 0;
 
         {
           short x0, y0, x1, y1;
           short dmin, dmax, derr;
 
           {
+            short *pt;
             short i;
 
-            i = EDGE(e)->point[0];
-            x0 = VERTEX(i)->x;
-            y0 = VERTEX(i)->y;
+            i = *edge++;
+            pt = (short *)VERTEX(i);
+            x0 = *pt++;
+            y0 = *pt++;
 
-            i = EDGE(e)->point[1];
-            x1 = VERTEX(i)->x;
-            y1 = VERTEX(i)->y;
+            i = *edge++;
+            pt = (short *)VERTEX(i);
+            x1 = *pt++;
+            y1 = *pt++;
           }
 
           if (y0 == y1)
-            goto next;
+            continue;
 
           if (y0 > y1) {
             swapr(x0, x1);
@@ -232,8 +241,6 @@ static void DrawObject(void *planes, Object3D *object,
         custom_->bltsize = bltsize;
 
         {
-          char edgeColor = EDGE(e)->flags;
-
           if (edgeColor & 1) { DRAWLINE(); }
           bltcpt += WIDTH * HEIGHT / 8;
           if (edgeColor & 2) { DRAWLINE(); }
@@ -242,10 +249,6 @@ static void DrawObject(void *planes, Object3D *object,
           bltcpt += WIDTH * HEIGHT / 8;
           if (edgeColor & 8) { DRAWLINE(); }
         }
-
-next:
-        /* clear visibility */
-        EDGE(e)->flags = 0;
       }
     }
   } while (*group);
