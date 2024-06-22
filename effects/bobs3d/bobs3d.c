@@ -19,8 +19,6 @@ static int active = 0;
 #include "data/flares32.c"
 #include "data/pilka.c"
 
-static Mesh3D *mesh = &pilka;
-
 static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(80);
   CopWait(cp, Y(-1), 0);
@@ -29,7 +27,7 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  cube = NewObject3D(mesh);
+  cube = NewObject3D(&pilka);
   cube->translate.z = fx4i(TZ);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
@@ -69,9 +67,8 @@ static void Kill(void) {
 
 static void TransformVertices(Object3D *object) {
   Matrix3D *M = &object->objectToWorld;
-  short *src = (short *)object->mesh->vertex;
-  short *dst = (short *)object->vertex;
-  register short n asm("d7") = object->mesh->vertices;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
 
   int m0 = (M->x - normfx(M->m00 * M->m01)) << 8;
   int m1 = (M->y - normfx(M->m10 * M->m11)) << 8;
@@ -90,25 +87,29 @@ static void TransformVertices(Object3D *object) {
    */
 
   do {
-    short x = *src++;
-    short y = *src++;
-    short z = *src++;
-    int xy = x * y;
-    int xp, yp;
-    short zp;
-    short *v = (short *)M;
+    short i;
 
-    MULVERTEX1(xp, m0);
-    MULVERTEX1(yp, m1);
-    MULVERTEX2(zp);
+    while ((i = *group++)) {
+      short *v = (short *)M;
+      short *pt = (short *)POINT(i);
 
-    *dst++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
-    *dst++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
-    *dst++ = zp;
+      short x = *pt++;
+      short y = *pt++;
+      short z = *pt++;
+      short zp;
 
-    src++;
-    dst++;
-  } while (--n > 0);
+      int xy = x * y;
+      int xp, yp;
+
+      MULVERTEX1(xp, m0);
+      MULVERTEX1(yp, m1);
+      MULVERTEX2(zp);
+
+      *pt++ = div16(xp, zp) + WIDTH / 2;  /* div(xp * 256, zp) */
+      *pt++ = div16(yp, zp) + HEIGHT / 2; /* div(yp * 256, zp) */
+      *pt++ = zp;
+    }
+  } while (*group);
 }
 
 #define BOBW 32
@@ -180,35 +181,38 @@ void BlitterOrArea(BitmapT *dst asm("a0"), u_short x asm("d0"), u_short y asm("d
 }
 
 static void DrawObject(Object3D *object, BitmapT *dst) {
-  short *data = (short *)object->vertex;
-  register short n asm("d7") = object->mesh->vertices;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
 
 #if 0
   short minZ = 32767, maxZ = -32768;
 #endif
 
   do {
-    short x = *data++;
-    short y = *data++;
-    short z = *data++;
+    short v;
 
-    z >>= 4;
-    z -= TZ;
-    z += 128 - 32;
-    z = z + z + z - 32;
-    z &= ~31;
+    while ((v = *group++)) {
+      short *data = (short *)VERTEX(v);
+      short x = *data++;
+      short y = *data++;
+      short z = *data++;
+
+      z >>= 4;
+      z -= TZ;
+      z += 128 - 32;
+      z = z + z + z - 32;
+      z &= ~31;
 
 #if 0
-    if (z < minZ)
-      minZ = z;
-    if (z > maxZ)
-      maxZ = z;
+      if (z < minZ)
+        minZ = z;
+      if (z > maxZ)
+        maxZ = z;
 #endif
 
-    BlitterOrArea(dst, x - 16, y - 16, &bobs, z);
-
-    data++;
-  } while (--n > 0);
+      BlitterOrArea(dst, x - 16, y - 16, &bobs, z);
+    }
+  } while (*group);
 }
 
 static void BitmapClearI(BitmapT *bm) {
