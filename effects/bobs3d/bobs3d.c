@@ -198,7 +198,7 @@ static void DrawObject(Object3D *object, void *src, void *dst,
 
         apt += z * (BOBW / 8) * DEPTH;
         dpt += (x & ~15) >> 3;
-#if 0
+#if 1
         y <<= 5;
         y += y + y;
         dpt += y;
