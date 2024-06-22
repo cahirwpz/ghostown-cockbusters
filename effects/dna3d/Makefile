@@ -6,7 +6,7 @@ CLEAN-FILES := data/flares32.c data/dna2.c \
 LIBS := lib3d
 
 PNG2C.flares32 := --bitmap bobs,48x512x3 --palette bobs,8
-OBJ2C.dna2 := --scale 12.5 -mesh-name dna_helix
+OBJ2C.dna2 := --scale 13.5 -mesh-name dna_helix
 PNG2C.carrion-metro-data := --bitmap carrion,256x256x2
 PNG2C.carrion-metro-pal := --pixmap carrion_cols,4x256x12
 
