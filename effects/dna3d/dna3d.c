@@ -8,16 +8,18 @@
 #define HEIGHT 256
 #define DEPTH 3
 
+#define screen_bplSize (WIDTH * HEIGHT / 8)
+
 #define TZ (-256)
 
-static Object3D *object;
+static Object3D *cube;
 static CopListT *cp;
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
 static int active = 0;
 
 #include "data/flares32.c"
-#include "data/pilka.c"
+#include "data/dna2.c"
 #include "data/carrion-metro-pal.c"
 #include "data/carrion-metro-data.c"
 
@@ -40,14 +42,14 @@ static CopListT *MakeCopperList(void) {
     for (i = 0; i < carrion_height; i++) {
       short bgcol = *data++;
       /* Start exchanging palette colors at the end of previous line. */
-      CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
+      CopWaitSafe(cp, VP(i-1), HP(320 - 32 - 4));
       CopMove16(cp, color[0], 0);
 
       for (j = 1; j < carrion_cols_width; j++) {
         CopMove16(cp, color[j + 8], *data++);
       }
 
-      CopWaitSafe(cp, Y(i), HP(24));
+      CopWaitSafe(cp, VP(i), HP(24));
       CopMove16(cp, color[0], bgcol);
     }
   }
@@ -55,11 +57,11 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 static void Init(void) {
-  object = NewObject3D(&pilka);
-  object->translate.z = fx4i(TZ);
+  cube = NewObject3D(&dna_helix);
+  cube->translate.z = fx4i(TZ);
 
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
@@ -68,9 +70,9 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
-  /* bitplane modulos for both playfields */
-  custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
-  custom->bpl2mod = WIDTH / 8 * (carrion_depth - 1);
+  /* set up bplmod for both playfieds */ 
+  custom->bpl1mod = 0;
+  custom->bpl2mod = 0;
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -82,7 +84,7 @@ static void Kill(void) {
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-  DeleteObject3D(object);
+  DeleteObject3D(cube);
 }
 
 #define MULVERTEX1(D, E) {              \
@@ -151,7 +153,7 @@ static void TransformVertices(Object3D *object) {
 #define BOBW 48
 #define BOBH 32
 
-static void DrawObject(Object3D *object, void *src, void *dst,
+static void DrawFlares(Object3D *object, void *src, void *dst,
                        CustomPtrT custom_ asm("a6"))
 {
   void *_objdat = object->objdat;
@@ -191,20 +193,13 @@ static void DrawObject(Object3D *object, void *src, void *dst,
 
       {
         const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
-        const short bltsize = (BOBH * DEPTH << 6) | (BOBW / 16);
+        const short bltsize = (BOBH << 6) | (BOBW / 16);
 
-        void *apt = src;
-        void *dpt = dst;
+        short src_start = (z + z + z) + (z + z + z);
+        short dst_start = ((x & ~15) >> 3) + (y << 5);
 
-        apt += z * (BOBW / 8) * DEPTH;
-        dpt += (x & ~15) >> 3;
-#if 1
-        y <<= 5;
-        y += y + y;
-        dpt += y;
-#else
-        dpt += y * (WIDTH / 8) * DEPTH;
-#endif
+        void *apt = src + src_start;
+        void *dpt = dst + dst_start;
 
         _WaitBlitter(custom_);
 
@@ -213,7 +208,115 @@ static void DrawObject(Object3D *object, void *src, void *dst,
         custom_->bltbpt = dpt;
         custom_->bltdpt = dpt;
         custom_->bltsize = bltsize;
+
+        apt += bobs_bplSize;
+        dpt += screen_bplSize;
+
+        _WaitBlitter(custom_);
+
+        custom_->bltapt = apt;
+        custom_->bltbpt = dpt;
+        custom_->bltdpt = dpt;
+        custom_->bltsize = bltsize;
+
+        apt += bobs_bplSize;
+        dpt += screen_bplSize;
+
+        _WaitBlitter(custom_);
+
+        custom_->bltapt = apt;
+        custom_->bltbpt = dpt;
+        custom_->bltdpt = dpt;
+        custom_->bltsize = bltsize;
       }
+    }
+  } while (*group);
+}
+
+static void DrawLinks(Object3D *object, void *dst,
+                      CustomPtrT custom_ asm("a6"))
+{
+  void *_objdat = object->objdat;
+  short *group = object->faceGroups;
+
+  _WaitBlitter(custom_);
+  custom_->bltafwm = -1;
+  custom_->bltalwm = -1;
+  custom_->bltadat = 0x8000;
+  custom_->bltbdat = 0xffff; /* Line texture pattern. */
+  custom_->bltcmod = WIDTH / 8;
+  custom_->bltdmod = WIDTH / 8;
+
+  do {
+    short f;
+
+    while ((f = *group++)) {
+      short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
+      int bltapt, bltcpt;
+      short x0, y0, x1, y1;
+      short dmin, dmax, derr;
+
+      {
+        short *vi = (short *)&FACE(f)->indices[0].vertex;
+        short *pt;
+        short i;
+
+        i = *vi++;
+        pt = (short *)VERTEX(i);
+        x0 = *pt++;
+        y0 = *pt++;
+
+        i = *vi++;
+        pt = (short *)VERTEX(i);
+        x1 = *pt++;
+        y1 = *pt++;
+      }
+
+      if (y0 > y1) {
+        swapr(x0, x1);
+        swapr(y0, y1);
+      }
+
+      dmax = x1 - x0;
+      if (dmax < 0)
+        dmax = -dmax;
+
+      dmin = y1 - y0;
+      if (dmax >= dmin) {
+        if (x0 >= x1)
+          bltcon1 = AUL | SUD | LINEMODE;
+        else
+          bltcon1 = SUD | LINEMODE;
+      } else {
+        if (x0 >= x1)
+          bltcon1 = SUL | LINEMODE;
+        else
+          bltcon1 = LINEMODE;
+        swapr(dmax, dmin);
+      }
+
+      bltcpt = (int)dst + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
+
+      bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_OR;
+      bltcon1 |= rorw(x0 & 15, 4);
+
+      dmin <<= 1;
+      derr = dmin - dmax;
+
+      bltamod = derr - dmax;
+      bltbmod = dmin;
+      bltsize = (dmax << 6) + 66;
+      bltapt = derr;
+
+      _WaitBlitter(custom_);
+      custom_->bltcon0 = bltcon0;
+      custom_->bltcon1 = bltcon1;
+      custom_->bltcpt = (void *)bltcpt;
+      custom_->bltapt = (void *)bltapt;
+      custom_->bltdpt = dst + screen_bplSize * 2;
+      custom_->bltbmod = bltbmod;
+      custom_->bltamod = bltamod;
+      custom_->bltsize = bltsize;
     }
   } while (*group);
 }
@@ -237,10 +340,10 @@ static void Render(void) {
 
   ProfilerStart(TransformObject);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 12;
+    cube->rotate.x = cube->rotate.y = cube->rotate.z = frameCount * 12;
 
-    UpdateObjectTransformation(object);
-    TransformVertices(object);
+    UpdateObjectTransformation(cube);
+    TransformVertices(cube);
   }
   ProfilerStop(TransformObject);
 
@@ -248,7 +351,8 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawObject(object, bobs.planes[0], screen[active]->planes[0], custom);
+    DrawFlares(cube, bobs.planes[0], screen[active]->planes[0], custom);
+    DrawLinks(cube, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);
 
