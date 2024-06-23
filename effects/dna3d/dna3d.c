@@ -12,7 +12,7 @@
 
 #define TZ (-256)
 
-static Object3D *cube;
+static Object3D *object;
 static CopListT *cp;
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
@@ -57,11 +57,11 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 static void Init(void) {
-  cube = NewObject3D(&dna_helix);
-  cube->translate.z = fx4i(TZ);
+  object = NewObject3D(&dna_helix);
+  object->translate.z = fx4i(TZ);
 
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
@@ -70,9 +70,9 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
-  /* set up bplmod for both playfieds */ 
-  custom->bpl1mod = 0;
-  custom->bpl2mod = 0;
+  /* bitplane modulos for both playfields */
+  custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
+  custom->bpl2mod = WIDTH / 8 * (carrion_depth - 1);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -84,7 +84,7 @@ static void Kill(void) {
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-  DeleteObject3D(cube);
+  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E) {              \
@@ -193,37 +193,24 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
 
       {
         const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
-        const short bltsize = (BOBH << 6) | (BOBW / 16);
+        const short bltsize = (BOBH * DEPTH << 6) | (BOBW / 16);
 
-        short src_start = (z + z + z) + (z + z + z);
-        short dst_start = ((x & ~15) >> 3) + (y << 5);
+        void *apt = src;
+        void *dpt = dst;
 
-        void *apt = src + src_start;
-        void *dpt = dst + dst_start;
+        apt += z * (BOBW / 8) * DEPTH;
+        dpt += (x & ~15) >> 3;
+#if 1
+        y <<= 5;
+        y += y + y;
+        dpt += y;
+#else
+        dpt += y * (WIDTH / 8) * DEPTH;
+#endif
 
         _WaitBlitter(custom_);
 
         custom_->bltcon0 = bltshift;
-        custom_->bltapt = apt;
-        custom_->bltbpt = dpt;
-        custom_->bltdpt = dpt;
-        custom_->bltsize = bltsize;
-
-        apt += bobs_bplSize;
-        dpt += screen_bplSize;
-
-        _WaitBlitter(custom_);
-
-        custom_->bltapt = apt;
-        custom_->bltbpt = dpt;
-        custom_->bltdpt = dpt;
-        custom_->bltsize = bltsize;
-
-        apt += bobs_bplSize;
-        dpt += screen_bplSize;
-
-        _WaitBlitter(custom_);
-
         custom_->bltapt = apt;
         custom_->bltbpt = dpt;
         custom_->bltdpt = dpt;
@@ -244,8 +231,8 @@ static void DrawLinks(Object3D *object, void *dst,
   custom_->bltalwm = -1;
   custom_->bltadat = 0x8000;
   custom_->bltbdat = 0xffff; /* Line texture pattern. */
-  custom_->bltcmod = WIDTH / 8;
-  custom_->bltdmod = WIDTH / 8;
+  custom_->bltcmod = WIDTH / 8 * DEPTH;
+  custom_->bltdmod = WIDTH / 8 * DEPTH;
 
   do {
     short f;
@@ -295,7 +282,7 @@ static void DrawLinks(Object3D *object, void *dst,
         swapr(dmax, dmin);
       }
 
-      bltcpt = (int)dst + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
+      bltcpt = (int)dst + (short)(((y0 << 5) * DEPTH + (x0 >> 3)) & ~1);
 
       bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_OR;
       bltcon1 |= rorw(x0 & 15, 4);
@@ -313,7 +300,7 @@ static void DrawLinks(Object3D *object, void *dst,
       custom_->bltcon1 = bltcon1;
       custom_->bltcpt = (void *)bltcpt;
       custom_->bltapt = (void *)bltapt;
-      custom_->bltdpt = dst + screen_bplSize * 2;
+      custom_->bltdpt = (void *)bltcpt;
       custom_->bltbmod = bltbmod;
       custom_->bltamod = bltamod;
       custom_->bltsize = bltsize;
@@ -340,10 +327,10 @@ static void Render(void) {
 
   ProfilerStart(TransformObject);
   {
-    cube->rotate.x = cube->rotate.y = cube->rotate.z = frameCount * 12;
+    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 12;
 
-    UpdateObjectTransformation(cube);
-    TransformVertices(cube);
+    UpdateObjectTransformation(object);
+    TransformVertices(object);
   }
   ProfilerStop(TransformObject);
 
@@ -351,8 +338,8 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawFlares(cube, bobs.planes[0], screen[active]->planes[0], custom);
-    DrawLinks(cube, screen[active]->planes[1], custom);
+    DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);
 
