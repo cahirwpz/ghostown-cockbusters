@@ -91,7 +91,7 @@ static short batPos[2] = {
 };
 
 static short ghostData[2] = {
-  -32, 112
+  -32, 110
 };
 
 static struct layer {
@@ -201,8 +201,6 @@ static void MoveForest(struct layer* l, short s) {
 
 /* BLITTER */
 static void VerticalFill(void** planes) {
-  WaitBlitter();
-
   custom->bltamod = 0;
   custom->bltbmod = 0;
   custom->bltdmod = 0;
@@ -218,7 +216,6 @@ static void VerticalFill(void** planes) {
 
   custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | NABC | ANBC);
   custom->bltsize = ((HEIGHT - GROUND_HEIGHT*2 - 1) << 6) | 20;
-
   WaitBlitter();
 
   /* BITPLANE 1 */
@@ -268,7 +265,7 @@ static void DrawForest(void **planes, u_short trees[6][24]) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;  // 160 cycles
+    custom->bltsize = (1 << 6) | 20;
 
     WaitBlitter();
 
@@ -280,7 +277,7 @@ static void DrawForest(void **planes, u_short trees[6][24]) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;  // 160 cycles
+    custom->bltsize = (1 << 6) | 20;
 
     WaitBlitter();
   }
@@ -294,7 +291,7 @@ static void DrawForest(void **planes, u_short trees[6][24]) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABNC | NABC | ANBNC | ANBC | ABNC | ABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;  // 160 cycles
+    custom->bltsize = (1 << 6) | 20;
 
     WaitBlitter();
 
@@ -306,15 +303,13 @@ static void DrawForest(void **planes, u_short trees[6][24]) {
 
     custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NANBC | NABNC | NABC);
     custom->bltcon1 = 0;
-    custom->bltsize = (1 << 6) | 20;  // 160 cycles
+    custom->bltsize = (1 << 6) | 20;
 
     WaitBlitter();
   }
 }
 
 static void DrawGround(void **planes, struct layer lr[6]) {
-  struct layer* l = &lr[5];
-
   custom->bltamod = 40;
   custom->bltbmod = -40;
   custom->bltcmod = -40;
@@ -329,80 +324,67 @@ static void DrawGround(void **planes, struct layer lr[6]) {
   custom->bltcon1 = 0;
 
   { /* 6th LAYER */
-    custom->bltapt = _ground_bpl + l->word;
+    custom->bltapt = _ground_bpl + lr[5].word;
     custom->bltbpt = planes[0];
     custom->bltdpt = planes[2] + 40;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(lr[5].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l--, 5);
     WaitBlitter();
   }
 
   { /* 5th LAYER */
-    custom->bltapt = _ground_bpl + l->word;
+    custom->bltapt = _ground_bpl + lr[4].word;
     custom->bltdpt = planes[0] + 40 + 16*40;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(lr[4].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l--, 4);
-
     WaitBlitter();
   }
 
   { /* 4th LAYER */
-    custom->bltapt = _ground2_bpl + l->word;
+    custom->bltapt = _ground2_bpl + lr[3].word;
     custom->bltbpt = planes[0];
     custom->bltcpt = planes[2];
     custom->bltdpt = planes[2] + 40 + 32*40;;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(lr[3].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l--, 3);
     WaitBlitter();
   }
 
   { /* 3rd LAYER */
-    custom->bltapt = _ground_bpl + l->word;
+    custom->bltapt = _ground_bpl + lr[2].word;
     custom->bltbpt = planes[1];
     custom->bltdpt = planes[3] + 40 + 48*40;
 
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ANBC | ANBNC) | ASHIFT(lr[2].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l--, 2);
     WaitBlitter();
   }
 
   { /* 2nd LAYER */
-    custom->bltapt = _ground2_bpl + l->word;
+    custom->bltapt = _ground2_bpl + lr[1].word;
     custom->bltdpt = planes[1] + 40 + 64*40;
 
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D | ASHIFT(lr[1].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l--, 1);
     WaitBlitter();
   }
 
   { /* 1st LAYER */
-    custom->bltapt = _ground_bpl + l->word;
+    custom->bltapt = _ground_bpl + lr[0].word;
     custom->bltbpt = planes[1];
     custom->bltcpt = planes[3];
     custom->bltdpt = planes[3] + 40 + 80*40;
 
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(l->bit);
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (NABC | NANBC | NANBNC) | ASHIFT(lr[0].bit);
     custom->bltsize = (GROUND_HEIGHT << 6) | 20;
-
-    MoveForest(l, 0);
-    // WaitBlitter();
+    WaitBlitter();
   }
 }
 
-static void ClearBitplanes(void **planes) {
+static void ClearBitplanes(void **planes, struct layer lr[6]) {
   /* const */
   custom->bltdmod = 0;
   custom->bltcon0 = (DEST) | 0x0;
@@ -416,18 +398,22 @@ static void ClearBitplanes(void **planes) {
   /* per blit */
   custom->bltdpt = planes[2] + 40 + 16*40;
   custom->bltsize = (GROUND_HEIGHT << 6) | 20;
+  MoveForest(&lr[5], 5);
   WaitBlitter();
 
   /* per blit */
   custom->bltdpt = planes[1] + 40;
   custom->bltsize = ((GROUND_HEIGHT*4) << 6) | 20;
+  MoveForest(&lr[4], 4);
+  MoveForest(&lr[3], 3);
+  MoveForest(&lr[2], 2);
   WaitBlitter();
 
   /* per blit */
   custom->bltdpt = planes[3] + 40;
   custom->bltsize = ((GROUND_HEIGHT*5) << 6) | 20;
-
-
+  MoveForest(&lr[1], 1);
+  MoveForest(&lr[0], 0);
   if (layers[0].speed == 0) {
     SwitchSprites();
     MoveGhost(ghostspr[spract]);
@@ -447,21 +433,25 @@ static void SetupColors(void) {
     0x556,
     0x667,
     0x778, // background
-    // 0x111, // 1st layer GREEN
-    // 0x232,
-    // 0x343,
-    // 0x454,
-    // 0x565,
-    // 0x676,
-    // 0x787, // background
-    // 0x111, // 1st layer RED
-    // 0x322,
-    // 0x433,
-    // 0x544,
-    // 0x655,
-    // 0x766,
-    // 0x877, // background
   };
+  // unsigned short colors[7] = {
+  //   0x111, // 1st layer GREEN
+  //   0x232,
+  //   0x343,
+  //   0x454,
+  //   0x565,
+  //   0x676,
+  //   0x787, // background
+  // };
+  // unsigned short colors[7] = {
+  //   0x111, // 1st layer RED
+  //   0x322,
+  //   0x433,
+  //   0x544,
+  //   0x655,
+  //   0x766,
+  //   0x877, // background
+  // };
 
   // TREES
   // PLAYFIELD 1
@@ -505,7 +495,6 @@ static void SetupColors(void) {
 static void SetupSprites(void) {
   SprDataT *dat;
   sprptr = CopSetupSprites(cp);
-  (void)spract;
 
   /* Moon, bat, ghost */
   dat = &moonbatghost10_sprdat;
@@ -570,10 +559,20 @@ static void SetupSprites(void) {
 static CopListT *MakeCopperList(void) {
   short i;
   static unsigned short backgroundGradient[12] = {
-    0x222, 0x222, 0x223, 0x223,
+    0x222, 0x222, 0x223, 0x223, // BLUE
     0x233, 0x334, 0x334, 0x435,
     0x445, 0x446, 0x456, 0x557
   };
+  // static unsigned short backgroundGradient[12] = {
+  //   0x221, 0x222, 0x222, 0x332, // GREEN
+  //   0x343, 0x343, 0x453, 0x454,
+  //   0x454, 0x464, 0x565, 0x575
+  // };
+  // static unsigned short backgroundGradient[12] = {
+  //   0x221, 0x222, 0x222, 0x333, // RED
+  //   0x333, 0x433, 0x433, 0x534,
+  //   0x544, 0x644, 0x655, 0x755
+  // };
   static short groundLevel[6] = {
     160,  // 6th LAYER (changing these values may brake copper list)
     144,  // 5th LAYER
@@ -664,7 +663,7 @@ PROFILE(Forest);
 static void Render(void) {
   ProfilerStart(Forest);
   {
-    ClearBitplanes(screen[active]->planes);
+    ClearBitplanes(screen[active]->planes, layers);
     DrawForest(screen[active]->planes, treeTab);
     DrawGround(screen[active]->planes, layers);
     VerticalFill(screen[active]->planes);
