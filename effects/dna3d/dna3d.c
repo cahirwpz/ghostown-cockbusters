@@ -37,19 +37,19 @@ static CopListT *MakeCopperList(void) {
 
   {
     u_short *data = carrion_cols_pixels;
-    short i, j;
+    short i;
 
     for (i = 0; i < carrion_height; i++) {
       short bgcol = *data++;
+
       /* Start exchanging palette colors at the end of previous line. */
-      CopWaitSafe(cp, VP(i-1), HP(320 - 32 - 4));
+      CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
       CopMove16(cp, color[0], 0);
 
-      for (j = 1; j < carrion_cols_width; j++) {
-        CopMove16(cp, color[j + 8], *data++);
-      }
-
-      CopWaitSafe(cp, VP(i), HP(24));
+      CopWaitSafe(cp, Y(i), HP(0));
+      CopMove16(cp, color[9], *data++);
+      CopMove16(cp, color[10], *data++);
+      CopMove16(cp, color[11], *data++);
       CopMove16(cp, color[0], bgcol);
     }
   }
