@@ -188,7 +188,7 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
 
       if (z < 0)
         z = 0;
-      else if (z > bobs_height - BOBH)
+      if (z > bobs_height - BOBH)
         z = bobs_height - BOBH;
 
       {
@@ -198,13 +198,18 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
         void *apt = src;
         void *dpt = dst;
 
-        apt += z * (BOBW / 8) * DEPTH;
-        dpt += (x & ~15) >> 3;
 #if 1
+        z += z << 3;
+        z += z;         /* z *= 18 */
+        apt += z;
+
         y <<= 5;
-        y += y + y;
+        y += y + y;     /* y *= 96 */
+        y += (x & ~15) >> 3;
         dpt += y;
 #else
+        apt += z * (BOBW / 8) * DEPTH;
+        dpt += (x & ~15) >> 3;
         dpt += y * (WIDTH / 8) * DEPTH;
 #endif
 
