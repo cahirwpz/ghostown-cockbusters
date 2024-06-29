@@ -47,10 +47,13 @@ void UpdateFaceVisibility(Object3D *object) {
             "swap  %0\n"
             : "+d" (px), "+d" (py), "+d" (pz));
         s = px;
+        /* (short)s is in range 0-511 */
 #endif
-        v = swap16(v); /* f >>= 16, ignore upper word */
+        v = swap16(v); /* v >>= 16, ignore upper word */
+        /* (short)v is in range 0-255 */
         l = div16((short)v * (short)v, s);
         FACE(f)->flags = (l >= 256) ? 15 : sqrt[l];
+        /* l is in range 0-255 */
       } else {
         FACE(f)->flags = -1;
       }
