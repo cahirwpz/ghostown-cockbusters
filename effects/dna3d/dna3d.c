@@ -19,7 +19,7 @@ static CopInsPairT *bplptr;
 static int active = 0;
 
 #include "data/flares32.c"
-#include "data/dna2.c"
+#include "data/dna.c"
 #include "data/carrion-metro-pal.c"
 #include "data/carrion-metro-data.c"
 
