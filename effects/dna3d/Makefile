@@ -6,7 +6,7 @@ CLEAN-FILES := data/flares32.c data/dna.{c,obj,mtl} \
 LIBS := lib3d
 
 PNG2C.flares32 := --bitmap bobs,48x512x3,+interleaved --palette bobs,8
-OBJ2C.dna := --scale 20 -mesh-name dna_helix
+OBJ2C.dna := --scale 30 -mesh-name dna_helix
 PNG2C.carrion-metro-data := --bitmap carrion,256x256x2,+interleaved
 PNG2C.carrion-metro-pal := --pixmap carrion_cols,4x256x12
 
@@ -18,6 +18,6 @@ include $(TOPDIR)/build/effect.mk
 
 %.obj %.mtl: %_gen.py
 	@echo "[GEN] $@"
-	$(PYTHON3) $*_gen.py $*
+	$(PYTHON3) $*_gen.py --circular $*
 
 .PRECIOUS: data/dna.obj data/dna.mtl
