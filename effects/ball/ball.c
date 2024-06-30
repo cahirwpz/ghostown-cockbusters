@@ -114,8 +114,8 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
     ////void *planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
     //c2p_1x1_4( void *chunky, void* bitplanes, short width,
     //           short height, int bplSize)
-    c2p_1x1_4(pixels, *(bm->planes), bm->width, bm->height, bplSize);
-
+    ////////c2p_1x1_4(pixels, *(bm->planes), bm->width, bm->height, bplSize);
+    c2p_1x1_4(pixels, *(bm->planes), 240     , 228   , bplSize);
     ////memcpy(planes, pixels, bplSize * 4);
     //MemFree(planes); // we wanna keep the bitmap
  
@@ -153,12 +153,19 @@ static void Init(void) {
   Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n", dragon_bp->bplSize,
       dragon_bp->depth,
       ((long int) dragon_bp->bplSize )* dragon_bp->depth);
+  Log("dragon_bp->planes[0] =  $%p\n", dragon_bp->planes[0]);
+  Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
+  Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
 
   memcpy(dragon_bp->planes[0], dragon_pixels, sizeof(dragon_pixels));
   
-  c2p_1x1_4(dragon_bp->planes[0], *(dragon_bp->planes), dragon_width,
-	    dragon_height, dragon_bp->bplSize);
+  c2p_1x1_4(dragon_bp->planes[0], dragon_bp->planes[0], dragon_width,
+            dragon_height, dragon_bp->bplSize);
 
+  //c2p_1x1_4(dragon_bp->planes[0], *(dragon_bp->planes), 320,
+  //          256, dragon_bp->bplSize);
+
+  
   // Something in here creates the nasty bars in the resulting image.
   
   //last two px of the bitplane
