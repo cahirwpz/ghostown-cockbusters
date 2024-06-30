@@ -177,7 +177,8 @@ static void TransformVertices(Object3D *object) {
 #define NPOINTS (POINTS_PER_TURN * TURNS)
 
 static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
-  int alpha; /* 0..65535 */
+  register short radius asm("a3") = fx12f(2.5);
+  u_short alpha; /* 0..65535 */
   short i;
 
   for (i = 0, alpha = 0; i < NPOINTS; i++, alpha += 65536 / NPOINTS) {
@@ -192,13 +193,15 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
     /* phi = turns * 2 * pi * i / points */
     short phi = alpha / TURNS + phi_offset;
 
-    const short radius = fx12f(2.5);
-    short cos_theta = COS(theta) << 1;
-    short sin_theta = SIN(theta) << 1;
+    short sin_theta = SIN(theta);
+    short cos_theta = COS(theta);
 
     /* helix_radius is 0.5, so shift right by 1 */
-    short cos_phi = COS(phi) >> 1;
     short sin_phi = SIN(phi) >> 1;
+    short cos_phi = COS(phi) >> 1;
+
+    sin_theta += sin_theta;
+    cos_theta += cos_theta;
 
     {
       short *p = &node[0].point.x; node++;
@@ -220,9 +223,17 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
       *p++ = sin_phi >> 3;
     }
 
+#if 0
     phi += SIN_HALF_PI;
     cos_phi = COS(phi) >> 1;
     sin_phi = SIN(phi) >> 1;
+#else
+    {
+      short _cos_phi = cos_phi;
+      cos_phi = -sin_phi;
+      sin_phi = _cos_phi;
+    }
+#endif
 
     {
       short *p = &node[0].point.x; node++;
