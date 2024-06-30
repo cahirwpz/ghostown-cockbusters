@@ -3,6 +3,7 @@
 #include "copper.h"
 #include "3d.h"
 #include "fx.h"
+#include "debug.h"
 
 #define WIDTH  256
 #define HEIGHT 256
@@ -17,6 +18,25 @@ static CopListT *cp;
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
 static int active = 0;
+
+#if 0
+ 0:  16,  1
+ 1:  47,  3
+ 2:  78,  5
+ 3: 109,  7
+ 4: 140,  9
+ 5: 171, 11
+ 6: 202, 13
+ 7: 233, 15
+ 8: 264, 17
+ 9: 295, 19
+10: 326, 21
+11: 357, 23
+12: 388, 25
+13: 419, 27
+14: 450, 29
+15: 481, 31
+#endif
 
 #include "data/flares32.c"
 #include "data/dna.c"
@@ -150,14 +170,85 @@ static void TransformVertices(Object3D *object) {
   } while (*group);
 }
 
+#define POINTS_PER_TURN 10
+#define TURNS 4
+#define RADIUS 2.5
+
+#define NPOINTS (POINTS_PER_TURN * TURNS)
+
+static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
+  int alpha; /* 0..65535 */
+  short i;
+
+  for (i = 0, alpha = 0; i < NPOINTS; i++, alpha += 65536 / NPOINTS) {
+    /* 
+     * 1) both theta and pi are in Q4.12 format
+     * 2) target x, y, z are in Q12.4 format
+     * 3) x, y, z need to be multiplied by 32 before casting to target format
+     */
+
+    /* theta = 2 * pi * i / points */
+    short theta = alpha >> 4;
+    /* phi = turns * 2 * pi * i / points */
+    short phi = alpha / TURNS + phi_offset;
+
+    const short radius = fx12f(2.5);
+    short cos_theta = COS(theta) << 1;
+    short sin_theta = SIN(theta) << 1;
+
+    /* helix_radius is 0.5, so shift right by 1 */
+    short cos_phi = COS(phi) >> 1;
+    short sin_phi = SIN(phi) >> 1;
+
+    {
+      short *p = &node[0].point.x; node++;
+
+      /* for x / y:
+       *  - 8.24 * 32 => 13.19 (for free)
+       *  - 13.19 << 1 => 12.20 (done above)
+       *  - swap16(12.20) => 12.4
+       * for z:
+       *  - 4.12 * 32 => 9.7 (for free)
+       *  - 9.7 >> 3 => 12.4
+       */
+
+      /* x = (radius + helix_radius * cos(phi)) * cos(theta) */
+      *p++ = swap16((short)(radius + cos_phi) * cos_theta);
+      /* y = (radius + helix_radius * sin(phi)) * sin(theta) */
+      *p++ = swap16((short)(radius + sin_phi) * sin_theta);
+      /* z = helix_radius * sin(phi) */
+      *p++ = sin_phi >> 3;
+    }
+
+    phi += SIN_HALF_PI;
+    cos_phi = COS(phi) >> 1;
+    sin_phi = SIN(phi) >> 1;
+
+    {
+      short *p = &node[0].point.x; node++;
+
+      /* (radius + helix_radius * cos(phi)) * cos(theta) */
+      *p++ = swap16((short)(radius + cos_phi) * cos_theta);
+      /* (radius + helix_radius * sin(phi)) * sin(theta) */
+      *p++ = swap16((short)(radius + sin_phi) * sin_theta);
+      /* helix_radius * sin(phi) */
+      *p++ = sin_phi >> 3;
+    }
+  }
+}
+
 #define BOBW 48
 #define BOBH 32
+#define Z_RANGE 0
 
 static void DrawFlares(Object3D *object, void *src, void *dst,
                        CustomPtrT custom_ asm("a6"))
 {
   void *_objdat = object->objdat;
   short *group = object->vertexGroups;
+#if Z_RANGE
+  static short maxZ = -32768, minZ = 32767;
+#endif
 
   _WaitBlitter(custom_);
 
@@ -177,52 +268,56 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
       short y = *data++;
       short z = *data++;
 
+      const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
+      const short bltsize = (BOBH * DEPTH << 6) | (BOBW / 16);
+
+      void *apt = src;
+      void *dpt = dst;
+
       x -= 16;
       y -= 16;
 
-      z >>= 4;
-      z -= TZ;
-      z += 128 - 32;
-      z = z + z + z - 32;
-      z &= ~31;
-
-      if (z < 0)
-        z = 0;
-      if (z > bobs_height - BOBH)
-        z = bobs_height - BOBH;
-
-      {
-        const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
-        const short bltsize = (BOBH * DEPTH << 6) | (BOBW / 16);
-
-        void *apt = src;
-        void *dpt = dst;
-
-#if 1
-        z += z << 3;
-        z += z;         /* z *= 18 */
-        apt += z;
-
-        y <<= 5;
-        y += y + y;     /* y *= 96 */
-        y += (x & ~15) >> 3;
-        dpt += y;
+#if Z_RANGE
+      if (z < minZ)
+        minZ = z;
+      else if (z > maxZ)
+        maxZ = z;
 #else
-        apt += z * (BOBW / 8) * DEPTH;
-        dpt += (x & ~15) >> 3;
-        dpt += y * (WIDTH / 8) * DEPTH;
+#define MAXZ -2416
+#define MINZ -5776
 #endif
 
-        _WaitBlitter(custom_);
+      z -= MINZ;
+      z >>= 3;
+      z &= ~31;
 
-        custom_->bltcon0 = bltshift;
-        custom_->bltapt = apt;
-        custom_->bltbpt = dpt;
-        custom_->bltdpt = dpt;
-        custom_->bltsize = bltsize;
-      }
+#if 1
+      z += z << 3;
+      z += z;         /* z *= 18 */
+      apt += z;
+
+      y <<= 5;
+      y += y + y;     /* y *= 96 */
+      y += (x & ~15) >> 3;
+      dpt += y;
+#else
+      apt += z * (BOBW / 8) * DEPTH;
+      dpt += (x & ~15) >> 3;
+      dpt += y * (WIDTH / 8) * DEPTH;
+#endif
+      _WaitBlitter(custom_);
+
+      custom_->bltcon0 = bltshift;
+      custom_->bltapt = apt;
+      custom_->bltbpt = dpt;
+      custom_->bltdpt = dpt;
+      custom_->bltsize = bltsize;
     }
   } while (*group);
+
+#if Z_RANGE
+  Log("minZ = %d, maxZ = %d\n", minZ, maxZ);
+#endif
 }
 
 static void DrawLinks(Object3D *object, void *dst,
@@ -332,9 +427,10 @@ static void Render(void) {
 
   ProfilerStart(TransformObject);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 12;
+    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
 
     UpdateObjectTransformation(object);
+    GenCircularDoubleHelix(object->objdat, frameCount * 24);
     TransformVertices(object);
   }
   ProfilerStop(TransformObject);
