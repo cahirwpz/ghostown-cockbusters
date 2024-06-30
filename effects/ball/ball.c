@@ -124,19 +124,17 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
 
 
 static void Init(void) {
-  //u_short i = 0;
+  u_short bitplanesz = ((dragon_width + 15) & ~15) / 8 * dragon_height;
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
   //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
-  //dragon_bp = NewBitmap(dragon_width, dragon_height, 4, BM_STATIC);
 
-  // c2p works in place, so we manually allocate enough data to copy the dragon
-  // pixels into the place, then manually create a 4 plane bitmap on top of it
-  // The resulting bitmap has 50% the size of the pixmap because the pixmap
-  // is always 8bpp. This would not be the case if the bitmap had 8 bitplanes.
-  dragon_bp = (BitmapT *) MemAlloc(sizeof(dragon_pixels) + 6*sizeof(u_short) + 4*sizeof(void*), MEMF_PUBLIC | MEMF_CLEAR);
+  // c2p requires target bitplanes to be contiguous in memory, therefore we
+  // allocate the BitmapT manually
+  dragon_bp = (BitmapT *) MemAlloc(sizeof(BitmapT) + 4 * bitplanesz,
+				   MEMF_PUBLIC | MEMF_CLEAR);
   
   dragon_bp->width  = dragon_width;
   dragon_bp->height = dragon_height;
@@ -144,37 +142,23 @@ static void Init(void) {
   dragon_bp->bplSize = dragon_bp->bytesPerRow * dragon_bp->height;
   dragon_bp->depth = 4;
   dragon_bp->flags = BM_STATIC;
-  dragon_bp->planes[0] = dragon_bp + 6*sizeof(u_short) + 4*sizeof(void*);
+  dragon_bp->planes[0] = dragon_bp + sizeof(BitmapT);
   dragon_bp->planes[1] = dragon_bp->planes[0] + dragon_bp->bplSize;
   dragon_bp->planes[2] = dragon_bp->planes[1] + dragon_bp->bplSize;
   dragon_bp->planes[3] = dragon_bp->planes[2] + dragon_bp->bplSize;
-  
+
   Log("sizeof(dragon_pixels) =  $%lx\n", sizeof(dragon_pixels));
-  Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n", dragon_bp->bplSize,
-      dragon_bp->depth,
-      ((long int) dragon_bp->bplSize )* dragon_bp->depth);
+  Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n",
+      dragon_bp->bplSize, dragon_bp->depth,
+      ((long int) dragon_bp->bplSize) * dragon_bp->depth);
   Log("dragon_bp->planes[0] =  $%p\n", dragon_bp->planes[0]);
   Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
   Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
-
-  memcpy(dragon_bp->planes[0], dragon_pixels, sizeof(dragon_pixels));
   
-  c2p_1x1_4(dragon_bp->planes[0], dragon_bp->planes[0], dragon_width,
+  c2p_1x1_4(dragon_pixels, dragon_bp->planes[0], dragon_width,
             dragon_height, dragon_bp->bplSize);
-
-  //c2p_1x1_4(dragon_bp->planes[0], *(dragon_bp->planes), 320,
-  //          256, dragon_bp->bplSize);
-
   
-  // Something in here creates the nasty bars in the resulting image.
-  
-  //last two px of the bitplane
-  //((u_char *) dragon_bp->planes[0])[0x27ff] = 0xaa;
-  //((u_char *) dragon_bp->planes[0])[0x27fd] = 0x55;
-  
-
-  
-  //Kopiowanie bitmapy smoka do tła
+  //Copy dragon bitmap to background
   memcpy(screen->planes[0], dragon_bp->planes[0],
         S_WIDTH * S_HEIGHT * S_DEPTH / 8);
 
@@ -218,7 +202,7 @@ static void Kill(void) {
   DeletePixmap(textureLo);
   MemFree(UVMapRender);
   MemFree(sprdat);
-
+  MemFree(dragon_bp);
   DeletePixmap(segment_p);
   DeleteBitmap(segment_bp);
 }
