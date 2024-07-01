@@ -266,18 +266,15 @@ static BobDescT bobdesc[16] = {
   BOBDESC(481, 31),
 };
 
-#define Z_RANGE 0
+#define MAXZ -2048
+#define MINZ -6144
 
 static void DrawFlares(Object3D *object, void *src, void *dst,
                        CustomPtrT custom_ asm("a6"))
 {
   void *_objdat = object->objdat;
+  void *_bobdesc = bobdesc;
   short *group = object->vertexGroups;
-#if Z_RANGE
-  static short maxZ = -32768, minZ = 32767;
-#endif
-
-  (void)bobdesc;
 
   _WaitBlitter(custom_);
 
@@ -298,42 +295,35 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
       short z = *data++;
 
       const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
-      const short bltsize = (BOBH * DEPTH << 6) | (BOBW / 16);
+      short bltsize;
 
       void *apt = src;
       void *dpt = dst;
 
       x -= 16;
-      y -= 16;
-
-#if Z_RANGE
-      if (z < minZ)
-        minZ = z;
-      else if (z > maxZ)
-        maxZ = z;
-#else
-#define MAXZ -2416
-#define MINZ -5776
-#endif
 
       z -= MINZ;
-      z >>= 3;
-      z &= ~31;
+      z >>= 5;
+      z &= ~7;
+
+      {
+        short *desc = (short *)(_bobdesc + z);
+
+        apt += *desc++;
+        y += *desc++;
+        bltsize = *desc++;
+      }
 
 #if 1
-      z += z << 3;
-      z += z;         /* z *= 18 */
-      apt += z;
-
       y <<= 5;
       y += y + y;     /* y *= 96 */
       y += (x & ~15) >> 3;
       dpt += y;
 #else
-      apt += z * (BOBW / 8) * DEPTH;
       dpt += (x & ~15) >> 3;
       dpt += y * (WIDTH / 8) * DEPTH;
 #endif
+
       _WaitBlitter(custom_);
 
       custom_->bltcon0 = bltshift;
@@ -343,10 +333,6 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
       custom_->bltsize = bltsize;
     }
   } while (*group);
-
-#if Z_RANGE
-  Log("minZ = %d, maxZ = %d\n", minZ, maxZ);
-#endif
 }
 
 static void DrawLinks(Object3D *object, void *dst,
