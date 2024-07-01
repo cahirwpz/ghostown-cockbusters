@@ -19,25 +19,6 @@ static BitmapT *screen[2];
 static CopInsPairT *bplptr;
 static int active = 0;
 
-#if 0
- 0:  16,  1
- 1:  47,  3
- 2:  78,  5
- 3: 109,  7
- 4: 140,  9
- 5: 171, 11
- 6: 202, 13
- 7: 233, 15
- 8: 264, 17
- 9: 295, 19
-10: 326, 21
-11: 357, 23
-12: 388, 25
-13: 419, 27
-14: 450, 29
-15: 481, 31
-#endif
-
 #include "data/flares32.c"
 #include "data/dna.c"
 #include "data/carrion-metro-pal.c"
@@ -250,6 +231,41 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
 
 #define BOBW 48
 #define BOBH 32
+
+typedef struct BobDesc {
+  short offset;
+  short align;
+  short bltsize;
+  short pad;
+} BobDescT;
+
+#define BOBDESC(Y, H)                                           \
+  (BobDescT){                                                   \
+    .offset = (Y) * (BOBW / 8) * DEPTH,                         \
+    .align = -(H) / 2,                                          \
+    .bltsize = ((H) * DEPTH << 6) | (BOBW / 16),                \
+    .pad = 0,                                                   \
+  }
+
+static BobDescT bobdesc[16] = {
+  BOBDESC(16, 1),
+  BOBDESC(47, 3),
+  BOBDESC(78, 5),
+  BOBDESC(109, 7),
+  BOBDESC(140, 9),
+  BOBDESC(171, 11),
+  BOBDESC(202, 13),
+  BOBDESC(233, 15),
+  BOBDESC(264, 17),
+  BOBDESC(295, 19),
+  BOBDESC(326, 21),
+  BOBDESC(357, 23),
+  BOBDESC(388, 25),
+  BOBDESC(419, 27),
+  BOBDESC(450, 29),
+  BOBDESC(481, 31),
+};
+
 #define Z_RANGE 0
 
 static void DrawFlares(Object3D *object, void *src, void *dst,
@@ -260,6 +276,8 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
 #if Z_RANGE
   static short maxZ = -32768, minZ = 32767;
 #endif
+
+  (void)bobdesc;
 
   _WaitBlitter(custom_);
 
