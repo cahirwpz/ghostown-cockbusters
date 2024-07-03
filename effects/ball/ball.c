@@ -14,7 +14,7 @@
 #define WIDTH 64
 #define HEIGHT 64
 
-static PixmapT *textureHi, *textureLo;
+//static PixmapT *textureHi, *textureLo;
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 static BitmapT *dragon_bp;
@@ -87,13 +87,12 @@ static CopListT *MakeCopperList(int active) {
   CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
   (int*) active = 0;
-  CopSetupBitplanes(cp, screen, S_DEPTH); //XXX dragon is now a pixmap
+  CopSetupBitplanes(cp, screen, S_DEPTH);
   for (i = 0; i < 8; i++)
     CopInsSetSprite(&sprptr[i], &sprite[i]);
   return CopListFinish(cp);
 }
 
-// Attn: in place
 void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
                     void *pixels)
 {
@@ -111,13 +110,9 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
   BitmapSetPointers(bm, pixels); // crash
 
   {
-    ////void *planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
-    //c2p_1x1_4( void *chunky, void* bitplanes, short width,
-    //           short height, int bplSize)
-    ////////c2p_1x1_4(pixels, *(bm->planes), bm->width, bm->height, bplSize);
+    
     c2p_1x1_4(pixels, *(bm->planes), 240     , 228   , bplSize);
-    ////memcpy(planes, pixels, bplSize * 4);
-    //MemFree(planes); // we wanna keep the bitmap
+    
  
   }
 }
@@ -128,7 +123,7 @@ static void Init(void) {
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
   //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
-  segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
+  segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP8, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
 
   // c2p requires target bitplanes to be contiguous in memory, therefore we
@@ -159,9 +154,12 @@ static void Init(void) {
             dragon_height, dragon_bp->bplSize);
   
   //Copy dragon bitmap to background
+  
   memcpy(screen->planes[0], dragon_bp->planes[0],
         S_WIDTH * S_HEIGHT * S_DEPTH / 8);
+  
 
+  
   ///UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   if(0) MakeUVMapRenderCode();
 
@@ -172,7 +170,7 @@ static void Init(void) {
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
 
-  /*sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP|MEMF_CLEAR);
+  sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP|MEMF_CLEAR);
 
   {
     SprDataT *dat = sprdat;
@@ -184,11 +182,11 @@ static void Init(void) {
       EndSprite(&dat);
     }
   }
-  */
+  
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
   LoadColors(dragon_pal_colors, 0);
 
-  cp = MakeCopperList(0); // PANIC()
+  cp = MakeCopperList(0);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
@@ -198,8 +196,8 @@ static void Kill(void) {
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE);
 
   DeleteCopList(cp);
-  DeletePixmap(textureHi);
-  DeletePixmap(textureLo);
+  //DeletePixmap(textureHi);
+  //DeletePixmap(textureLo);
   MemFree(UVMapRender);
   MemFree(sprdat);
   MemFree(dragon_bp);
@@ -207,18 +205,17 @@ static void Kill(void) {
   DeleteBitmap(segment_bp);
 }
 
-#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
+//#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
 
-#if (BLTSIZE / 4) > 1024
-#error "blit size too big!"
-#endif
-#if 1
+//#if (BLTSIZE / 4) > 1024
+//#error "blit size too big!"
+//#endif
 #define SPRITEH 64
-/* TODO: change output to a pointer to two consecutive sprites in memory */
-static void ChunkyToPlanar(PixmapT *input, void *output) {
-  void *planes = output;
+#if 0
+static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
+  void *planes = output->planes[0];
   void *chunky = input->pixels;
-
+  u_short BLTSIZE = input->width * input->height / 2;
   /* Output format [words]:
      CW1            ; Sprite 0 control words
      CW2            ;
@@ -445,10 +442,8 @@ static void ChunkyToPlanar(PixmapT *input, void *output) {
     custom->bltsize = 1 | (SPRITEH << 6); //XXX
 
   }
-
-
   
-#if 0  
+#if 1 
   /* Swap 2x1, pass 1 & 2. */
   {
     WaitBlitter();
@@ -494,7 +489,8 @@ static void ChunkyToPlanar(PixmapT *input, void *output) {
   }
 #endif
 }
-#if 0
+#endif
+#if 1
 static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
   void *planes = input->planes[0];
   short bltsize = (input->height << 6) | 1;
@@ -547,17 +543,18 @@ static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
     x += 16;
   }
 }
-#endif
-#if 1
-static void CropPixmap(PixmapT *input, short x0, short y0, short width, short height, PixmapT* output){
-  short j = 0;
+
+static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
+		       short width, short height, PixmapT* output){
+  u_short j = 0;
+  u_short k = 0;
   for(j = y0; j < height+y0; j++){
-    memcpy(output->pixels + j*output->width + x0,
-	   input->pixels + j*input->width,
+    memcpy(output->pixels + k*output->width,
+	   input->pixels + j*input->width + x0,
 	   width);
+    k++;
   }
 }
-#endif
 
 PROFILE(UVMapRender);
 
@@ -570,18 +567,19 @@ static void Render(void) {
   
   ProfilerStart(UVMapRender);
   {
-    //XXX: dragon.pixels 
-    if (0) CropPixmap(dragon.pixels, 16, 16, WIDTH, HEIGHT, segment_p);
-    //PixmapToBitmap(segment_bp, WIDTH, HEIGHT, S_DEPTH, dragon.pixels);
-    
-    
+    CropPixmap(&dragon, 80, 0, WIDTH, HEIGHT, segment_p);
+
     //(*UVMapRender)(segment_p->pixels, txtHi, txtLo);
     //(*UVMapRender)(dragon_pixels, txtHi, txtLo);
-    //ChunkyToPlanar(segment_p, segment_bp);
-    if(0) ChunkyToPlanar(segment_p, sprite);
+    
+    //ChunkyToPlanar(segment_p, segment_bp->planes[0]);
+    c2p_1x1_4(segment_p, segment_bp->planes[0], segment_bp->width,
+            segment_bp->height, segment_bp->bplSize);
 
-    //BitmapToSprite(segment_bp, sprite);
-    if(0) PositionSprite(sprite, xo / 2, yo / 2);
+    BitmapToSprite(segment_bp, sprite);
+    
+    PositionSprite(sprite, xo / 2, yo / 2);
+    //PositionSprite(sprite, 20, 20);
     //CopListActivate(cp);
   }
   ProfilerStop(UVMapRender);
