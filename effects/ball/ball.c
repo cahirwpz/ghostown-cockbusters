@@ -155,8 +155,8 @@ static void Init(void) {
   
   //Copy dragon bitmap to background
   
-  memcpy(screen->planes[0], dragon_bp->planes[0],
-        S_WIDTH * S_HEIGHT * S_DEPTH / 8);
+  //memcpy(screen->planes[0], dragon_bp->planes[0],
+  //      S_WIDTH * S_HEIGHT * S_DEPTH / 8);
   
 
   
@@ -493,7 +493,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 #endif
 #if 1
 static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
-  void *planes = input->planes[0];
+  //void *planes = input->planes[0];
   short bltsize = (input->height << 6) | 1;
   short i = 0;
 
@@ -503,29 +503,35 @@ static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
   custom->bltalwm = -1;
   custom->bltcon0 = (SRCA | DEST) | A_TO_D;
   custom->bltcon1 = 0;
-  custom->bltamod = 2;
-  custom->bltdmod = 2;
+  custom->bltamod = input->width - 1;
+  custom->bltdmod = 4; //sizeof(SprWordT);
 
-  for (i = 0; i < 1; i++) {
+  for (i = 0; i < 4; i++) {
     SprDataT *sprdat0 = (sprite++)->sprdat;
-    SprDataT *sprdat1 = (sprite++)->sprdat;
+    //SprDataT *sprdat1 = (sprite++)->sprdat;
 
     WaitBlitter();
-    custom->bltapt = planes + i * 2;
+    custom->bltapt = input->planes[0];
     custom->bltdpt = &sprdat0->data[0][0];
     custom->bltsize = bltsize;
-
+    
     WaitBlitter();
+    custom->bltapt = input->planes[1];
+
     custom->bltdpt = &sprdat0->data[0][1];
     custom->bltsize = bltsize;
-
+    /*
     WaitBlitter();
+    custom->bltapt = input->planes[2];
     custom->bltdpt = &sprdat1->data[0][0];
     custom->bltsize = bltsize;
 
     WaitBlitter();
+    custom->bltapt = input->planes[3];
+
     custom->bltdpt = &sprdat1->data[0][1];
     custom->bltsize = bltsize;
+    */
   }
 }
 #endif
@@ -568,15 +574,19 @@ static void Render(void) {
   
   ProfilerStart(UVMapRender);
   {
-    CropPixmap(&dragon, 80, 0, WIDTH, HEIGHT, segment_p);
+    CropPixmap(&dragon, 64, 0, WIDTH, HEIGHT, segment_p);
 
     //(*UVMapRender)(segment_p->pixels, txtHi, txtLo);
     //(*UVMapRender)(dragon_pixels, txtHi, txtLo);
     
     //ChunkyToPlanar(segment_p, segment_bp->planes[0]);
-    c2p_1x1_4(segment_p, segment_bp->planes[0], segment_bp->width,
-            segment_bp->height, segment_bp->bplSize);
+    //c2p_1x1_4(segment_p, segment_bp->planes[0], segment_bp->width,
+    //        segment_bp->height, segment_bp->bplSize);
 
+    c2p_1x1_4(segment_p->pixels, segment_bp->planes[0], segment_bp->width,
+	      segment_bp->height, segment_bp->bplSize);
+
+    
     BitmapToSprite(segment_bp, sprite);
     
     PositionSprite(sprite, xo / 2, yo / 2);
