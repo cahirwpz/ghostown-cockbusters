@@ -185,6 +185,7 @@ static void Init(void) {
   
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
   LoadColors(dragon_pal_colors, 0);
+  LoadColors(dragon_pal_colors, 16);
 
   cp = MakeCopperList(0);
   CopListActivate(cp);
@@ -502,10 +503,10 @@ static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
   custom->bltalwm = -1;
   custom->bltcon0 = (SRCA | DEST) | A_TO_D;
   custom->bltcon1 = 0;
-  custom->bltamod = 6;
+  custom->bltamod = 2;
   custom->bltdmod = 2;
 
-  for (i = 0; i < 4; i++) {
+  for (i = 0; i < 1; i++) {
     SprDataT *sprdat0 = (sprite++)->sprdat;
     SprDataT *sprdat1 = (sprite++)->sprdat;
 
@@ -559,8 +560,8 @@ static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
 PROFILE(UVMapRender);
 
 static void Render(void) {
-  short xo = normfx(SIN(frameCount * 16) * 128);
-  short yo = normfx(COS(frameCount * 16) * 100);
+  short xo = 128; //normfx(SIN(frameCount * 16) * 128);
+  short yo = 100; //normfx(COS(frameCount * 16) * 100);
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
   //u_char *txtLo = textureLo->pixels + offset;
