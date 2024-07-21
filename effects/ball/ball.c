@@ -93,6 +93,8 @@ static CopListT *MakeCopperList(int active) {
   return CopListFinish(cp);
 }
 
+
+//XXX This function is currently NOT used
 void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
                     void *pixels)
 {
@@ -206,7 +208,87 @@ static void Kill(void) {
   DeleteBitmap(segment_bp);
 }
 
-//#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
+
+// Blitter ops as in prototypes/c2p/c2p_1x1_4bpl_sprites.py
+#define P2S_M0 0x00FF
+#define P2S_M1 0x0F0F
+#define P2S_M2 0x3333
+#define P2S_M3 0x5555
+#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
+
+static void PixmapToSprites(PixmapT *input, BitmapT *output) {
+  void *sprites = output->planes[0];
+  void *chunky = input->pixels;
+ 
+  /* Output format [words]:
+     CW1            ; Sprite 0 control words
+     CW2            ;
+     SPR0DATA       ; Sprite 0 data
+     SPR0DATB       ;
+     SPR0DATA      
+     SPR0DATB
+     ...
+     EOS            ; End of sprite 0
+     CW1            ; Sprite 1 control words
+     CW2            ;
+     SPR0DATA       ; Sprite 1 data
+     SPR0DATB
+     ...
+     EOS            ; End of sprite 1
+     ...            ; Sprites 2-7 in the same format.
+  */
+  //
+  //Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
+  //       N // 4, 2, Channel(A, 2, 2), Channel(A, 0, 2), Channel(B, 0, 2))
+  //       BLTSIZE
+  // Channel(data, start, mod)  ==  bltXpt = source + start; bltXmod = mod
+  
+  // Pass 1 - Swap 8x4, blit 1
+  {
+    WaitBlitter();
+    // a >> 8 & M0 | b & ~M0 == a >> 8 & M0 | ~b & M0
+    // Minterm select: AC | NBC: 7 - 5 - - - 1 -
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
+      (ABC | ANBC | NANBC) |
+      ASHIFT(8);
+    custom->bltcon1 = 0;
+    // custom->bltcon1 = BLITREVERSE; zeby shift w lewo
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = P2S_M0;
+
+    custom->bltapt = chunky + 2;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+    
+  }
+  // Pass 1 - Swap 8x4, blit 2
+  {
+    WaitBlitter();
+    // a << 8 & ~M0 | b & M0 == ~a << 8 & M0 | b & M0
+    // Minterm select: NAC | BC: 7 - - - 3 - 1
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
+      (ABC | NABC | NANBC) |
+      ASHIFT(8);
+    custom->bltcon1 = BLITREVERSE;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = P2S_M0;
+
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 2;
+    custom->bltdpt = planes + 2;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+  }
+  WaitBlitter();
+}
 
 //#if (BLTSIZE / 4) > 1024
 //#error "blit size too big!"
@@ -444,7 +526,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 
   }
   
-#if 1 
+#if 0
   /* Swap 2x1, pass 1 & 2. */
   {
     WaitBlitter();
@@ -503,12 +585,12 @@ static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
   custom->bltalwm = -1;
   custom->bltcon0 = (SRCA | DEST) | A_TO_D;
   custom->bltcon1 = 0;
-  custom->bltamod = input->width - 1;
-  custom->bltdmod = 4; //sizeof(SprWordT);
+  custom->bltamod = 1;
+  custom->bltdmod = 3;
 
   for (i = 0; i < 4; i++) {
     SprDataT *sprdat0 = (sprite++)->sprdat;
-    //SprDataT *sprdat1 = (sprite++)->sprdat;
+    SprDataT *sprdat1 = (sprite++)->sprdat;
 
     WaitBlitter();
     custom->bltapt = input->planes[0];
@@ -517,10 +599,9 @@ static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
     
     WaitBlitter();
     custom->bltapt = input->planes[1];
-
     custom->bltdpt = &sprdat0->data[0][1];
     custom->bltsize = bltsize;
-    /*
+    
     WaitBlitter();
     custom->bltapt = input->planes[2];
     custom->bltdpt = &sprdat1->data[0][0];
@@ -531,7 +612,7 @@ static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
 
     custom->bltdpt = &sprdat1->data[0][1];
     custom->bltsize = bltsize;
-    */
+    
   }
 }
 #endif
@@ -566,8 +647,8 @@ static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
 PROFILE(UVMapRender);
 
 static void Render(void) {
-  short xo = 128; //normfx(SIN(frameCount * 16) * 128);
-  short yo = 100; //normfx(COS(frameCount * 16) * 100);
+  short xo = 100; //normfx(SIN(frameCount * 16) * 128);
+  short yo = 50; //normfx(COS(frameCount * 16) * 100);
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
   //u_char *txtLo = textureLo->pixels + offset;
@@ -585,9 +666,8 @@ static void Render(void) {
 
     c2p_1x1_4(segment_p->pixels, segment_bp->planes[0], segment_bp->width,
 	      segment_bp->height, segment_bp->bplSize);
-
     
-    BitmapToSprite(segment_bp, sprite);
+    //BitmapToSprite(segment_bp, sprite);
     
     PositionSprite(sprite, xo / 2, yo / 2);
     //PositionSprite(sprite, 20, 20);

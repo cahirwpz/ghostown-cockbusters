@@ -57,7 +57,7 @@ def c2p(bitplane_output=True):
              Channel(D, 2, 3), Channel(D, 3, 3), Channel(E[3], 0, 0))
         
 
-        print("Spirtes:")
+        print("Bitplanes:")
         Array.Print("[0]:", *E[0])
         Array.Print("[1]:", *E[1])
         Array.Print("[2]:", *E[2])
@@ -88,8 +88,8 @@ def c2p(bitplane_output=True):
         Array.Print("SPR1DATA word wise", *SPR1DATA)
         Array.Print("SPR1DATB word wise", *SPR1DATB)
 
-
-c2p(bitplane_output=True)
+# Do c2p with target output being sprite data
+c2p(bitplane_output=False)
 
 #zz = Array.Zero(8, 16)
 #Array.Print(*zz)
