@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-# Important: This prototype is doing c2p in place. The implementations in assembly
-# are not.
+
 
 from common import Bit, Word, Channel, Blit, Array
 
@@ -23,7 +22,7 @@ def c2p(bitplane_output=True):
     A = Array.Make(MakeWord)
     N = len(A)
     Array.Print("Data:", *A)
-
+    # Channel(data, start, modulo)
     B = Array.Zero(N, 16)
     Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
          N // 4, 2, Channel(A, 2, 2), Channel(A, 0, 2), Channel(B, 0, 2))
