@@ -56,6 +56,7 @@ def Ball(x, y):
     except ValueError:
         pass
 
+
 def Lens(x, y):
     r = dist(x, y, 0.0, 0.0)
     if r > 1:
@@ -64,7 +65,7 @@ def Lens(x, y):
     # mnożnik r - zoom
     # mnożnik r2 - zniekształcenie
     r = 0.5*r + 0.3*r2
-    
+
     # TODO: zrobic funkcje phi albo angle z tych ifow
     try:
         phi = atan2(x, y)

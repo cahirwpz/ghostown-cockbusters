@@ -10,7 +10,8 @@ def c2p(bitplane_output=True):
     m2 = Word.Mask('3333')
     m3 = Word.Mask('5555')
 
-    print("=[ c2p 1x1 4bpl (4 sprites for 64px wide sprite) ]=".center(48, '-'))
+    print("=[ c2p 1x1 4bpl (4 sprites for 64px wide sprite) ]="
+          .center(48, '-'))
 
     def MakeWord(chars, color):
         bits = []
@@ -54,7 +55,6 @@ def c2p(bitplane_output=True):
              Channel(D, 0, 3), Channel(D, 1, 3), Channel(E[1], 0, 0))
         Blit(lambda a, b: ((a << 1) & ~m3) | (b & m3), N // 4, 1,
              Channel(D, 2, 3), Channel(D, 3, 3), Channel(E[3], 0, 0))
-        
 
         print("Bitplanes:")
         Array.Print("[0]:", *E[0])
@@ -87,8 +87,6 @@ def c2p(bitplane_output=True):
         Array.Print("SPR1DATA word wise", *SPR1DATA)
         Array.Print("SPR1DATB word wise", *SPR1DATB)
 
+
 # Do c2p with target output being sprite data
 c2p(bitplane_output=False)
-
-#zz = Array.Zero(8, 16)
-#Array.Print(*zz)
