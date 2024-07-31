@@ -71,6 +71,9 @@
 #define LINE_SOLID 0
 #define LINE_ONEDOT 2
 
+/* Calculate OCS blit size, `W` is in 16-bit words. */
+#define BLTSIZE(W, H) (((W) & 63) | (((H) & 1023) << 6))
+
 /* Precalculated masks for bltafwm and bltalwm registers. */
 extern const u_short FirstWordMask[16];
 extern const u_short LastWordMask[16];

@@ -43,6 +43,7 @@ SUBDIRS := \
 	stripes \
 	textscroll \
 	thunders \
+	textri \
 	tiles8 \
 	tiles16 \
 	tilezoomer \
