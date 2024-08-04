@@ -48,7 +48,17 @@ typedef struct Side {
   short ys, ye;                 // integer
 } SideT;
 
-#define FRAC(n, k) (10000 * (abs(n) & (k - 1)) / k)
+static inline int part_int(int num, int shift) {
+  int r = abs(num) >> shift;
+  return num >= 0 ? r : -r;
+}
+
+static inline int part_frac(int num, int shift) {
+  int r = abs(num) & ((1 << shift) - 1);
+  return 10000 * r >> shift;
+}
+
+#define FRAC(n, k) part_int((n), (k)), part_frac((n), (k))
 
 static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
   short y1 = (pb->y + 7) >> 4;
@@ -64,21 +74,18 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
 
 #if 0
   Log("A: x: %d.%04d, y: %d.%04d, u: %d.%04d, v: %d.%04d\n",
-      pa->x >> 4, FRAC(pa->x, 16), pa->y >> 4, FRAC(pa->y, 16),
-      pa->u >> 4, FRAC(pa->u, 16), pa->v >> 4, FRAC(pa->v, 16));
+      FRAC(pa->x, 4), FRAC(pa->y, 4), FRAC(pa->u, 4), FRAC(pa->v, 4));
   Log("B: x: %d.%04d, y: %d.%04d, u: %d.%04d, v: %d.%04d\n",
-      pb->x >> 4, FRAC(pb->x, 16), pb->y >> 4, FRAC(pb->y, 16),
-      pb->u >> 4, FRAC(pb->u, 16), pb->v >> 4, FRAC(pb->v, 16));
-  Log("> dy: %d.%04d, dx: %d.%04d, du: %d.%04d, dv: %d.%04d\n",
-      dy >> 4, FRAC(dy, 16), s->dx >> 4, FRAC(s->dx, 16),
-      s->du >> 4, FRAC(s->du, 16), s->dv >> 4, FRAC(s->dv, 16));
+      FRAC(pb->x, 4), FRAC(pb->y, 4), FRAC(pb->u, 4), FRAC(pb->v, 4));
+  Log("> dx: %d.%04d, dy: %d.%04d, du: %d.%04d, dv: %d.%04d\n",
+      FRAC(s->dx, 4), FRAC(dy, 4), FRAC(s->du, 4), FRAC(s->dv, 4));
 #endif
 
   if (s->ye > s->ys) {
-    short prestep = ((pa->y + 7) & -16) - pa->y + 8;
+    short prestep = ((pa->y + 7) & -16) + 8 - pa->y;
 
 #if 0
-    Log("> prestep: %d.%04d\n", prestep >> 4, FRAC(prestep, 16));
+    Log("> prestep: %d.%04d\n", FRAC(prestep, 4));
 #endif
 
     s->dxdy = div16(s->dx << 8, dy);                    // 20.12 / 12.4 = 8.8
@@ -101,12 +108,9 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
   }
 
 #if 0
-    Log("> dxdy: %d.%04d, x: %d.%04d\n",
-        s->dxdy >> 8, FRAC(s->dxdy, 256), s->x >> 8, FRAC(s->x, 256));
-    Log("> dudy: %d.%04d, u: %d.%04d\n",
-        s->dudy >> 8, FRAC(s->dudy, 256), s->u >> 8, FRAC(s->u, 256));
-    Log("> dvdy: %d.%04d, v: %d.%04d\n",
-        s->dvdy >> 8, FRAC(s->dvdy, 256), s->v >> 8, FRAC(s->v, 256));
+    Log("> dxdy: %d.%04d, x: %d.%04d\n", FRAC(s->dxdy, 8), FRAC(s->x, 8));
+    Log("> dudy: %d.%04d, u: %d.%04d\n", FRAC(s->dudy, 8), FRAC(s->u, 8));
+    Log("> dvdy: %d.%04d, v: %d.%04d\n", FRAC(s->dvdy, 8), FRAC(s->v, 8));
 #endif
 }
 
@@ -125,7 +129,7 @@ static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
 
 #if 0
   Log("*** ys: %d, ye: %d, du: %d.%04d, dv: %d.%04d\n",
-      m->ys, m->ye, du >> 8, FRAC(du, 256), dv >> 8, FRAC(dv, 256));
+      m->ys, m->ye, FRAC(du, 8), FRAC(dv, 8));
 #endif
 
   while (m->ys < m->ye) {
@@ -147,8 +151,7 @@ static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
 
 #if 0
     Log("$ y: %d, xs: %d.%04d, xe: %d.%04d, u: %d.%04d, v: %d.%04d\n",
-        m->ys, l->x >> 8, FRAC(l->x, 256), r->x >> 8, FRAC(r->x, 256),
-        u >> 8, FRAC(u, 256), v >> 8, FRAC(v, 256));
+        m->ys, FRAC(l->x, 8), FRAC(r->x, 8), FRAC(u, 8), FRAC(v, 8));
 #endif
 
     if (xe > xs) {
