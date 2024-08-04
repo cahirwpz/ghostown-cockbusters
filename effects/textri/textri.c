@@ -454,21 +454,24 @@ PROFILE(DrawTriangle);
 #define MIDDLE_X fx4i(WIDTH / 2)
 #define MIDDLE_Y fx4i(HEIGHT / 2)
 
+#define STEP 4
+#define PHASE 0
+
 static void Render(void) {
   CornerT p0, p1, p2;
 
-  p0.x = normfx(SIN(frameCount * 4) * RADIUS_X) + MIDDLE_X;
-  p0.y = normfx(COS(frameCount * 4) * RADIUS_Y) + MIDDLE_Y;
+  p0.x = normfx(SIN(frameCount * STEP + PHASE) * RADIUS_X) + MIDDLE_X;
+  p0.y = normfx(COS(frameCount * STEP + PHASE) * RADIUS_Y) + MIDDLE_Y;
   p0.u = fx4i(0);
   p0.v = fx4i(0);
 
-  p1.x = normfx(SIN(frameCount * 4 + 0x555) * RADIUS_X) + MIDDLE_X;
-  p1.y = normfx(COS(frameCount * 4 + 0x555) * RADIUS_Y) + MIDDLE_Y;
+  p1.x = normfx(SIN(frameCount * STEP + PHASE + 0x555) * RADIUS_X) + MIDDLE_X;
+  p1.y = normfx(COS(frameCount * STEP + PHASE + 0x555) * RADIUS_Y) + MIDDLE_Y;
   p1.u = fx4i(texture_width - 1);
   p1.v = fx4i(0);
 
-  p2.x = normfx(SIN(frameCount * 4 + 0xaaa) * RADIUS_X) + MIDDLE_X;
-  p2.y = normfx(COS(frameCount * 4 + 0xaaa) * RADIUS_Y) + MIDDLE_Y;
+  p2.x = normfx(SIN(frameCount * STEP + PHASE + 0xaaa) * RADIUS_X) + MIDDLE_X;
+  p2.y = normfx(COS(frameCount * STEP + PHASE + 0xaaa) * RADIUS_Y) + MIDDLE_Y;
   p2.u = fx4i(0);
   p2.v = fx4i(texture_height - 1);
 
