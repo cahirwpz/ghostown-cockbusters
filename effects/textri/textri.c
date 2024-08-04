@@ -224,6 +224,9 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
   }
 }
 
+/* Calculate OCS blit size, `W` is in 16-bit words. */
+#define BLTSIZE(W, H) (((W) & 63) | (((H) & 1023) << 6))
+
 /* This is the size of a single bitplane in `screen`. */
 #define BUFSIZE ((WIDTH / 8) * HEIGHT * 4) /* 8192 bytes */
 
