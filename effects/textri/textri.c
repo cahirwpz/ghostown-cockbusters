@@ -119,7 +119,9 @@ static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
   SideT *m = l;
 
   if ((r->x < l->x) ||
-      (r->x == l->x && l->dxdy > r->dxdy)) { SideT *t = l; l = r; r = t; }
+      (r->x == l->x && l->dxdy > r->dxdy)) {
+    SideT *t = l; l = r; r = t;
+  }
 
   pixels += m->ys * WIDTH;
 
@@ -198,9 +200,17 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
     InitSide(&s12, p1, p2);
 
     {
-      short u = s02.dudy - s01.dudy;
-      short v = s02.dvdy - s01.dvdy;
-      short x = s02.dxdy - s01.dxdy;
+      short u, v, x;
+
+      if (s12.dy < s01.dy) {
+        u = s02.dudy - s01.dudy;
+        v = s02.dvdy - s01.dvdy;
+        x = s02.dxdy - s01.dxdy;
+      } else {
+        u = s02.dudy - s12.dudy;
+        v = s02.dvdy - s12.dvdy;
+        x = s02.dxdy - s12.dxdy;
+      }
 
       du = div16(u << 8, x);
       dv = div16(v << 8, x);
