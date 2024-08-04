@@ -3,6 +3,8 @@
 #include <copper.h>
 #include <fx.h>
 #include <pixmap.h>
+#include <3d.h>
+#include <fx.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -11,6 +13,7 @@
 #define DEPTH 4
 
 #include "data/rork-128.c"
+#include "data/cube.c"
 
 static __code BitmapT *screen[2];
 static __code CopListT *cp;

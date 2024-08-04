@@ -53,6 +53,7 @@ void Transform3D(Matrix3D *M, Point3D *out, Point3D *in, short n);
  */
 typedef struct Mesh3D {
   short vertices;
+  short texcoords;
   short edges;
   short faces;
   short materials;
