@@ -382,10 +382,17 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
       CopInsSet32(&bplptr[2], bpl[2] + BUFSIZE / 2);
       CopInsSet32(&bplptr[3], bpl[3] + BUFSIZE / 2);
 
-      /* clear the buffer */
-      custom_->bltapt = texture_pixels;
+      /* initialize rendering buffer */
       custom_->bltdpt = bpl[0];
+#if 1
+      /* copy the texture */
+      custom_->bltapt = texture_pixels;
       custom_->bltcon0 = (SRCA | DEST) | A_TO_D;
+#else
+      /* set all pixels to 0 */
+      custom_->bltadat = 0;
+      custom_->bltcon0 = DEST | A_TO_D;
+#endif
       custom_->bltcon1 = 0;
 
       /* overall size: BUFSIZE * 2 bytes (chunk buffer size) */
@@ -458,27 +465,33 @@ PROFILE(DrawTriangle);
 #define PHASE 0
 
 static void Render(void) {
-  CornerT p0, p1, p2;
+  CornerT p0, p1, p2, p3;
 
   p0.x = normfx(SIN(frameCount * STEP + PHASE) * RADIUS_X) + MIDDLE_X;
   p0.y = normfx(COS(frameCount * STEP + PHASE) * RADIUS_Y) + MIDDLE_Y;
   p0.u = fx4i(0);
   p0.v = fx4i(0);
 
-  p1.x = normfx(SIN(frameCount * STEP + PHASE + 0x555) * RADIUS_X) + MIDDLE_X;
-  p1.y = normfx(COS(frameCount * STEP + PHASE + 0x555) * RADIUS_Y) + MIDDLE_Y;
+  p1.x = normfx(SIN(frameCount * STEP + PHASE + 0x400) * RADIUS_X) + MIDDLE_X;
+  p1.y = normfx(COS(frameCount * STEP + PHASE + 0x400) * RADIUS_Y) + MIDDLE_Y;
   p1.u = fx4i(texture_width - 1);
   p1.v = fx4i(0);
 
-  p2.x = normfx(SIN(frameCount * STEP + PHASE + 0xaaa) * RADIUS_X) + MIDDLE_X;
-  p2.y = normfx(COS(frameCount * STEP + PHASE + 0xaaa) * RADIUS_Y) + MIDDLE_Y;
-  p2.u = fx4i(0);
+  p2.x = normfx(SIN(frameCount * STEP + PHASE + 0x800) * RADIUS_X) + MIDDLE_X;
+  p2.y = normfx(COS(frameCount * STEP + PHASE + 0x800) * RADIUS_Y) + MIDDLE_Y;
+  p2.u = fx4i(texture_width - 1);
   p2.v = fx4i(texture_height - 1);
+
+  p3.x = normfx(SIN(frameCount * STEP + PHASE + 0xc00) * RADIUS_X) + MIDDLE_X;
+  p3.y = normfx(COS(frameCount * STEP + PHASE + 0xc00) * RADIUS_Y) + MIDDLE_Y;
+  p3.u = fx4i(0);
+  p3.v = fx4i(texture_height - 1);
 
   ProfilerStart(DrawTriangle);
   {
     chunky = screen[active]->planes[0];
     DrawTriangle(&p0, &p1, &p2);
+    DrawTriangle(&p0, &p3, &p2);
   }
   ProfilerStop(DrawTriangle);
 
