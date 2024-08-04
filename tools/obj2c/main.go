@@ -17,6 +17,7 @@ var meshName string
 var indexSize int
 var noEdges bool
 var textured bool
+var textureScale float64
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
@@ -29,6 +30,8 @@ func init() {
 		"don't augment the object with edges")
 	flag.BoolVar(&textured, "textured", false,
 		"add per vertex uv coordinates")
+	flag.Float64Var(&textureScale, "texture-scale", 1.0,
+		"scale uv coordinates by this number")
 }
 
 func main() {
@@ -50,10 +53,11 @@ func main() {
 	}
 
 	cp := obj.ConverterParams{
-		Name:     meshName,
-		Scale:    scaleFactor,
-		Edges:    !noEdges,
-		Textured: textured,
+		Name:         meshName,
+		Scale:        scaleFactor,
+		Edges:        !noEdges,
+		TextureScale: textureScale,
+		Textured:     textured,
 	}
 
 	output, err := obj.Convert(data, cp)

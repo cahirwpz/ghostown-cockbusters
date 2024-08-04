@@ -57,11 +57,12 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 
 		/* texture coordinates */
 		if cp.Textured {
+			s = cp.TextureScale
 			for _, vt := range obj.TexCoords {
 				texCoordIndices = append(texCoordIndices,
 					len(geom.TexCoords)*TexCoordSize)
 				geom.TexCoords = append(geom.TexCoords,
-					Vector{int(vt[0] * 256), int(vt[1] * 256)})
+					Vector{int(vt[0] * s), int(vt[1] * s)})
 			}
 		}
 
@@ -243,10 +244,11 @@ func Convert(data *WavefrontData, cp ConverterParams) (string, error) {
 }
 
 type ConverterParams struct {
-	Name     string
-	Scale    float64
-	Edges    bool
-	Textured bool
+	Name         string
+	Scale        float64
+	TextureScale float64
+	Edges        bool
+	Textured     bool
 }
 
 type Vector []int

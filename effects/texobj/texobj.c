@@ -22,6 +22,7 @@ static __code u_char *chunky;
 static __code short active;
 static __code volatile short c2p_phase;
 static __code void **c2p_bpl;
+static __code Object3D *object;
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] */
 static const u_char PixelHi[16] = {
@@ -91,13 +92,13 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
     Log("> prestep: %d.%04d\n", FRAC(prestep, 4));
 #endif
 
-    s->dxdy = div16(s->dx << 8, dy);                    // 20.12 / 12.4 = 8.8
+    s->dxdy = div16(0x80 + (s->dx << 8), dy);           // 20.12 / 12.4 = 8.8
     s->x = (pa->x << 4) + (s->dxdy * prestep >> 4);     // 8.8 * 12.4 = 20.12
 
-    s->dudy = div16(s->du << 8, dy);
+    s->dudy = div16(0x80 + (s->du << 8), dy);
     s->u = (pa->u << 4) + (s->dudy * prestep >> 4);
 
-    s->dvdy = div16(s->dv << 8, dy);
+    s->dvdy = div16(0x80 + (s->dv << 8), dy);
     s->v = (pa->v << 4) + (s->dvdy * prestep >> 4);
   } else {
     s->dxdy = 0;
@@ -124,6 +125,13 @@ static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
   if ((r->x < l->x) ||
       (r->x == l->x && l->dxdy > r->dxdy)) {
     SideT *t = l; l = r; r = t;
+#if 0
+    Log("*** long on the left\n");
+#endif
+  } else {
+#if 0
+    Log("*** long on the right\n");
+#endif
   }
 
   pixels += m->ys * WIDTH;
@@ -150,9 +158,11 @@ static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
     v = l->v + (dv * prestep >> 8);
 #else
     (void)prestep;
-    u = l->u >> 1;
-    v = l->v >> 1;
+    u = l->u;
+    v = l->v;
 #endif
+    u >>= 1;
+    v >>= 1;
 
 #if 0
     Log("$ y: %d, xs: %d.%04d, xe: %d.%04d, u: %d.%04d, v: %d.%04d\n",
@@ -205,14 +215,22 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
     {
       short u, v, x;
 
-      if (s12.dy < s01.dy) {
-        u = s02.dudy - s01.dudy;
-        v = s02.dvdy - s01.dvdy;
-        x = s02.dxdy - s01.dxdy;
-      } else {
+      if (s02.dxdy == s01.dxdy) {
+        x = s02.dxdy - s12.dxdy;
         u = s02.dudy - s12.dudy;
         v = s02.dvdy - s12.dvdy;
+      } else if (s02.dxdy == s12.dxdy) {
+        x = s02.dxdy - s01.dxdy;
+        u = s02.dudy - s01.dudy;
+        v = s02.dvdy - s01.dvdy;
+      } else if (s12.dy < s01.dy) {
+        x = s02.dxdy - s01.dxdy;
+        u = s02.dudy - s01.dudy;
+        v = s02.dvdy - s01.dvdy;
+      } else {
         x = s02.dxdy - s12.dxdy;
+        u = s02.dudy - s12.dudy;
+        v = s02.dvdy - s12.dvdy;
       }
 
       du = div16(u << 8, x);
@@ -222,6 +240,92 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
     DrawSpan(&s01, &s02, du, dv);
     DrawSpan(&s12, &s02, du, dv);
   }
+}
+
+#define MULVERTEX(D) {                          \
+  short t0 = (*v++) + y;                        \
+  short t1 = (*v++) + x;                        \
+  int t2 = (*v++) * z;                          \
+  short t3 = (*v++);                            \
+  D = normfx(t0 * t1 + t2 - x * y) + t3;        \
+}
+
+static void TransformVertices(Object3D *object) {
+  Matrix3D *M = &object->objectToWorld;
+  void *_objdat = object->objdat;
+  short *group = object->vertexGroups;
+
+  /* WARNING! This modifies camera matrix! */
+  M->x -= normfx(M->m00 * M->m01);
+  M->y -= normfx(M->m10 * M->m11);
+  M->z -= normfx(M->m20 * M->m21);
+
+  /*
+   * A = m00 * m01
+   * B = m10 * m11
+   * C = m20 * m21 
+   * yx = y * x
+   *
+   * (m00 + y) * (m01 + x) + m02 * z - yx + (mx - A)
+   * (m10 + y) * (m11 + x) + m12 * z - yx + (my - B)
+   * (m20 + y) * (m21 + x) + m22 * z - yx + (mz - C)
+   */
+
+  do {
+    short i;
+
+    while ((i = *group++)) {
+      short *pt = (short *)POINT(i);
+      short *v = (short *)M;
+      short x, y, z;
+      int xp, yp, zp;
+
+      x = *pt++;
+      y = *pt++;
+      z = *pt++;
+
+      MULVERTEX(xp);
+      MULVERTEX(yp);
+      MULVERTEX(zp);
+
+      *pt++ = div16(xp << 12, zp) + fx4i(WIDTH / 2);
+      *pt++ = div16(yp << 12, zp) + fx4i(HEIGHT / 2);
+      *pt++ = zp;
+    }
+  } while (*group);
+}
+
+static void DrawObject(Object3D *object) {
+  void *_objdat = object->objdat;
+  short *group = object->faceGroups;
+
+  CornerT corners[3];
+
+  do {
+    short f;
+
+    while ((f = *group++)) {
+      if (FACE(f)->flags >= 0) {
+        register short *index asm("a3") = (short *)(FACE(f)->indices);
+        short n = FACE(f)->count - 1;
+        CornerT *corner = corners;
+
+        do {
+          short i;
+
+          i = *index++; /* vertex */
+          corner->x = VERTEX(i)->x;
+          corner->y = VERTEX(i)->y;
+          i = *index++; /* uvcoord */
+          corner->u = UVCOORD(i)->u;
+          corner->v = UVCOORD(i)->v;
+          corner++;
+        } while (--n != -1);
+
+        DrawTriangle(&corners[0], &corners[1], &corners[2]);
+      }
+    }
+  } while (*group);
 }
 
 /* Calculate OCS blit size, `W` is in 16-bit words. */
@@ -427,6 +531,9 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Init(void) {
+  object = NewObject3D(&cube);
+  object->translate.z = fx4i(-250);
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
@@ -458,19 +565,17 @@ static void Kill(void) {
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
+
+  DeleteObject3D(object);
 }
 
-PROFILE(DrawTriangle);
-
-#define RADIUS_X fx4i(WIDTH / 2 - 2)
-#define RADIUS_Y fx4i(HEIGHT / 2 - 2)
-#define MIDDLE_X fx4i(WIDTH / 2)
-#define MIDDLE_Y fx4i(HEIGHT / 2)
-
-#define STEP 4
-#define PHASE 0
+PROFILE(UpdateGeometry);
+PROFILE(DrawObject);
 
 static void Render(void) {
+  chunky = screen[active]->planes[0];
+
+#if 0
   CornerT p0, p1, p2, p3;
 
   p0.x = normfx(SIN(frameCount * STEP + PHASE) * RADIUS_X) + MIDDLE_X;
@@ -495,11 +600,27 @@ static void Render(void) {
 
   ProfilerStart(DrawTriangle);
   {
-    chunky = screen[active]->planes[0];
     DrawTriangle(&p0, &p1, &p2);
     DrawTriangle(&p0, &p3, &p2);
   }
   ProfilerStop(DrawTriangle);
+#endif
+
+  ProfilerStart(UpdateGeometry);
+  {
+    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
+
+    UpdateObjectTransformation(object);
+    UpdateFaceVisibility(object);
+    TransformVertices(object);
+  }
+  ProfilerStop(UpdateGeometry);
+
+  ProfilerStart(DrawObject);
+  {
+    DrawObject(object);
+  }
+  ProfilerStop(DrawObject);
 
   while (c2p_phase < C2P_LAST)
     WaitBlitter();
