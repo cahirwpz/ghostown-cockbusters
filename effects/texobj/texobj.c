@@ -47,13 +47,13 @@ static void ScrambleTexture(void) {
 typedef struct Corner {
   short x, y;
   short u, v;
+  short yi;
 } CornerT;
 
 typedef struct Side {
   short dy;                     // 12.4 format
   short dxdy, dudy, dvdy;       // 8.8 format
   short x, u, v;                // 8.8 format
-  short ys, ye;                 // integer
 } SideT;
 
 static inline int part_int(int num, int shift) {
@@ -69,15 +69,11 @@ static inline int part_frac(int num, int shift) {
 #define FRAC(n, k) part_int((n), (k)), part_frac((n), (k))
 
 static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
-  short y1 = (pb->y + 7) >> 4;
-  short y0 = (pa->y + 7) >> 4;
   short dy = pb->y - pa->y;
   short dx = pb->x - pa->x;
   short du = pb->u - pa->u;
   short dv = pb->v - pa->v;
 
-  s->ys = y0;
-  s->ye = y1;
   s->dy = dy;
 
 #if 0
@@ -89,7 +85,7 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
       FRAC(s->dx, 4), FRAC(dy, 4), FRAC(s->du, 4), FRAC(s->dv, 4));
 #endif
 
-  if (s->ye > s->ys) {
+  if (pb->yi > pa->yi) {
     short prestep = ((pa->y + 7) & -16) + 8 - pa->y;
 
 #if 0
@@ -137,6 +133,10 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
   if (p0->y > p2->y) { CornerT *t = p2; p2 = p0; p0 = t; }
   if (p1->y > p2->y) { CornerT *t = p2; p2 = p1; p1 = t; }
 
+  p0->yi = (p0->y + 7) >> 4;
+  p1->yi = (p1->y + 7) >> 4;
+  p2->yi = (p2->y + 7) >> 4;
+
   {
     static __code SideT s01, s02, s12;
     short du, dv;
@@ -172,11 +172,11 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
 
     // ((s02.x < s01.x) || (s02.x == s01.x && s02.dxdy > s01.dxdy))
     if (s01.dxdy < s02.dxdy) {
-      DrawTriPart(chunky, texture, &s01, &s02, du, dv, s01.ys, s01.ye);
-      DrawTriPart(chunky, texture, &s12, &s02, du, dv, s12.ys, s12.ye);
+      DrawTriPart(chunky, texture, &s01, &s02, du, dv, p0->yi, p1->yi);
+      DrawTriPart(chunky, texture, &s12, &s02, du, dv, p1->yi, p2->yi);
     } else {
-      DrawTriPart(chunky, texture, &s02, &s01, du, dv, s01.ys, s01.ye);
-      DrawTriPart(chunky, texture, &s02, &s12, du, dv, s12.ys, s12.ye);
+      DrawTriPart(chunky, texture, &s02, &s01, du, dv, p0->yi, p1->yi);
+      DrawTriPart(chunky, texture, &s02, &s12, du, dv, p1->yi, p2->yi);
     }
   }
 }
