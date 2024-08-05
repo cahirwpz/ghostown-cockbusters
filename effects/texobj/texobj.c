@@ -50,7 +50,7 @@ typedef struct Corner {
 } CornerT;
 
 typedef struct Side {
-  short dx, dy, du, dv;         // 12.4 format
+  short dy;                     // 12.4 format
   short dxdy, dudy, dvdy;       // 8.8 format
   short x, u, v;                // 8.8 format
   short ys, ye;                 // integer
@@ -72,13 +72,13 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
   short y1 = (pb->y + 7) >> 4;
   short y0 = (pa->y + 7) >> 4;
   short dy = pb->y - pa->y;
+  short dx = pb->x - pa->x;
+  short du = pb->u - pa->u;
+  short dv = pb->v - pa->v;
 
   s->ys = y0;
   s->ye = y1;
   s->dy = dy;
-  s->dx = pb->x - pa->x;
-  s->du = pb->u - pa->u;
-  s->dv = pb->v - pa->v;
 
 #if 0
   Log("A: x: %d.%04d, y: %d.%04d, u: %d.%04d, v: %d.%04d\n",
@@ -96,13 +96,13 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
     Log("> prestep: %d.%04d\n", FRAC(prestep, 4));
 #endif
 
-    s->dxdy = div16(0x80 + (s->dx << 8), dy);           // 20.12 / 12.4 = 8.8
+    s->dxdy = div16(0x80 + (dx << 8), dy);              // 20.12 / 12.4 = 8.8
     s->x = (pa->x << 4) + (s->dxdy * prestep >> 4);     // 8.8 * 12.4 = 20.12
 
-    s->dudy = div16(0x80 + (s->du << 8), dy);
+    s->dudy = div16(0x80 + (du << 8), dy);
     s->u = (pa->u << 4) + (s->dudy * prestep >> 4);
 
-    s->dvdy = div16(0x80 + (s->dv << 8), dy);
+    s->dvdy = div16(0x80 + (dv << 8), dy);
     s->v = (pa->v << 4) + (s->dvdy * prestep >> 4);
   } else {
     s->dxdy = 0;

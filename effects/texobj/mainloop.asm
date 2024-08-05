@@ -6,18 +6,13 @@ WIDTH           equ     128
 WIDTH_BITS      equ     7
 
  STRUCTURE SIDE,0               ; Keep in sync with SideT from texobj.c !
-        WORD    DX
         WORD    DY
-        WORD    DU
-        WORD    DV
         WORD    DXDY
         WORD    DUDY
         WORD    DVDY
         WORD    X
         WORD    U
         WORD    V
-        WORD    YS
-        WORD    YE
         LABEL   SIDE_SIZE
 
         section ".text"
