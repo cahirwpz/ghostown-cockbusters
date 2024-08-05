@@ -28,19 +28,23 @@ WIDTH_BITS      equ     7
 ; [a3] right (const)
 ; [d2] du (----UUuu)
 ; [d3] dv (----VVvv)
-; [d4] ys
-; [d5] ye
+; [d6] ys
+; [d7] ye
 _DrawTriPart:
-        movem.l d2-d5/a4,-(sp)
+        movem.l d2-d7/a4,-(sp)
 
-        ; height must be positive
-        sub.w   d4,d5
-        subq.w  #1,d5
+        ; [d7] height - must be positive
+        sub.w   d6,d7
+        subq.w  #1,d7
         bmi     .quit
 
-        ; line = chunky + ys * WIDTH
-        lsl.w   #WIDTH_BITS,d4
-        lea     (a0,d4.w),a4
+        ; [a4] line = chunky + ys * WIDTH
+        lsl.w   #WIDTH_BITS,d6
+        lea     (a0,d6.w),a4
+
+        ; keep xs and xe prepared for rounding
+        add.w   #127,X(a2)
+        add.w   #127,X(a3)
 
 ; in:
 ;  [d2] u (----UUuu)
@@ -57,32 +61,46 @@ _DrawTriPart:
         clr.b   d3      ; VVvvuu--
         swap    d3      ; uu--VVvv
 
+        ; [d5] u = l->u
+        move.w  U(a2),d5
+
+        ; [d6] v = l->v
+        move.w  V(a2),d6
+
 .loop:
         ; xs = (l->x + 127) >> 8
-        move.w  X(a2),d0
-        add.w   #127,d0
-        asr.w   #8,d0
+        clr.w   d4
+        move.b  X(a2),d4
 
         ; xe = (r->x + 127) >> 8
-        move.w  X(a3),d4
-        add.w   #127,d4
-        asr.w   #8,d4
+        clr.w   d0
+        move.b  X(a3),d0
 
         ; xs >= xe => skip
-        cmp.w   d4,d0
+        cmp.w   d0,d4
         bge     .skip
 
-        ; pixels = &line[xs]
-        lea     (a4,d0.w),a0
+        ; [a0] pixels = &line[xs]
+        lea     (a4,d4.w),a0
         
-        ; n = xe - xs
+        ; [d4] n = WIDTH - (xe - xs) = WIDTH + xs - xe
+        add.w   #128,d4
         sub.w   d0,d4
 
-        ; u = l->u
-        move.w  U(a2),d0
+        ; 12 is the size of single iteration
+        move.w  d4,d0
+        add.w   d0,d0
+        add.w   d0,d0
+        move.w  d0,d4
+        add.w   d0,d0
+        add.w   d0,d4
+        ; same as `mulu.w #12,d4` but takes 24 cycles instead of 46
 
-        ; v = l->v
-        move.w  V(a2),d1
+        ; [d0] u (per loop)
+        move.w  d5,d0
+
+        ; [d1] v (per loop)
+        move.w  d6,d1
 
 ; in:
 ;  [d0] u (----UUuu)
@@ -101,9 +119,6 @@ _DrawTriPart:
         
 ; jump into unrolled loop
 
-        sub.w   #WIDTH,d4
-        neg.w   d4
-        mulu.w  #14,d4  ; 14 is the size of single iteration
         jmp     .start(pc,d4.w)
 
 ; Texturing code inspired by article by Kalms
@@ -114,37 +129,32 @@ _DrawTriPart:
         add.l   d3,d1           ;   [8] uu--VVvv 
         move.b  d0,d4           ;   [4] ----VVUU
         addx.b  d2,d0           ;   [4] ------UU
-        add.b   d4,d4           ;   [4]
         move.b  (a1,d4.w),(a0)+ ;  [18]
-        endr                    ; [=42]
+        endr                    ; [=38]
         
 .skip:  ; l->x += l->dxdy
         move.w  DXDY(a2),d4
         add.w   d4,X(a2)
         
         ; l->u += l->dudy
-        move.w  DUDY(a2),d4
-        add.w   d4,U(a2)
+        add.w   DUDY(a2),d5
 
         ; l->v += l->dvdy
-        move.w  DVDY(a2),d4
-        add.w   d4,V(a2)
+        add.w   DVDY(a2),d6
 
         ; r->x += r->dxdy
         move.w  DXDY(a3),d4
         add.w   d4,X(a3)
         
-        ; r->u += r->dudy
-        move.w  DUDY(a3),d4
-        add.w   d4,U(a3)
-
-        ; r->v += r->dvdy
-        move.w  DVDY(a3),d4
-        add.w   d4,V(a3)
-
         ; line += WIDTH
         lea     WIDTH(a4),a4
-        dbf     d5,.loop
+        dbf     d7,.loop
 
-.quit:  movem.l (sp)+,d2-d5/a4
+        ; revert xs and xe to original form
+        sub.w   #127,X(a2)
+        sub.w   #127,X(a3)
+        move.w  d5,U(a2)
+        move.w  d6,V(a2)
+
+.quit:  movem.l (sp)+,d2-d7/a4
         rts

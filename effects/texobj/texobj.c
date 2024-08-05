@@ -115,6 +115,10 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
     s->v = pa->v << 4;
   }
 
+  /* texture is streched in U by 2 */
+  s->u *= 2;
+  s->dudy *= 2;
+
 #if 0
     Log("> dxdy: %d.%04d, x: %d.%04d\n", FRAC(s->dxdy, 8), FRAC(s->x, 8));
     Log("> dudy: %d.%04d, u: %d.%04d\n", FRAC(s->dudy, 8), FRAC(s->u, 8));
@@ -125,7 +129,7 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
 void DrawTriPart(u_char *line asm("a0"), short *texture asm("a1"),
                  SideT *left asm("a2"), SideT *right asm("a3"),
                  int du asm("d2"), int dv asm("d3"),
-                 int ys asm("d4"), int ye asm("d5"));
+                 int ys asm("d6"), int ye asm("d7"));
 
 static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
   // sort them by y
@@ -166,6 +170,7 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
       dv = div16(v << 8, x);
     }
 
+    // ((s02.x < s01.x) || (s02.x == s01.x && s02.dxdy > s01.dxdy))
     if (s01.dxdy < s02.dxdy) {
       DrawTriPart(chunky, texture, &s01, &s02, du, dv, s01.ys, s01.ye);
       DrawTriPart(chunky, texture, &s12, &s02, du, dv, s12.ys, s12.ye);
