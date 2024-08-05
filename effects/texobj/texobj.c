@@ -23,20 +23,24 @@ static __code short active;
 static __code volatile short c2p_phase;
 static __code void **c2p_bpl;
 static __code Object3D *object;
+static __code short *texture;
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] */
-static const u_char PixelHi[16] = {
-  0x00, 0x04, 0x08, 0x0c, 0x40, 0x44, 0x48, 0x4c,
-  0x80, 0x84, 0x88, 0x8c, 0xc0, 0xc4, 0xc8, 0xcc,
+static const short Pixel[16] = {
+  0x0000, 0x0404, 0x0808, 0x0c0c, 0x4040, 0x4444, 0x4848, 0x4c4c,
+  0x8080, 0x8484, 0x8888, 0x8c8c, 0xc0c0, 0xc4c4, 0xc8c8, 0xcccc,
 };
 
 static void ScrambleTexture(void) {
   u_char *src = texture_pixels;
-  u_char *dst = texture_pixels;
+  u_char *dst0 = texture_pixels;
+  short *dst1 = texture;
   short n = texture_width * texture_height;
 
   while (--n >= 0) {
-    *dst++ = PixelHi[*src++];
+    short c = Pixel[*src++];
+    *dst0++ = c;
+    *dst1++ = c;
   }
 }
 
@@ -118,84 +122,28 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
 #endif
 }
 
-static void DrawSpan(SideT *l, SideT *r, short du, short dv) {
-  u_char *pixels = chunky;
-  SideT *m = l;
+void DrawSpan(u_char *line asm("a0"), short *texture asm("a1"),
+              SideT *left asm("a2"), SideT *right asm("a3"),
+              int du asm("d2"), int dv asm("d3"), int n asm("d4"));
+
+static inline void DrawTriPart(SideT *l, SideT *r, int du, int dv) {
+  u_char *line = chunky;
+  short ys = l->ys;
+  short height = l->ye - ys;
+
+  line += ys * WIDTH;
 
   if ((r->x < l->x) ||
       (r->x == l->x && l->dxdy > r->dxdy)) {
     SideT *t = l; l = r; r = t;
-#if 0
-    Log("*** long on the left\n");
-#endif
-  } else {
-#if 0
-    Log("*** long on the right\n");
-#endif
   }
-
-  pixels += m->ys * WIDTH;
-
-  /* reduce to texture size => 9.7 */
-  du >>= 1;
-  dv >>= 1;
 
 #if 0
   Log("*** ys: %d, ye: %d, du: %d.%04d, dv: %d.%04d\n",
       m->ys, m->ye, FRAC(du, 8), FRAC(dv, 8));
 #endif
 
-  while (m->ys < m->ye) {
-    short xs, xe, prestep, u, v;
-
-    xs = (l->x + 127) >> 8;
-    xe = (r->x + 127) >> 8;
-
-#if 0
-    prestep = ((l->x + 7) & -16) - l->x + 8;
-
-    u = l->u + (du * prestep >> 8);
-    v = l->v + (dv * prestep >> 8);
-#else
-    (void)prestep;
-    u = l->u;
-    v = l->v;
-#endif
-    u >>= 1;
-    v >>= 1;
-
-#if 0
-    Log("$ y: %d, xs: %d.%04d, xe: %d.%04d, u: %d.%04d, v: %d.%04d\n",
-        m->ys, FRAC(l->x, 8), FRAC(r->x, 8), FRAC(u, 8), FRAC(v, 8));
-#endif
-
-    if (xe > xs) {
-      short n = xe - xs - 1;
-      register short mask asm("d5") = -128;
-      u_char *line = &pixels[xs];
-
-      do {
-        register short ui asm("d6") = u >> 7;
-        register short vi asm("d7") = v;
-        short offset = ui + (vi & mask);
-
-        *line++ = texture_pixels[offset];
-
-        u += du;
-        v += dv;
-      } while (--n != -1);
-    }
-
-    l->x += l->dxdy;
-    l->u += l->dudy;
-    l->v += l->dvdy;
-    r->x += r->dxdy;
-    r->u += r->dudy;
-    r->v += r->dvdy;
-
-    m->ys++;
-    pixels += WIDTH;
-  }
+  DrawSpan(line, texture, l, r, du, dv, height);
 }
 
 static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
@@ -205,7 +153,7 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
   if (p1->y > p2->y) { CornerT *t = p2; p2 = p1; p1 = t; }
 
   {
-    SideT s01, s02, s12;
+    static __code SideT s01, s02, s12;
     short du, dv;
 
     InitSide(&s01, p0, p1);
@@ -237,8 +185,8 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
       dv = div16(v << 8, x);
     }
 
-    DrawSpan(&s01, &s02, du, dv);
-    DrawSpan(&s12, &s02, du, dv);
+    DrawTriPart(&s01, &s02, du, dv);
+    DrawTriPart(&s12, &s02, du, dv);
   }
 }
 
@@ -299,7 +247,7 @@ static void DrawObject(Object3D *object) {
   void *_objdat = object->objdat;
   short *group = object->faceGroups;
 
-  CornerT corners[3];
+  static __code CornerT corners[3];
 
   do {
     short f;
@@ -537,6 +485,7 @@ static void Init(void) {
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
+  texture = MemAlloc(texture_width * texture_height * 2, MEMF_PUBLIC);
   ScrambleTexture();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
@@ -566,6 +515,8 @@ static void Kill(void) {
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
 
+  MemFree(texture);
+
   DeleteObject3D(object);
 }
 
@@ -574,37 +525,6 @@ PROFILE(DrawObject);
 
 static void Render(void) {
   chunky = screen[active]->planes[0];
-
-#if 0
-  CornerT p0, p1, p2, p3;
-
-  p0.x = normfx(SIN(frameCount * STEP + PHASE) * RADIUS_X) + MIDDLE_X;
-  p0.y = normfx(COS(frameCount * STEP + PHASE) * RADIUS_Y) + MIDDLE_Y;
-  p0.u = fx4i(0);
-  p0.v = fx4i(0);
-
-  p1.x = normfx(SIN(frameCount * STEP + PHASE + 0x400) * RADIUS_X) + MIDDLE_X;
-  p1.y = normfx(COS(frameCount * STEP + PHASE + 0x400) * RADIUS_Y) + MIDDLE_Y;
-  p1.u = fx4i(texture_width - 1);
-  p1.v = fx4i(0);
-
-  p2.x = normfx(SIN(frameCount * STEP + PHASE + 0x800) * RADIUS_X) + MIDDLE_X;
-  p2.y = normfx(COS(frameCount * STEP + PHASE + 0x800) * RADIUS_Y) + MIDDLE_Y;
-  p2.u = fx4i(texture_width - 1);
-  p2.v = fx4i(texture_height - 1);
-
-  p3.x = normfx(SIN(frameCount * STEP + PHASE + 0xc00) * RADIUS_X) + MIDDLE_X;
-  p3.y = normfx(COS(frameCount * STEP + PHASE + 0xc00) * RADIUS_Y) + MIDDLE_Y;
-  p3.u = fx4i(0);
-  p3.v = fx4i(texture_height - 1);
-
-  ProfilerStart(DrawTriangle);
-  {
-    DrawTriangle(&p0, &p1, &p2);
-    DrawTriangle(&p0, &p3, &p2);
-  }
-  ProfilerStop(DrawTriangle);
-#endif
 
   ProfilerStart(UpdateGeometry);
   {
