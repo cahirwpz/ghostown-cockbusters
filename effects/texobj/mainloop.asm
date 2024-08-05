@@ -1,8 +1,9 @@
         include 'exec/types.i'
 
-        xdef    _DrawSpan
+        xdef    _DrawTriPart
 
-WIDTH   equ     128
+WIDTH           equ     128
+WIDTH_BITS      equ     7
 
  STRUCTURE SIDE,0               ; Keep in sync with SideT from texobj.c !
         WORD    DX
@@ -21,22 +22,25 @@ WIDTH   equ     128
 
         section ".text"
 
-; [a0] line
+; [a0] chunky
 ; [a1] texture (const)
 ; [a2] left (const)
 ; [a3] right (const)
 ; [d2] du (----UUuu)
 ; [d3] dv (----VVvv)
-; [d4] height
-_DrawSpan:
+; [d4] ys
+; [d5] ye
+_DrawTriPart:
         movem.l d2-d5/a4,-(sp)
 
         ; height must be positive
-        subq.w  #1,d4
+        sub.w   d4,d5
+        subq.w  #1,d5
         bmi     .quit
 
-        ; line pointer changes with each iteration
-        move.l  a0,a4
+        ; line = chunky + ys * WIDTH
+        lsl.w   #WIDTH_BITS,d4
+        lea     (a0,d4.w),a4
 
 ; in:
 ;  [d2] u (----UUuu)
@@ -60,19 +64,19 @@ _DrawSpan:
         asr.w   #8,d0
 
         ; xe = (r->x + 127) >> 8
-        move.w  X(a3),d5
-        add.w   #127,d5
-        asr.w   #8,d5
+        move.w  X(a3),d4
+        add.w   #127,d4
+        asr.w   #8,d4
 
         ; xs >= xe => skip
-        cmp.w   d5,d0
+        cmp.w   d4,d0
         bge     .skip
 
         ; pixels = &line[xs]
         lea     (a4,d0.w),a0
         
         ; n = xe - xs
-        sub.w   d0,d5
+        sub.w   d0,d4
 
         ; u = l->u
         move.w  U(a2),d0
@@ -97,50 +101,50 @@ _DrawSpan:
         
 ; jump into unrolled loop
 
-        sub.w   #WIDTH,d5
-        neg.w   d5
-        mulu.w  #14,d5  ; 14 is the size of single iteration
-        jmp     .start(pc,d5.w)
+        sub.w   #WIDTH,d4
+        neg.w   d4
+        mulu.w  #14,d4  ; 14 is the size of single iteration
+        jmp     .start(pc,d4.w)
 
 ; Texturing code inspired by article by Kalms
 ; https://amycoders.org/opt/innerloops.html
 .start:
         rept    WIDTH
-        move.w  d1,d5           ;   [4] ----VVvv
+        move.w  d1,d4           ;   [4] ----VVvv
         add.l   d3,d1           ;   [8] uu--VVvv 
-        move.b  d0,d5           ;   [4] ----VVUU
+        move.b  d0,d4           ;   [4] ----VVUU
         addx.b  d2,d0           ;   [4] ------UU
-        add.b   d5,d5           ;   [4]
-        move.b  (a1,d5.w),(a0)+ ;  [18]
+        add.b   d4,d4           ;   [4]
+        move.b  (a1,d4.w),(a0)+ ;  [18]
         endr                    ; [=42]
         
 .skip:  ; l->x += l->dxdy
-        move.w  DXDY(a2),d5
-        add.w   d5,X(a2)
+        move.w  DXDY(a2),d4
+        add.w   d4,X(a2)
         
         ; l->u += l->dudy
-        move.w  DUDY(a2),d5
-        add.w   d5,U(a2)
+        move.w  DUDY(a2),d4
+        add.w   d4,U(a2)
 
         ; l->v += l->dvdy
-        move.w  DVDY(a2),d5
-        add.w   d5,V(a2)
+        move.w  DVDY(a2),d4
+        add.w   d4,V(a2)
 
         ; r->x += r->dxdy
-        move.w  DXDY(a3),d5
-        add.w   d5,X(a3)
+        move.w  DXDY(a3),d4
+        add.w   d4,X(a3)
         
         ; r->u += r->dudy
-        move.w  DUDY(a3),d5
-        add.w   d5,U(a3)
+        move.w  DUDY(a3),d4
+        add.w   d4,U(a3)
 
         ; r->v += r->dvdy
-        move.w  DVDY(a3),d5
-        add.w   d5,V(a3)
+        move.w  DVDY(a3),d4
+        add.w   d4,V(a3)
 
         ; line += WIDTH
         lea     WIDTH(a4),a4
-        dbf     d4,.loop
+        dbf     d5,.loop
 
 .quit:  movem.l (sp)+,d2-d5/a4
         rts

@@ -122,29 +122,10 @@ static void InitSide(SideT *s, CornerT *pa, CornerT *pb) {
 #endif
 }
 
-void DrawSpan(u_char *line asm("a0"), short *texture asm("a1"),
-              SideT *left asm("a2"), SideT *right asm("a3"),
-              int du asm("d2"), int dv asm("d3"), int n asm("d4"));
-
-static inline void DrawTriPart(SideT *l, SideT *r, int du, int dv) {
-  u_char *line = chunky;
-  short ys = l->ys;
-  short height = l->ye - ys;
-
-  line += ys * WIDTH;
-
-  if ((r->x < l->x) ||
-      (r->x == l->x && l->dxdy > r->dxdy)) {
-    SideT *t = l; l = r; r = t;
-  }
-
-#if 0
-  Log("*** ys: %d, ye: %d, du: %d.%04d, dv: %d.%04d\n",
-      m->ys, m->ye, FRAC(du, 8), FRAC(dv, 8));
-#endif
-
-  DrawSpan(line, texture, l, r, du, dv, height);
-}
+void DrawTriPart(u_char *line asm("a0"), short *texture asm("a1"),
+                 SideT *left asm("a2"), SideT *right asm("a3"),
+                 int du asm("d2"), int dv asm("d3"),
+                 int ys asm("d4"), int ye asm("d5"));
 
 static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
   // sort them by y
@@ -185,8 +166,13 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
       dv = div16(v << 8, x);
     }
 
-    DrawTriPart(&s01, &s02, du, dv);
-    DrawTriPart(&s12, &s02, du, dv);
+    if (s01.dxdy < s02.dxdy) {
+      DrawTriPart(chunky, texture, &s01, &s02, du, dv, s01.ys, s01.ye);
+      DrawTriPart(chunky, texture, &s12, &s02, du, dv, s12.ys, s12.ye);
+    } else {
+      DrawTriPart(chunky, texture, &s02, &s01, du, dv, s01.ys, s01.ye);
+      DrawTriPart(chunky, texture, &s02, &s12, du, dv, s12.ys, s12.ye);
+    }
   }
 }
 
