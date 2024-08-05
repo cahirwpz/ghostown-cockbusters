@@ -12,8 +12,13 @@
 #define HEIGHT 128
 #define DEPTH 4
 
-#include "data/rork-128.c"
 #include "data/cube.c"
+#include "data/cube-bg.c"
+#include "data/cube-tex0.c"
+#include "data/cube-tex1.c"
+#include "data/cube-tex2.c"
+#include "data/cube-tex3.c"
+#include "data/cube-tex4.c"
 
 static __code BitmapT *screen[2];
 static __code CopListT *cp;
@@ -23,7 +28,7 @@ static __code short active;
 static __code volatile short c2p_phase;
 static __code void **c2p_bpl;
 static __code Object3D *object;
-static __code short *texture;
+static __code short *texture[5];
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] */
 static const short Pixel[16] = {
@@ -31,17 +36,34 @@ static const short Pixel[16] = {
   0x8080, 0x8484, 0x8888, 0x8c8c, 0xc0c0, 0xc4c4, 0xc8c8, 0xcccc,
 };
 
-static void ScrambleTexture(void) {
-  u_char *src = texture_pixels;
-  u_char *dst0 = texture_pixels;
-  short *dst1 = texture;
-  short n = texture_width * texture_height;
+static const short texture_light[16] = {
+  4, 4, 4, 4,
+  3, 3, 3,
+  2, 2, 2,
+  1, 1, 1,
+  0, 0, 0,
+};
+
+static void ScrambleBackground(void) {
+  u_char *src = background_pixels;
+  u_char *dst = background_pixels;
+  short n = background_width * background_height;
 
   while (--n >= 0) {
-    short c = Pixel[*src++];
-    *dst0++ = c;
-    *dst1++ = c;
+    *dst++ = Pixel[*src++];
   }
+}
+
+static short *ScrambleTexture(u_char *src) {
+  short *tex = MemAlloc(texture_0_width * texture_0_height * 2, MEMF_PUBLIC);
+  short n = texture_0_width * texture_0_height;
+  short *dst = tex;
+
+  while (--n >= 0) {
+    *dst++ = Pixel[*src++];
+  }
+
+  return tex;
 }
 
 typedef struct Corner {
@@ -127,7 +149,9 @@ void DrawTriPart(u_char *line asm("a0"), short *texture asm("a1"),
                  int du asm("d2"), int dv asm("d3"),
                  int ys asm("d6"), int ye asm("d7"));
 
-static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
+static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2, int color) {
+  short *tex = texture[color];
+
   // sort them by y
   if (p0->y > p1->y) { CornerT *t = p1; p1 = p0; p0 = t; }
   if (p0->y > p2->y) { CornerT *t = p2; p2 = p0; p0 = t; }
@@ -172,11 +196,11 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2) {
 
     // ((s02.x < s01.x) || (s02.x == s01.x && s02.dxdy > s01.dxdy))
     if (s01.dxdy < s02.dxdy) {
-      DrawTriPart(chunky, texture, &s01, &s02, du, dv, p0->yi, p1->yi);
-      DrawTriPart(chunky, texture, &s12, &s02, du, dv, p1->yi, p2->yi);
+      DrawTriPart(chunky, tex, &s01, &s02, du, dv, p0->yi, p1->yi);
+      DrawTriPart(chunky, tex, &s12, &s02, du, dv, p1->yi, p2->yi);
     } else {
-      DrawTriPart(chunky, texture, &s02, &s01, du, dv, p0->yi, p1->yi);
-      DrawTriPart(chunky, texture, &s02, &s12, du, dv, p1->yi, p2->yi);
+      DrawTriPart(chunky, tex, &s02, &s01, du, dv, p0->yi, p1->yi);
+      DrawTriPart(chunky, tex, &s02, &s12, du, dv, p1->yi, p2->yi);
     }
   }
 }
@@ -247,6 +271,7 @@ static void DrawObject(Object3D *object) {
       if (FACE(f)->flags >= 0) {
         register short *index asm("a3") = (short *)(FACE(f)->indices);
         short n = FACE(f)->count - 1;
+        int color = texture_light[(short)FACE(f)->flags];
         CornerT *corner = corners;
 
         do {
@@ -261,7 +286,7 @@ static void DrawObject(Object3D *object) {
           corner++;
         } while (--n != -1);
 
-        DrawTriangle(&corners[0], &corners[1], &corners[2]);
+        DrawTriangle(&corners[0], &corners[1], &corners[2], color);
       }
     }
   } while (*group);
@@ -434,8 +459,8 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
       /* initialize rendering buffer */
       custom_->bltdpt = bpl[0];
 #if 1
-      /* copy the texture */
-      custom_->bltapt = texture_pixels;
+      /* copy the background */
+      custom_->bltapt = background_pixels;
       custom_->bltcon0 = (SRCA | DEST) | A_TO_D;
 #else
       /* set all pixels to 0 */
@@ -476,8 +501,13 @@ static void Init(void) {
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
-  texture = MemAlloc(texture_width * texture_height * 2, MEMF_PUBLIC);
-  ScrambleTexture();
+  ScrambleBackground();
+
+  texture[0] = ScrambleTexture(texture_0_pixels);
+  texture[1] = ScrambleTexture(texture_1_pixels);
+  texture[2] = ScrambleTexture(texture_2_pixels);
+  texture[3] = ScrambleTexture(texture_3_pixels);
+  texture[4] = ScrambleTexture(texture_4_pixels);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
   LoadColors(texture_colors, 0);
@@ -506,7 +536,11 @@ static void Kill(void) {
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
 
-  MemFree(texture);
+  MemFree(texture[0]);
+  MemFree(texture[1]);
+  MemFree(texture[2]);
+  MemFree(texture[3]);
+  MemFree(texture[4]);
 
   DeleteObject3D(object);
 }
