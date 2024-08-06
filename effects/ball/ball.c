@@ -152,8 +152,11 @@ static void Init(void) {
   Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
   Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
   
-  c2p_1x1_4(dragon_pixels, dragon_bp->planes[0], dragon_width,
-            dragon_height, dragon_bp->bplSize);
+  //c2p_1x1_4(dragon_pixels, dragon_bp->planes[0], dragon_width,
+  //          dragon_height, dragon_bp->bplSize);
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
+
+  ChunkyToPlanar(dragon, dragon_bp);
   
   //Copy dragon bitmap to background
   
@@ -170,7 +173,6 @@ static void Init(void) {
   //textureLo = NewPixmap(texture.width, texture.height * 2,
   //                      PM_CMAP8, MEMF_PUBLIC);
 
-  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
 
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP|MEMF_CLEAR);
 
@@ -208,6 +210,247 @@ static void Kill(void) {
   DeleteBitmap(segment_bp);
 }
 
+
+// Blitter ops as in prototypes/c2p/c2p_1x1_4bpl_sprites.py
+#if 0
+
+#define P2S_M0 0x00FF
+#define P2S_M1 0x0F0F
+#define P2S_M2 0x3333
+#define P2S_M3 0x5555
+#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
+static void PixmapToSprites(PixmapT *input, BitmapT *output) {
+  void *planes = output->planes[0];
+  void *chunky = input->pixels;
+ 
+  /* Output format [words]:
+     CW1            ; Sprite 0 control words
+     CW2            ;
+     SPR0DATA       ; Sprite 0 data
+     SPR0DATB       ;
+     SPR0DATA      
+     SPR0DATB
+     ...
+     EOS            ; End of sprite 0
+     CW1            ; Sprite 1 control words
+     CW2            ;
+     SPR0DATA       ; Sprite 1 data
+     SPR0DATB
+     ...
+     EOS            ; End of sprite 1
+     ...            ; Sprites 2-7 in the same format.
+  */
+  //
+  //Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
+  //       N // 4, 2, Channel(A, 2, 2), Channel(A, 0, 2), Channel(B, 0, 2))
+  //       BLTSIZE
+  // Channel(data, start, mod)  ==  bltXpt = source + start; bltXmod = mod
+  
+  // Pass 1 - Swap 8x4, blit 1
+  {
+    //WaitBlitter();
+    // a >> 8 & M0 | b & ~M0 == a >> 8 & M0 | ~b & M0
+    // Minterm select: AC | NBC: 7 - 5 - - - 1 -
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
+      (ABC | ANBC | NANBC) |
+      ASHIFT(8);
+    custom->bltcon1 = 0;
+    // custom->bltcon1 = BLITREVERSE; zeby shift w lewo
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = P2S_M0;
+
+    custom->bltapt = chunky + 2;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+    
+  }
+  // Pass 1 - Swap 8x4, blit 2
+  {
+    WaitBlitter();
+    // a << 8 & ~M0 | b & M0 == ~a << 8 & M0 | b & M0
+    // Minterm select: NAC | BC: 7 - - - 3 - 1
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
+      (ABC | NABC | NANBC) |
+      ASHIFT(8);
+    custom->bltcon1 = BLITREVERSE;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = P2S_M0;
+
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 2;
+    custom->bltdpt = planes + 2;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+  }
+  WaitBlitter();
+}
+#endif
+//#if (BLTSIZE / 4) > 1024
+//#error "blit size too big!"
+//#endif
+#define SPRITEH 64
+#if 1
+static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
+  void *planes = output->planes[0];
+  void *chunky = input->pixels;
+  u_short BLTSIZE = input->width * input->height / 2;
+
+  //przepisać tutaj c2p_1x1_4bpl_sprites.py
+
+
+  
+  /* Swap 8x4, pass 1. */
+  {
+    WaitBlitter();
+
+    /* (a & 0xFF00) | ((b >> 8) & ~0xFF00) */
+    /* Minterm select: 6 | 7 | 5 | 2: D = AC + AB + B */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
+    custom->bltcon1 = BSHIFT(8);
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = 0xFF00;
+
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 4;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+  }
+
+  /* Swap 8x4, pass 2. */
+  {
+    WaitBlitter();
+
+    /* ((a << 8) & 0xFF00) | (b & ~0xFF00) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(8);
+    custom->bltcon1 = BLITREVERSE;
+
+    custom->bltapt = chunky + BLTSIZE - 2;
+    custom->bltbpt = chunky + BLTSIZE - 6;
+    custom->bltdpt = planes + BLTSIZE - 6;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+  }
+  /* Swap 4x2, pass 1. */
+  {
+    WaitBlitter();
+
+    /* (a & 0xF0F0) | ((b >> 4) & ~0xF0F0) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
+    custom->bltcon1 = BSHIFT(4);
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = 0xF0F0;
+
+    custom->bltapt = planes;
+    custom->bltbpt = planes + 2;
+    custom->bltdpt = chunky;
+    custom->bltsize = 1 | ((BLTSIZE / 4) << 6);
+  }
+
+  /* Swap 4x2, pass 2. */
+  {
+    WaitBlitter();
+
+    /* ((a << 4) & 0xF0F0) | (b & ~0xF0F0) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(4);
+    custom->bltcon1 = BLITREVERSE;
+
+    custom->bltapt = planes + BLTSIZE - 2;
+    custom->bltbpt = planes + BLTSIZE - 4;
+    custom->bltdpt = chunky + BLTSIZE - 4;
+    custom->bltsize = 1 | ((BLTSIZE / 4) << 6);
+  }
+
+  /* Swap 2x2, pass 1. */
+  {
+    WaitBlitter();
+
+    /* ((a >> 2) & ~0xCCCC) | (b & 0xCCCC) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(2);
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = 0xCCCC;
+
+    custom->bltapt = chunky + 4;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+  }
+
+  
+  /* Swap 2x2, pass 2. */
+  {
+    WaitBlitter();
+
+    /* ((a << 2) & 0xCCCC) | (b & ~0xCCCC) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(2);
+    custom->bltcon1 = BLITREVERSE;
+
+    custom->bltapt = chunky + BLTSIZE - 2;
+    custom->bltbpt = chunky + BLTSIZE - 6;
+    custom->bltdpt = planes + BLTSIZE - 6;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+
+  }
+  WaitBlitter();
+}
+#endif
+#if 0
+static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
+  //void *planes = input->planes[0];
+  short bltsize = (input->height << 6) | 1;
+  short i = 0;
+
+  WaitBlitter();
+
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+  custom->bltcon1 = 0;
+  custom->bltamod = 1;
+  custom->bltdmod = 3;
+
+  for (i = 0; i < 4; i++) {
+    SprDataT *sprdat0 = (sprite++)->sprdat;
+    SprDataT *sprdat1 = (sprite++)->sprdat;
+
+    WaitBlitter();
+    custom->bltapt = input->planes[0];
+    custom->bltdpt = &sprdat0->data[0][0];
+    custom->bltsize = bltsize;
+    
+    WaitBlitter();
+    custom->bltapt = input->planes[1];
+    custom->bltdpt = &sprdat0->data[0][1];
+    custom->bltsize = bltsize;
+    
+    WaitBlitter();
+    custom->bltapt = input->planes[2];
+    custom->bltdpt = &sprdat1->data[0][0];
+    custom->bltsize = bltsize;
+
+    WaitBlitter();
+    custom->bltapt = input->planes[3];
+
+    custom->bltdpt = &sprdat1->data[0][1];
+    custom->bltsize = bltsize;
+    
+  }
+}
+#endif
 static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
   short x = X((S_WIDTH - WIDTH) / 2) + xo;
   short y = Y((S_HEIGHT - HEIGHT) / 2) + yo;
@@ -235,7 +478,7 @@ static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
     k++;
   }
 }
-
+#if 0
 #define BLITTERSZ(h, w) ((h << 6) | w)
 static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   /* Copy out planar format into sprites
@@ -310,36 +553,26 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   }
   WaitBlitter();
 }
-
+#endif 
 
 //PROFILE(UVMapRender);
-PROFILE(PlanarToSprite);
+//PROFILE(PlanarToSprite);
 static void Render(void) {
   //short xo = 0x40; 
   //short yo = 0x40;
-  short xo = normfx(SIN(frameCount * 8) * 128);
-  short yo = normfx(COS(frameCount * 7)  * 100);
+  //short xo = normfx(SIN(frameCount * 8) * 128);
+  //xshort yo = normfx(COS(frameCount * 7)  * 100);
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
   //u_char *txtLo = textureLo->pixels + offset;
   
   //ProfilerStart(UVMapRender);
   {
-    CropPixmap(&dragon, 0, 0, WIDTH, HEIGHT, segment_p);
-
-    //(*UVMapRender)(segment_p->pixels, txtHi, txtLo);
-    //(*UVMapRender)(dragon_pixels, txtHi, txtLo);
-
+    //CropPixmap(&dragon, 0, 0, WIDTH, HEIGHT, segment_p);
     
-    c2p_1x1_4(segment_p->pixels, segment_bp->planes[0], segment_bp->width,
-              segment_bp->height, segment_bp->bplSize);
-
-    ProfilerStart(PlanarToSprite);
-    PlanarToSprite(segment_bp, sprite);
-    ProfilerStop(PlanarToSprite);
-
+    //ChunkyToPlanar(segment_p, segment_bp);
     
-    PositionSprite(sprite, xo / 2, yo / 2);
+    //PositionSprite(sprite, xo / 2, yo / 2);
     //PositionSprite(sprite, 20, 20);
     //CopListActivate(cp);
   }
