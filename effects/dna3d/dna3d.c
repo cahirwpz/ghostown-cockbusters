@@ -13,44 +13,108 @@
 
 #define TZ (-256)
 
+#include "data/bobs.c"
+#include "data/bobs_gradient.c"
+#include "data/dna.c"
+#include "data/necrocoq-00-data.c"
+#include "data/necrocoq-00-pal.c"
+#include "data/necrocoq-01.c"
+#include "data/necrocoq-02.c"
+#include "data/necrocoq-03.c"
+#include "data/necrocoq-04.c"
+#include "data/necrocoq-05.c"
+#include "data/necrocoq-06.c"
+#include "data/necrocoq-07.c"
+#include "data/necrocoq-08.c"
+#include "data/necrocoq-09.c"
+#include "data/necrocoq-10.c"
+
 static Object3D *object;
 static CopListT *cp;
 static BitmapT *screen[2];
 static CopInsPairT *bplptr;
+static CopInsT *linecol[necrocoq_height];
 static int active = 0;
 
-#include "data/flares32.c"
-#include "data/dna.c"
-#include "data/carrion-metro-pal.c"
-#include "data/carrion-metro-data.c"
+static u_short *necrochicken_cols[11] = {
+  necrocoq_00_cols_pixels,
+  necrocoq_01_cols_pixels,
+  necrocoq_02_cols_pixels,
+  necrocoq_03_cols_pixels,
+  necrocoq_04_cols_pixels,
+  necrocoq_05_cols_pixels,
+  necrocoq_06_cols_pixels,
+  necrocoq_07_cols_pixels,
+  necrocoq_08_cols_pixels,
+  necrocoq_09_cols_pixels,
+  necrocoq_10_cols_pixels,
+};
+
+#define envelope_length 40
+
+static short envelope[envelope_length] = {
+  0, 0,
+  1, 1,
+  2, 2,
+  3, 3,
+  4, 4,
+  5, 5,
+  6, 6,
+  7, 7,
+  8, 8,
+  9, 9,
+  10, 10,
+  9, 9,
+  8, 8,
+  7, 7,
+  6, 6,
+  5, 5,
+  4, 4,
+  3, 3,
+  2, 2,
+  1, 1,
+};
 
 static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + carrion_height * (carrion_cols_width + 3));
+  CopListT *cp = 
+    NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
 
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
 
   bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
-  CopMove32(cp, bplpt[1], carrion.planes[0]);
+  CopMove32(cp, bplpt[1], necrocoq.planes[0]);
   CopMove32(cp, bplpt[2], screen[1]->planes[1]);
-  CopMove32(cp, bplpt[3], carrion.planes[1]);
+  CopMove32(cp, bplpt[3], necrocoq.planes[1]);
   CopMove32(cp, bplpt[4], screen[1]->planes[2]);
 
   {
-    u_short *data = carrion_cols_pixels;
+    u_short *pf1_data = bobs_cols_pixels;
+    u_short *pf2_data = necrocoq_00_cols_pixels;
     short i;
 
-    for (i = 0; i < carrion_height; i++) {
-      short bgcol = *data++;
+    for (i = 0; i < necrocoq_height; i++) {
+      short bgcol = *pf2_data++;
+      short fgcol;
 
       /* Start exchanging palette colors at the end of previous line. */
       CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
       CopMove16(cp, color[0], 0);
+      fgcol = *pf1_data++;
+      CopMove16(cp, color[1], fgcol);
+      fgcol = *pf1_data++;
+      CopMove16(cp, color[2], fgcol);
+      CopMove16(cp, color[3], fgcol);
+      fgcol = *pf1_data++;
+      CopMove16(cp, color[4], fgcol);
+      CopMove16(cp, color[5], fgcol);
+      CopMove16(cp, color[6], fgcol);
+      CopMove16(cp, color[7], fgcol);
 
       CopWaitSafe(cp, Y(i), HP(0));
-      CopMove16(cp, color[9], *data++);
-      CopMove16(cp, color[10], *data++);
-      CopMove16(cp, color[11], *data++);
+      linecol[i] = CopMove16(cp, color[9], *pf2_data++);
+      CopMove16(cp, color[10], *pf2_data++);
+      CopMove16(cp, color[11], *pf2_data++);
       CopMove16(cp, color[0], bgcol);
     }
   }
@@ -66,14 +130,14 @@ static void Init(void) {
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
-  SetupMode(MODE_DUALPF, DEPTH + carrion_depth);
+  SetupMode(MODE_DUALPF, DEPTH + necrocoq_depth);
   LoadColors(bobs_colors, 0);
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
   /* bitplane modulos for both playfields */
   custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
-  custom->bpl2mod = WIDTH / 8 * (carrion_depth - 1);
+  custom->bpl2mod = WIDTH / 8 * (necrocoq_depth - 1);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -185,7 +249,7 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
     cos_theta += cos_theta;
 
     {
-      short *p = &node[0].point.x; node++;
+      short *p = &node[0].point.x;
 
       /* for x / y:
        *  - 8.24 * 32 => 13.19 (for free)
@@ -217,7 +281,7 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
 #endif
 
     {
-      short *p = &node[0].point.x; node++;
+      short *p = &node[1].point.x;
 
       /* (radius + helix_radius * cos(phi)) * cos(theta) */
       *p++ = swap16((short)(radius + cos_phi) * cos_theta);
@@ -226,6 +290,8 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
       /* helix_radius * sin(phi) */
       *p++ = sin_phi >> 3;
     }
+
+    node += 2;
   }
 }
 
@@ -234,17 +300,17 @@ static void GenCircularDoubleHelix(Node3D *node, short phi_offset) {
 
 typedef struct BobDesc {
   short offset;
-  short align;
+  short x_align;
+  short y_align;
   short bltsize;
-  short pad;
 } BobDescT;
 
 #define BOBDESC(Y, H)                                           \
   (BobDescT){                                                   \
     .offset = (Y) * (BOBW / 8) * DEPTH,                         \
-    .align = -(H) / 2,                                          \
+    .x_align = -16,                                             \
+    .y_align = -(H) / 2,                                        \
     .bltsize = ((H) * DEPTH << 6) | (BOBW / 16),                \
-    .pad = 0,                                                   \
   }
 
 static BobDescT bobdesc[16] = {
@@ -294,13 +360,8 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
       short y = *data++;
       short z = *data++;
 
-      const short bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
-      short bltsize;
-
-      void *apt = src;
-      void *dpt = dst;
-
-      x -= 16;
+      short bltshift, bltsize;
+      void *apt, *dpt;
 
       z -= MINZ;
       z >>= 5;
@@ -309,16 +370,19 @@ static void DrawFlares(Object3D *object, void *src, void *dst,
       {
         short *desc = (short *)(_bobdesc + z);
 
-        apt += *desc++;
+        apt = src + *desc++;
+        x += *desc++;
         y += *desc++;
         bltsize = *desc++;
       }
+
+      bltshift = rorw(x & 15, 4) | (SRCA | SRCB | DEST) | A_OR_B;
 
 #if 1
       y <<= 5;
       y += y + y;     /* y *= 96 */
       y += (x & ~15) >> 3;
-      dpt += y;
+      dpt = dst + y;
 #else
       dpt += (x & ~15) >> 3;
       dpt += y * (WIDTH / 8) * DEPTH;
@@ -434,11 +498,30 @@ static void BitmapClearI(BitmapT *bm) {
   custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
 }
 
+static void ChangeBackgroundColor(short n) {
+  short p = envelope[n % envelope_length];
+  u_short *data = necrochicken_cols[p];
+  CopInsT **lineptr = linecol;
+  short i;
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *lineptr++;
+    short bgcol = *data++;
+
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, bgcol);
+  }
+}
+
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
 static void Render(void) {
   BitmapClearI(screen[active]);
+
+  ChangeBackgroundColor(frameCount >> 1);
 
   ProfilerStart(TransformObject);
   {
