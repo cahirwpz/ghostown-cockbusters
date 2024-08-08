@@ -17,7 +17,11 @@
 //static PixmapT *textureHi, *textureLo;
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
-static BitmapT *dragon_bp;
+
+// target screen bitplanes
+static BitmapT dragon_bp;
+static char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
+
 static BitmapT *screen;
 static SprDataT *sprdat;
 static SpriteT sprite[8];
@@ -130,37 +134,45 @@ static void Init(void) {
 
   // c2p requires target bitplanes to be contiguous in memory, therefore we
   // allocate the BitmapT manually
-  dragon_bp = (BitmapT *) MemAlloc(sizeof(BitmapT) + 4 * bitplanesz,
-				   MEMF_PUBLIC | MEMF_CLEAR);
   
-  dragon_bp->width  = dragon_width;
-  dragon_bp->height = dragon_height;
-  dragon_bp->bytesPerRow = ((dragon_width + 15) & ~15) / 8;
-  dragon_bp->bplSize = dragon_bp->bytesPerRow * dragon_bp->height;
-  dragon_bp->depth = 4;
-  dragon_bp->flags = BM_STATIC;
-  dragon_bp->planes[0] = dragon_bp + sizeof(BitmapT);
-  dragon_bp->planes[1] = dragon_bp->planes[0] + dragon_bp->bplSize;
-  dragon_bp->planes[2] = dragon_bp->planes[1] + dragon_bp->bplSize;
-  dragon_bp->planes[3] = dragon_bp->planes[2] + dragon_bp->bplSize;
+  dragon_bp.width  = dragon_width;
+  dragon_bp.height = dragon_height;
+  dragon_bp.bytesPerRow = ((dragon_width + 15) & ~15) / 8;
+  dragon_bp.bplSize = dragon_bp.bytesPerRow * dragon_bp.height;
+  dragon_bp.depth = 4;
+  dragon_bp.flags = BM_STATIC;
+  dragon_bp.planes[0] = dragon_bitplanes;
+  dragon_bp.planes[1] = dragon_bp.planes[0] + dragon_bp.bplSize;
+  dragon_bp.planes[2] = dragon_bp.planes[1] + dragon_bp.bplSize;
+  dragon_bp.planes[3] = dragon_bp.planes[2] + dragon_bp.bplSize;
 
   Log("sizeof(dragon_pixels) =  $%lx\n", sizeof(dragon_pixels));
   Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n",
-      dragon_bp->bplSize, dragon_bp->depth,
-      ((long int) dragon_bp->bplSize) * dragon_bp->depth);
-  Log("dragon_bp->planes[0] =  $%p\n", dragon_bp->planes[0]);
+      dragon_bp.bplSize, dragon_bp.depth,
+      ((long int) dragon_bp.bplSize) * dragon_bp.depth);
+  Log("dragon_bp->planes[0] =  $%p\n", dragon_bp.planes[0]);
   Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
   Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
   
   //c2p_1x1_4(dragon_pixels, dragon_bp->planes[0], dragon_width,
   //          dragon_height, dragon_bp->bplSize);
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
+  Log("dragon_bp = %p\n", dragon_bp);
+ 
+  *((short*) dragon_bp.planes[0]) = 0x1111;
+  *((short*) dragon_bp.planes[0]+1) = 0x2222;
+  *((short*) dragon_bp.planes[0]+2) = 0x3333;
+  *((short*) dragon_bp.planes[0]+3) = 0x4444;
 
-  ChunkyToPlanar(dragon, dragon_bp);
+  
+  ChunkyToPlanar(&dragon, &dragon_bp);
+
+  Log("c2p done");
+    
   
   //Copy dragon bitmap to background
   
-  memcpy(screen->planes[0], dragon_bp->planes[0],
+  memcpy(screen->planes[0], dragon_bp.planes[0],
         S_WIDTH * S_HEIGHT * S_DEPTH / 8);
   
 
@@ -205,7 +217,7 @@ static void Kill(void) {
   //DeletePixmap(textureLo);
   MemFree(UVMapRender);
   MemFree(sprdat);
-  MemFree(dragon_bp);
+
   DeletePixmap(segment_p);
   DeleteBitmap(segment_bp);
 }
@@ -297,16 +309,115 @@ static void PixmapToSprites(PixmapT *input, BitmapT *output) {
 //#error "blit size too big!"
 //#endif
 #define SPRITEH 64
+
+
+
 #if 1
+#define C2P_MASK0 0x00FF
+#define C2P_MASK1 0x0F0F
+#define C2P_MASK2 0x3333
+#define C2P_MASK3 0x5555
+
+/* C2P pass 1 is AC + BNC, pass 2 is ANC + BC */
+#define C2P_LF_PASS1 (NABNC | ANBC | ABNC | ABC)
+#define C2P_LF_PASS2 (NABC | ANBNC | ABNC | ABC)
+
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   void *planes = output->planes[0];
   void *chunky = input->pixels;
-  u_short BLTSIZE = input->width * input->height / 2;
-
+  u_short BLTSIZE = input->width * input->height / 16;
+  
+  Log("ChunkyToPlanar: input  = %p  output = %p\n", input, output);
+  Log("ChunkyToPlanar: chunky = %p  planes = %p\n", chunky, planes);
+  
   //przepisać tutaj c2p_1x1_4bpl_sprites.py
+  // !! modulos and pointers are in bytes
+  // Swap 8x4, pass 1
+  {
+    WaitBlitter();
+
+    /* ((a >> 8) & 0x00FF) | (b & ~0x00FF) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(8);
+    custom->bltcon1 = 0;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = C2P_MASK0;
+
+    custom->bltapt = chunky + 4;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+  }
+  // Swap 8x4, pass 2
+  {
+    WaitBlitter();
+
+    /* ((a << 8) & ~0x00FF) | (b & 0x00FF) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(8);
+    custom->bltcon1 = BLITREVERSE;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = C2P_MASK0;
+
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 4;
+    custom->bltdpt = planes + 4;
+    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+  }
+
+  //Swap 4x2, pass 1
+
+  {
+    WaitBlitter();
+
+    /* ((a >> 4) & 0x0F0F) | (b & ~0x0F0F) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(4);
+    custom->bltcon1 = 0;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = C2P_MASK1;
+
+    custom->bltapt = chunky + 2;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+  }
+  // Swap 4x2, pass 2
+  {
+    WaitBlitter();
+
+    /* ((a << 4) & ~0x0F0F) | (b & 0x0F0F) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
+    custom->bltcon1 = BLITREVERSE;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = C2P_MASK1;
+
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 2;
+    custom->bltdpt = planes + 2;
+    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+  }
+
 
 
   
+  WaitBlitter();
+  return;
+
+  //--------------------
   /* Swap 8x4, pass 1. */
   {
     WaitBlitter();
