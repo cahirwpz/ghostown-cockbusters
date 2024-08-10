@@ -4,8 +4,7 @@ TOPDIR := $(realpath ../..)
 CLEAN-FILES := data/dragon-bg.c data/ball.c
 
 #PNG2C.dragon-bg := --bitmap background,320x256x4 --palette background_pal,16
-PNG2C.dragon-bg := --pixmap dragon,320x256x4, --palette dragon_pal,32
-#PNG2C.texture-15 := --pixmap texture,128x128x4 --palette texture_pal,16
+PNG2C.dragon-bg := --pixmap dragon,320x256x4,+displayable --palette dragon_pal,32
 
 include $(TOPDIR)/build/effect.mk
 WFLAGS :=   #niech sie kompilator odwali

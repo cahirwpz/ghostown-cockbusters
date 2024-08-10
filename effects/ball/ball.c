@@ -14,20 +14,18 @@
 #define WIDTH 64
 #define HEIGHT 64
 
-//static PixmapT *textureHi, *textureLo;
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
 // target screen bitplanes
 static BitmapT dragon_bp;
-static char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
+static __data_chip char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
 
 static BitmapT *screen;
 static SprDataT *sprdat;
 static SpriteT sprite[8];
 
 #include "data/dragon-bg.c"
-#include "data/texture-15.c"
 #include "data/ball.c"
 
 static short active = 0;
@@ -150,33 +148,33 @@ static void Init(void) {
   Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n",
       dragon_bp.bplSize, dragon_bp.depth,
       ((long int) dragon_bp.bplSize) * dragon_bp.depth);
-  Log("dragon_bp->planes[0] =  $%p\n", dragon_bp.planes[0]);
+  Log("&(dragon_bp->planes[0]) =  $%p\n", dragon_bp.planes[0]);
   Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
   Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
   
   //c2p_1x1_4(dragon_pixels, dragon_bp->planes[0], dragon_width,
   //          dragon_height, dragon_bp->bplSize);
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-  Log("dragon_bp = %p\n", dragon_bp);
+  Log("&dragon_bp = %p\n", dragon_bp);
  
   *((short*) dragon_bp.planes[0]) = 0x1111;
   *((short*) dragon_bp.planes[0]+1) = 0x2222;
   *((short*) dragon_bp.planes[0]+2) = 0x3333;
   *((short*) dragon_bp.planes[0]+3) = 0x4444;
 
+  *((short*) dragon_bp.planes[1]+128) = 0x5555;
+  *((short*) dragon_bp.planes[1]+129) = 0x5555;
+  *((short*) dragon_bp.planes[1]+130) = 0x5555;
+  *((short*) dragon_bp.planes[1]+131) = 0x5555;
+
   
   ChunkyToPlanar(&dragon, &dragon_bp);
-
   Log("c2p done");
     
-  
   //Copy dragon bitmap to background
-  
   memcpy(screen->planes[0], dragon_bp.planes[0],
         S_WIDTH * S_HEIGHT * S_DEPTH / 8);
-  
-
-  
+    
   ///UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   if(0) MakeUVMapRenderCode();
 
@@ -317,6 +315,7 @@ static void PixmapToSprites(PixmapT *input, BitmapT *output) {
 #define C2P_MASK1 0x0F0F
 #define C2P_MASK2 0x3333
 #define C2P_MASK3 0x5555
+#define BLTSIZE_VAL(w, h) (h << 6 | (w >> 3))
 
 /* C2P pass 1 is AC + BNC, pass 2 is ANC + BC */
 #define C2P_LF_PASS1 (NABNC | ANBC | ABNC | ABC)
@@ -325,7 +324,6 @@ static void PixmapToSprites(PixmapT *input, BitmapT *output) {
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   void *planes = output->planes[0];
   void *chunky = input->pixels;
-  u_short BLTSIZE = input->width * input->height / 16;
   
   Log("ChunkyToPlanar: input  = %p  output = %p\n", input, output);
   Log("ChunkyToPlanar: chunky = %p  planes = %p\n", chunky, planes);
@@ -349,7 +347,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltapt = chunky + 4;
     custom->bltbpt = chunky;
     custom->bltdpt = planes;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
   }
   // Swap 8x4, pass 2
   {
@@ -368,11 +366,23 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltapt = chunky;
     custom->bltbpt = chunky + 4;
     custom->bltdpt = planes + 4;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
   }
 
-  //Swap 4x2, pass 1
+  WaitBlitter();
+  // już tutaj dane sie nie zgadzają z symulacją
+  /*
 
+    b ball.c:373
+    x/16t chunky
+    x/16t planes
+    zauwazmy ze po 8x4:
+       chunky[0] = planes[0], chunky[1] = planes[4]
+       chunky[2] = planes[2], chunky[3] = planes[6] ...
+     trzeba znalezc jak poustawiać wskazniki zeby sie zgadzało.
+  */
+  
+  //Swap 4x2, pass 1
   {
     WaitBlitter();
 
@@ -386,10 +396,10 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltdmod = 2;
     custom->bltcdat = C2P_MASK1;
 
-    custom->bltapt = chunky + 2;
-    custom->bltbpt = chunky;
-    custom->bltdpt = planes;
-    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+    custom->bltapt = planes + 2;
+    custom->bltbpt = planes;
+    custom->bltdpt = chunky;
+    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
   }
   // Swap 4x2, pass 2
   {
@@ -405,118 +415,65 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltdmod = 2;
     custom->bltcdat = C2P_MASK1;
 
-    custom->bltapt = chunky;
-    custom->bltbpt = chunky + 2;
-    custom->bltdpt = planes + 2;
-    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
+    custom->bltapt = planes;
+    custom->bltbpt = planes + 2;
+    custom->bltdpt = chunky + 2;
+    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
   }
 
 
 
-  
-  WaitBlitter();
-  return;
 
-  //--------------------
-  /* Swap 8x4, pass 1. */
+  
+  //Swap 2x2, pass 1
   {
     WaitBlitter();
 
-    /* (a & 0xFF00) | ((b >> 8) & ~0xFF00) */
-    /* Minterm select: 6 | 7 | 5 | 2: D = AC + AB + B */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
-    custom->bltcon1 = BSHIFT(8);
+    /* ((a >> 4) & 0x3333) | (b & ~0x3333) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(4);
+    custom->bltcon1 = 0;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
     custom->bltamod = 4;
     custom->bltbmod = 4;
     custom->bltdmod = 4;
-    custom->bltcdat = 0xFF00;
-
-    custom->bltapt = chunky;
-    custom->bltbpt = chunky + 4;
-    custom->bltdpt = planes;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
-  }
-
-  /* Swap 8x4, pass 2. */
-  {
-    WaitBlitter();
-
-    /* ((a << 8) & 0xFF00) | (b & ~0xFF00) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(8);
-    custom->bltcon1 = BLITREVERSE;
-
-    custom->bltapt = chunky + BLTSIZE - 2;
-    custom->bltbpt = chunky + BLTSIZE - 6;
-    custom->bltdpt = planes + BLTSIZE - 6;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
-  }
-  /* Swap 4x2, pass 1. */
-  {
-    WaitBlitter();
-
-    /* (a & 0xF0F0) | ((b >> 4) & ~0xF0F0) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
-    custom->bltcon1 = BSHIFT(4);
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = 0xF0F0;
-
-    custom->bltapt = planes;
-    custom->bltbpt = planes + 2;
-    custom->bltdpt = chunky;
-    custom->bltsize = 1 | ((BLTSIZE / 4) << 6);
-  }
-
-  /* Swap 4x2, pass 2. */
-  {
-    WaitBlitter();
-
-    /* ((a << 4) & 0xF0F0) | (b & ~0xF0F0) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(4);
-    custom->bltcon1 = BLITREVERSE;
-
-    custom->bltapt = planes + BLTSIZE - 2;
-    custom->bltbpt = planes + BLTSIZE - 4;
-    custom->bltdpt = chunky + BLTSIZE - 4;
-    custom->bltsize = 1 | ((BLTSIZE / 4) << 6);
-  }
-
-  /* Swap 2x2, pass 1. */
-  {
-    WaitBlitter();
-
-    /* ((a >> 2) & ~0xCCCC) | (b & 0xCCCC) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(2);
-    custom->bltamod = 4;
-    custom->bltbmod = 4;
-    custom->bltdmod = 4;
-    custom->bltcdat = 0xCCCC;
+    custom->bltcdat = C2P_MASK2;
 
     custom->bltapt = chunky + 4;
     custom->bltbpt = chunky;
     custom->bltdpt = planes;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
+    custom->bltsize = BLTSIZE_VAL(1, input->height/2);
   }
-
-  
-  /* Swap 2x2, pass 2. */
+  // Swap 2x2, pass 2
   {
     WaitBlitter();
 
-    /* ((a << 2) & 0xCCCC) | (b & ~0xCCCC) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(2);
+    /* ((a << 4) & ~0x0F0F) | (b & 0x0F0F) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
     custom->bltcon1 = BLITREVERSE;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = C2P_MASK2;
 
-    custom->bltapt = chunky + BLTSIZE - 2;
-    custom->bltbpt = chunky + BLTSIZE - 6;
-    custom->bltdpt = planes + BLTSIZE - 6;
-    custom->bltsize = 2 | ((BLTSIZE / 8) << 6);
-
+    custom->bltapt = chunky;
+    custom->bltbpt = chunky + 4;
+    custom->bltdpt = planes + 4;
+    custom->bltsize = BLTSIZE_VAL(1, input->height/2);
   }
+
+
+
+
+
+
+  
+  
   WaitBlitter();
+  return;
+
 }
 #endif
 #if 0
