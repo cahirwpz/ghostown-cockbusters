@@ -6,23 +6,124 @@
 
 #define WIDTH 256
 #define HEIGHT 256
-#define DEPTH 4
+#define DEPTH 3
 
-static Object3D *cube;
-static CopListT *cp;
-static CopInsPairT *bplptr;
-static BitmapT *screen[2];
-static BitmapT *buffer;
-static int active = 0;
+static __code Object3D *object;
+static __code CopListT *cp;
+static __code CopInsPairT *bplptr;
+static __code BitmapT *screen[2];
+static __code BitmapT *buffer;
+static __code int active = 0;
 
-#include "data/stencil3d-pal-3.c"
-#include "data/slayer-pat-05.c"
-#include "data/slayer-pat-06.c"
-#include "data/codi_02.c"
+#include "data/background-data.c"
+#include "data/background-pal.c"
+#include "data/pattern-1-1.c"
+#include "data/pattern-1-2.c"
+#include "data/pattern-1-3.c"
+#include "data/pattern-2-1.c"
+
+#define KURAK 1
+
+#if KURAK
+#include "data/kurak-head.c"
+#else
+#include "data/flower.c"
+#endif
+
+static CopListT *MakeCopperList(void) {
+  CopListT *cp =
+    NewCopList(100 + background_height * (background_cols_width + 3));
+
+  CopWait(cp, Y(-1), 0);
+
+  bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
+  CopMove32(cp, bplpt[1], background.planes[0]);
+  CopMove32(cp, bplpt[2], screen[1]->planes[1]);
+  CopMove32(cp, bplpt[3], background.planes[1]);
+  CopMove32(cp, bplpt[4], screen[1]->planes[2]);
+
+  {
+    u_short *data = background_cols_pixels;
+    short i;
+
+    for (i = 0; i < background_height; i++) {
+      short bgcol = *data++;
+
+      /* Start exchanging palette colors at the end of previous line. */
+      CopWaitSafe(cp, Y(i - 1), HP(320 - 32 - 4));
+      CopMove16(cp, color[0], 0);
+
+      CopWaitSafe(cp, Y(i), HP(0));
+      CopMove16(cp, color[9], *data++);
+      CopMove16(cp, color[10], *data++);
+      CopMove16(cp, color[11], *data++);
+      CopMove16(cp, color[0], bgcol);
+    }
+  }
+
+  return CopListFinish(cp);
+}
+
+static void SortFacesMinZ(Object3D *object) {
+  short *item = (short *)object->visibleFace;
+  short count = 0;
+
+  void *_objdat = object->objdat;
+  short *group = object->faceGroups;
+
+  do {
+    short f;
+
+    while ((f = *group++)) {
+      if (FACE(f)->flags >= 0) {
+        short minZ = 32767;
+
+        short *index = (short *)&FACE(f)->count;
+        short n = (*index++);
+        short i;
+
+        for (i = 0; i < n; i++) {
+          short j = FACE(f)->indices[i].vertex;
+          short z = VERTEX(j)->z;
+          if (z < minZ)
+            minZ = z;
+        }
+
+        *item++ = minZ;
+        *item++ = f;
+        count++;
+      }
+    }
+  } while (*group);
+
+  /* guard element */
+  *item++ = 0;
+  *item++ = -1;
+
+  SortItemArray(object->visibleFace, count);
+}
+
+static void AllFacesDoubleSided(Object3D *object) {
+  void *_objdat = object->objdat;
+  short *group = object->faceGroups;
+  short f;
+
+  do {
+    while ((f = *group++)) {
+      FACE(f)->material |= 0x80;
+    }
+  } while (*group);
+}
 
 static void Init(void) {
-  cube = NewObject3D(&codi);
-  cube->translate.z = fx4i(-250);
+#if KURAK
+  object = NewObject3D(&kurak);
+  (void)AllFacesDoubleSided;
+#else
+  object = NewObject3D(&flower);
+  AllFacesDoubleSided(object);
+#endif
+  object->translate.z = fx4i(-250);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -30,18 +131,18 @@ static void Init(void) {
 
   /* keep the buffer as the last bitplane of both screens */
   screen[0]->planes[DEPTH] = buffer->planes[0];
-  screen[0]->planes[DEPTH + 1] = pattern_1.planes[0];
-  screen[0]->planes[DEPTH + 2] = pattern_2.planes[0];
   screen[1]->planes[DEPTH] = buffer->planes[0];
-  screen[1]->planes[DEPTH + 1] = pattern_1.planes[0];
-  screen[1]->planes[DEPTH + 2] = pattern_2.planes[0];
 
-  SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH, HEIGHT);
-  LoadColors(flatshade_colors, 0);
+  SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
+  SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
+  SetupMode(MODE_DUALPF, DEPTH + background_depth);
+  LoadColors(pattern_1_colors, 0);
+  LoadColors(pattern_2_colors, 4);
 
-  cp = NewCopList(80);
-  bplptr = CopSetupBitplanes(cp, screen[0], DEPTH);
-  CopListFinish(cp);
+  /* reverse playfield priorities */
+  custom->bplcon2 = 0;
+
+  cp = MakeCopperList();
   CopListActivate(cp);
   EnableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 }
@@ -52,7 +153,7 @@ static void Kill(void) {
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);
   DeleteCopList(cp);
-  DeleteObject3D(cube);
+  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E)                                                       \
@@ -61,7 +162,7 @@ static void Kill(void) {
     short t1 = (*v++) + x;                                                     \
     int t2 = (*v++) * z;                                                       \
     v++;                                                                       \
-    D = ((t0 * t1 + t2 - x * y) >> 4) + E;                                     \
+    D = ((t0 * t1 + t2 - xy) >> 4) + E;                                        \
   }
 
 #define MULVERTEX2(D)                                                          \
@@ -70,7 +171,7 @@ static void Kill(void) {
     short t1 = (*v++) + x;                                                     \
     int t2 = (*v++) * z;                                                       \
     short t3 = (*v++);                                                         \
-    D = normfx(t0 * t1 + t2 - x * y) + t3;                                     \
+    D = normfx(t0 * t1 + t2 - xy) + t3;                                        \
   }
 
 static void TransformVertices(Object3D *object) {
@@ -128,7 +229,6 @@ static void TransformVertices(Object3D *object) {
 static void DrawObject(Object3D *object, void **planes,
                        CustomPtrT custom_ asm("a6")) {
   register SortItemT *item asm("a3") = object->visibleFace;
-  void **scrbpl = &planes[DEPTH];
   void *_objdat = object->objdat;
 
   custom_->bltafwm = -1;
@@ -191,7 +291,7 @@ static void DrawObject(Object3D *object, void **planes,
           swapr(dmax, dmin);
         }
 
-        bltcpt = (int)scrbpl[0] + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
+        bltcpt = (int)planes[DEPTH] + (short)(((y0 << 5) + (x0 >> 3)) & ~1);
 
         bltcon0 = rorw(x0 & 15, 4) | BC0F_LINE_EOR;
         bltcon1 |= rorw(x0 & 15, 4);
@@ -214,7 +314,7 @@ static void DrawObject(Object3D *object, void **planes,
         custom_->bltcon1 = bltcon1;
         custom_->bltcpt = (void *)bltcpt;
         custom_->bltapt = (void *)bltapt;
-        custom_->bltdpt = scrbpl[0];
+        custom_->bltdpt = planes[DEPTH];
         custom_->bltcmod = WIDTH / 8;
         custom_->bltbmod = bltbmod;
         custom_->bltamod = bltamod;
@@ -278,14 +378,14 @@ static void DrawObject(Object3D *object, void **planes,
 
       /* Fill face. */
       {
-        void *src = scrbpl[0] + bltend;
+        void *dst = planes[DEPTH] + bltend;
 
         _WaitBlitter(custom_);
 
         custom_->bltcon0 = (SRCA | DEST) | A_TO_D;
         custom_->bltcon1 = BLITREVERSE | FILL_XOR;
-        custom_->bltapt = src;
-        custom_->bltdpt = src;
+        custom_->bltapt = dst;
+        custom_->bltdpt = dst;
         custom_->bltamod = bltmod;
         custom_->bltbmod = bltmod;
         custom_->bltcmod = bltmod;
@@ -295,50 +395,61 @@ static void DrawObject(Object3D *object, void **planes,
 
       /* Copy filled face to screen. */
       {
-        void **dstbpl = scrbpl;
-        void *src = scrbpl[0] + bltstart;
-        void *pat = scrbpl[(short)FACE(ii)->material + 1]; // + bltstart;
-        char mask = 1 << (DEPTH - 1);
-        char color = FACE(ii)->flags >> 1;
-        char shade = FACE(ii)->flags;
+        void *dst = planes[2] + bltstart;
+        void *mask = planes[DEPTH] + bltstart;
 
-        if (FACE(ii)->material)
-          color |= 1 << (DEPTH - 1);
+        u_short bltcon0;
 
-        do {
-          void *dst = *(--dstbpl) + bltstart;
-          u_short bltcon0;
+        if (FACE(ii)->material & 1) {
+          bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
+        } else {
+          bltcon0 = (SRCA | SRCB | DEST) | A_AND_NOT_B;
+        }
 
-          if (shade > 8) {
-            if (color & mask)
-              bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
-            else
-              bltcon0 = (SRCA | SRCB | DEST) | (NABC | NABNC);
-          } else {
-            if (color & mask)
-              bltcon0 =
-                (SRCA | SRCB | SRCC | DEST) | (ABC | ANBC | NABC | NABNC);
-            else
-              bltcon0 = (SRCA | SRCB | DEST) | (NABC | NABNC);
-          }
+        _WaitBlitter(custom_);
+
+        custom_->bltcon0 = bltcon0;
+        custom_->bltcon1 = 0;
+        custom_->bltapt = dst;
+        custom_->bltbpt = mask;
+        custom_->bltdpt = dst;
+        custom_->bltsize = bltsize;
+      }
+
+      {
+        void **srcbpl;
+        void **dstbpl = planes;
+        void *mask = planes[DEPTH] + bltstart;
+        short i;
+
+        if (FACE(ii)->flags > 13)
+          srcbpl = (void **)pattern_1_1.planes;
+        else if (FACE(ii)->flags > 9)
+          srcbpl = (void **)pattern_1_2.planes;
+        else
+          srcbpl = (void **)pattern_1_3.planes;
+
+        for (i = 0; i < pattern_1_1_depth; i++) {
+          void *src = *srcbpl++;
+          void *dst = *dstbpl++ + bltstart;
+          u_short bltcon0 =
+            (SRCA | SRCB | SRCC | DEST) | (ABC | ABNC | NABC | NANBC);
 
           _WaitBlitter(custom_);
 
           custom_->bltcon0 = bltcon0;
           custom_->bltcon1 = 0;
-          custom_->bltapt = src;
-          custom_->bltbpt = dst;
-          custom_->bltcpt = pat;
+          custom_->bltapt = mask;
+          custom_->bltbpt = src;
+          custom_->bltcpt = dst;
           custom_->bltdpt = dst;
           custom_->bltsize = bltsize;
-
-          mask >>= 1;
-        } while (mask);
+        }
       }
 
       /* Clear working area. */
       {
-        void *data = scrbpl[0] + bltstart;
+        void *data = planes[DEPTH] + bltstart;
 
         _WaitBlitter(custom_);
 
@@ -376,20 +487,28 @@ static void Render(void) {
 
   ProfilerStart(Transform);
   {
-    cube->rotate.x = cube->rotate.y = cube->rotate.z = frameCount * 8;
-    UpdateObjectTransformation(cube);
-    UpdateFaceVisibility(cube);
-    UpdateVertexVisibility(cube);
-    TransformVertices(cube);
-    SortFaces(cube);
+#if KURAK
+    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
+#else
+    object->rotate.x = 0x400;
+    object->rotate.z = 0x200;
+    object->rotate.y = frameCount * 12;
+#endif
+    UpdateObjectTransformation(object);
+    UpdateFaceVisibility(object);
+    UpdateVertexVisibility(object);
+    TransformVertices(object);
+    SortFacesMinZ(object);
   }
   ProfilerStop(Transform); // Average: 163
 
   ProfilerStart(Draw);
-  { DrawObject(cube, screen[active]->planes, custom); }
+  DrawObject(object, screen[active]->planes, custom);
   ProfilerStop(Draw); // Average: 671
 
-  CopUpdateBitplanes(bplptr, screen[active], DEPTH);
+  CopInsSet32(&bplptr[0], screen[active]->planes[0]);
+  CopInsSet32(&bplptr[2], screen[active]->planes[1]);
+  CopInsSet32(&bplptr[4], screen[active]->planes[2]);
   TaskWaitVBlank();
   active ^= 1;
 }

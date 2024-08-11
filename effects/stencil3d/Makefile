@@ -1,16 +1,23 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/stencil3d-pal-?.c data/codi_02.c data/slayer-pat-??.c
+CLEAN-FILES := data/flower.c data/kurak-head.c data/pattern-?-?.c \
+	data/background-data.{c,png} data/background-pal.{c,png}
 
 LIBS := lib3d
 
-PNG2C.stencil3d-pal-1 := --palette flatshade,16
-PNG2C.stencil3d-pal-2 := --palette flatshade,16
-PNG2C.stencil3d-pal-3 := --palette flatshade,16
-PNG2C.stencil3d-pal-4 := --palette flatshade,16
-PNG2C.stencil3d-pal-5 := --palette flatshade,16
-PNG2C.slayer-pat-05 := --bitmap pattern_1,256x256x1
-PNG2C.slayer-pat-06 := --bitmap pattern_2,256x256x1
-OBJ2C.codi_02 := --scale 488.0 --mesh-name codi
+PNG2C.background-data := --bitmap background,256x256x2
+PNG2C.background-pal := --pixmap background_cols,4x256x12,+onlydata
+PNG2C.pattern-1-1 := --bitmap pattern_1_1,256x256x2 --palette pattern_1,4
+PNG2C.pattern-1-2 := --bitmap pattern_1_2,256x256x2
+PNG2C.pattern-1-3 := --bitmap pattern_1_3,256x256x2
+PNG2C.pattern-2-1 := --palette pattern_2,4
+PNG2C.pattern-2-2 := 
+PNG2C.pattern-2-3 := 
+OBJ2C.flower := --scale 30.0 --mesh-name flower
+OBJ2C.kurak-head := --scale 2.7 --mesh-name kurak
 
 include $(TOPDIR)/build/effect.mk
+
+%-data.png %-pal.png: %.png
+	@echo "[SPLITIMG] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(TOPDIR)/effects/carrion/data/split-img.py 4 $<
