@@ -96,32 +96,6 @@ static CopListT *MakeCopperList(int active) {
 }
 
 
-//XXX This function is currently NOT used
-void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
-                    void *pixels)
-{
-  short bytesPerRow = ((short)(width + 15) & ~15) / 8;
-  int bplSize = bytesPerRow * height;
-
-  bm->width = width;
-  bm->height = height;
-  bm->depth = depth;
-  bm->bytesPerRow = bytesPerRow;
-  bm->bplSize = bplSize;
-  //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
-  bm->flags = BM_CPUONLY | BM_STATIC;
-
-  BitmapSetPointers(bm, pixels); // crash
-
-  {
-    
-    c2p_1x1_4(pixels, *(bm->planes), 240     , 228   , bplSize);
-    
- 
-  }
-}
-
-
 static void Init(void) {
   u_short bitplanesz = ((dragon_width + 15) & ~15) / 8 * dragon_height;
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
@@ -221,95 +195,6 @@ static void Kill(void) {
 }
 
 
-// Blitter ops as in prototypes/c2p/c2p_1x1_4bpl_sprites.py
-#if 0
-
-#define P2S_M0 0x00FF
-#define P2S_M1 0x0F0F
-#define P2S_M2 0x3333
-#define P2S_M3 0x5555
-#define BLTSIZE (WIDTH * HEIGHT / 2) //XXX: bad, set to actual pixmap size
-static void PixmapToSprites(PixmapT *input, BitmapT *output) {
-  void *planes = output->planes[0];
-  void *chunky = input->pixels;
- 
-  /* Output format [words]:
-     CW1            ; Sprite 0 control words
-     CW2            ;
-     SPR0DATA       ; Sprite 0 data
-     SPR0DATB       ;
-     SPR0DATA      
-     SPR0DATB
-     ...
-     EOS            ; End of sprite 0
-     CW1            ; Sprite 1 control words
-     CW2            ;
-     SPR0DATA       ; Sprite 1 data
-     SPR0DATB
-     ...
-     EOS            ; End of sprite 1
-     ...            ; Sprites 2-7 in the same format.
-  */
-  //
-  //Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
-  //       N // 4, 2, Channel(A, 2, 2), Channel(A, 0, 2), Channel(B, 0, 2))
-  //       BLTSIZE
-  // Channel(data, start, mod)  ==  bltXpt = source + start; bltXmod = mod
-  
-  // Pass 1 - Swap 8x4, blit 1
-  {
-    //WaitBlitter();
-    // a >> 8 & M0 | b & ~M0 == a >> 8 & M0 | ~b & M0
-    // Minterm select: AC | NBC: 7 - 5 - - - 1 -
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
-      (ABC | ANBC | NANBC) |
-      ASHIFT(8);
-    custom->bltcon1 = 0;
-    // custom->bltcon1 = BLITREVERSE; zeby shift w lewo
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = P2S_M0;
-
-    custom->bltapt = chunky + 2;
-    custom->bltbpt = chunky;
-    custom->bltdpt = planes;
-    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
-    
-  }
-  // Pass 1 - Swap 8x4, blit 2
-  {
-    WaitBlitter();
-    // a << 8 & ~M0 | b & M0 == ~a << 8 & M0 | b & M0
-    // Minterm select: NAC | BC: 7 - - - 3 - 1
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) |
-      (ABC | NABC | NANBC) |
-      ASHIFT(8);
-    custom->bltcon1 = BLITREVERSE;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = P2S_M0;
-
-    custom->bltapt = chunky;
-    custom->bltbpt = chunky + 2;
-    custom->bltdpt = planes + 2;
-    custom->bltsize = 2 | ((BLTSIZE / 4) << 6);
-  }
-  WaitBlitter();
-}
-#endif
-//#if (BLTSIZE / 4) > 1024
-//#error "blit size too big!"
-//#endif
-#define SPRITEH 64
-
-
-
 #if 1
 #define C2P_MASK0 0x00FF
 #define C2P_MASK1 0x0F0F
@@ -322,15 +207,31 @@ static void PixmapToSprites(PixmapT *input, BitmapT *output) {
 #define C2P_LF_PASS2 (NABC | ANBNC | ABNC | ABC)
 
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
-  void *planes = output->planes[0];
-  void *chunky = input->pixels;
+  char *planes = output->planes[0];
+  char *chunky = input->pixels;
+
+  u_short blsz = 0;
+  u_short chunkysz = input->width * input->height / 2;
+  u_short planesz  = output->bplSize;
+  u_short planarsz  = planesz * 4;
+  u_short blith    = 0;
+  
   
   Log("ChunkyToPlanar: input  = %p  output = %p\n", input, output);
   Log("ChunkyToPlanar: chunky = %p  planes = %p\n", chunky, planes);
+  Log("ChunkyToPlanar: inputh = %d\n", input->height);
+  Log("ChunkyToPlanar: inputw = %d\n", input->width);
+  
+  blith = planesz / 4;
+  Log("ChunkyToPlanar: bitplane size  = 0x%x\n", planesz );
+
+  Log("ChunkyToPlanar: blit height is = 0x%x\n", blith );
+  
   
   //przepisać tutaj c2p_1x1_4bpl_sprites.py
   // !! modulos and pointers are in bytes
   // Swap 8x4, pass 1
+  #if 0
   {
     WaitBlitter();
 
@@ -339,37 +240,44 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltcon1 = 0;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
-    custom->bltamod = 4;
-    custom->bltbmod = 4;
-    custom->bltdmod = 4;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
     custom->bltcdat = C2P_MASK0;
 
     custom->bltapt = chunky + 4;
     custom->bltbpt = chunky;
     custom->bltdpt = planes;
-    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
+    custom->bltsize = BLTSIZE_VAL(2, blith);
   }
+  WaitBlitter();
+#endif  //skip 8x4 pass 1
+    // SO FAR SO GOOD :D
+  //todo find the right bltsize (the right height, w=2 is OK)
+    
   // Swap 8x4, pass 2
-  {
-    WaitBlitter();
 
+    
+  {
+  
     /* ((a << 8) & ~0x00FF) | (b & 0x00FF) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(8);
     custom->bltcon1 = BLITREVERSE;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
-    custom->bltamod = 4;
-    custom->bltbmod = 4;
-    custom->bltdmod = 4;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
     custom->bltcdat = C2P_MASK0;
 
-    custom->bltapt = chunky;
-    custom->bltbpt = chunky + 4;
-    custom->bltdpt = planes + 4;
-    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
+    custom->bltapt = chunky + chunkysz - 2;
+    custom->bltbpt = chunky + chunkysz - 6;
+    custom->bltdpt = planes + planesz - 2;
+    custom->bltsize = BLTSIZE_VAL(2, blith - 32);
   }
 
   WaitBlitter();
+  return;
   // już tutaj dane sie nie zgadzają z symulacją
   /*
 

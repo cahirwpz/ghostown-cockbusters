@@ -28,6 +28,9 @@ def c2p(bitplane_output=True):
     planes = Array.Zero(N, 16)
     Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
          N // 4, 2, Channel(chunky, 2, 2), Channel(chunky, 0, 2), Channel(planes, 0, 2))
+    Array.Print("Swap 8x4: planar after 1st pass:", *planes)
+
+    
     Blit(lambda a, b: ((a << 8) & ~m0) | (b & m0),
          N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2), Channel(planes, 2, 2))
     Array.Print("Swap 8x4: planar:", *planes)
