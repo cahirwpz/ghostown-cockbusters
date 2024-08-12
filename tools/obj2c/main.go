@@ -9,19 +9,30 @@ import (
 	"ghostown.pl/obj2c/obj"
 )
 
-var printHelp bool
-var scaleFactor float64
-var vertexSize int
-var edgeSize int
-var meshName string
-var indexSize int
-var noEdges bool
-var textured bool
-var textureScale float64
+var (
+	printHelp    bool
+	scaleFactor  float64
+	vertexSize   int
+	edgeSize     int
+	meshName     string
+	indexSize    int
+	offsetX      float64
+	offsetY      float64
+	offsetZ      float64
+	noEdges      bool
+	textured     bool
+	textureScale float64
+)
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
 		"print help message and exit")
+	flag.Float64Var(&offsetX, "offset-x", 0.0,
+		"the object will moved in X axis by that amount")
+	flag.Float64Var(&offsetY, "offset-y", 0.0,
+		"the object will moved in Y axis by that amount")
+	flag.Float64Var(&offsetZ, "offset-z", 0.0,
+		"the object will moved in Z axis by that amount")
 	flag.Float64Var(&scaleFactor, "scale", 1.0,
 		"the object will be scaled by this factor")
 	flag.StringVar(&meshName, "mesh-name", "",
@@ -55,6 +66,9 @@ func main() {
 	cp := obj.ConverterParams{
 		Name:         meshName,
 		Scale:        scaleFactor,
+		OffsetX:      offsetX,
+		OffsetY:      offsetY,
+		OffsetZ:      offsetZ,
 		Edges:        !noEdges,
 		TextureScale: textureScale,
 		Textured:     textured,
