@@ -4,13 +4,9 @@ import os
 import sys
 import argparse
 import xml.etree.ElementTree as ET
-from PIL import Image, ImageOps
 
-PASSEPARTOUT = 10
-TMP_DIR = ""
-TMP_SVG_FILE = "vtrace_tmp.svg"
+BORDER = 10
 FPS = 25
-
 XMLNS = {"svg": "http://www.w3.org/2000/svg"}
 
 
@@ -54,12 +50,13 @@ def append_path(to, verts, path_id, fill):
 
 def get_coords(code):
     xy = code.split(",")
-    x = int(xy[0]) - PASSEPARTOUT
-    y = int(xy[1]) - PASSEPARTOUT
+    x = int(xy[0]) - BORDER
+    y = int(xy[1]) - BORDER
     return (x, y)
 
 
-def append_frame(to, frame_root, total_frames, frame_number):
+def append_frame(to, frame_svg, total_frames, frame_number):
+    frame_root = ET.parse(frame_svg).getroot()
     frame = append_group(to, f"frame_{frame_number}")
     polys = append_group(frame, f"polygons_frame_{frame_number}")
     append_animate_element(frame, f"anim_frame_{frame_number}",
@@ -79,68 +76,42 @@ def append_frame(to, frame_root, total_frames, frame_number):
             verts.append(get_coords(code[1:]))
 
 
-def get_dimensions(img):
-    return Image.open(img).size
-
-
-def run_vtrace(img, opts):
-    path = os.path.join(TMP_DIR, TMP_SVG_FILE)
-    return os.system(f"vtracer {opts} --input {img} --output {path}")
-
-
-def make_passepartout(img):
-    img_name = os.path.join(TMP_DIR, "passepartout.png")
-    ImageOps.expand(
-            ImageOps.grayscale(Image.open(img)),
-            PASSEPARTOUT,
-            0).save(img_name, "png")
-    return img_name
+def get_dimensions(svg_file):
+    svg_root = ET.parse(svg_file).getroot()
+    width = int(svg_root.attrib["width"]) - 2 * BORDER
+    height = int(svg_root.attrib["height"]) - 2 * BORDER
+    return width, height
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(
-            description="Process rendered animation into a single "
-                        ".svg file for anim-polygons effect.")
+        description="Process rendered animation into a single "
+                    ".svg file for anim-polygons effect.")
     parser.add_argument(
-            "anim_dir",
-            help="Directory containing blender animation output.",
-            type=str)
+        "anim_dir",
+        help="Directory containing blender animation output.")
     parser.add_argument(
-            "-o", "--output",
-            metavar="OUT",
-            help="Output svg file name.",
-            default="dancing.svg",
-            type=str)
-    parser.add_argument(
-            "-t", "--vtracer-opts",
-            metavar="OPTS",
-            help="vtracer options",
-            default=
-                "--colormode bw --corner_threshold 30 --color_precision 8 "
-                "--filter_speckle 15 --gradient_step 0 --mode polygon",
-            type=str)
+        "-o", "--output",
+        metavar="OUT",
+        help="Output svg file name.",
+        default="dancing.svg")
     args = parser.parse_args()
+
     if not os.path.isdir(args.anim_dir):
-        sys.exit("anim_dir must be a valid directory!!")
+        sys.exit("anim_dir must be a valid directory!")
 
     ET.register_namespace("", XMLNS["svg"])
 
-    frames_files = [os.path.join(args.anim_dir, name)
-                    for name in os.listdir(args.anim_dir)]
+    frames_files = sorted(
+            [os.path.join(args.anim_dir, name)
+             for name in os.listdir(args.anim_dir)
+             if name.endswith(".svg")])
     total_frames = len(frames_files)
     width, height = get_dimensions(frames_files[0])
     svg_root = create_svg_root(width, height)
     animation = append_group(svg_root, "Animation")
 
-    for frame_number, in_img in enumerate(sorted(frames_files)):
-        print(f'Converting frame #{frame_number}.')
-        in_img = make_passepartout(in_img)
-        if run_vtrace(in_img, args.vtracer_opts):
-            sys.exit(f"A problem occured on frame: {frame_number}")
-        os.remove(in_img)
-        tmp_svg = ET.parse(os.path.join(TMP_DIR, TMP_SVG_FILE)).getroot()
-        append_frame(animation, tmp_svg, total_frames, frame_number)
+    for frame_number, frame_svg in enumerate(frames_files):
+        append_frame(animation, frame_svg, total_frames, frame_number)
 
     ET.ElementTree(svg_root).write(args.output)
-    os.remove(TMP_SVG_FILE)

@@ -5,9 +5,11 @@ WORKDIR /root
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends \
   build-essential \
-  curl git \
+  curl \
+  git \
   ca-certificates \
-  python3-pil \
+  imagemagick \
+  python3 \
   xauth \
   libopenexr-dev \
   bzip2 \
