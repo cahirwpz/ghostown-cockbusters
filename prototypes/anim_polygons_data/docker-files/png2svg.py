@@ -83,12 +83,9 @@ def get_dimensions(img):
     return Image.open(img).size
 
 
-def run_vtrace(img):
-    return os.system(
-            "vtracer --colormode bw -c 30"
-            " --color_precision 8 --filter_speckle 15"
-            f" --gradient_step 0 --mode polygon --input {img}"
-            f" --output {os.path.join(TMP_DIR, TMP_SVG_FILE)}")
+def run_vtrace(img, opts):
+    path = os.path.join(TMP_DIR, TMP_SVG_FILE)
+    return os.system(f"vtracer {opts} --input {img} --output {path}")
 
 
 def make_passepartout(img):
@@ -115,9 +112,17 @@ if __name__ == "__main__":
             help="Output svg file name.",
             default="dancing.svg",
             type=str)
+    parser.add_argument(
+            "-t", "--vtracer-opts",
+            metavar="OPTS",
+            help="vtracer options",
+            default=
+                "--colormode bw --corner_threshold 30 --color_precision 8 "
+                "--filter_speckle 15 --gradient_step 0 --mode polygon",
+            type=str)
     args = parser.parse_args()
     if not os.path.isdir(args.anim_dir):
-        sys.exit(f"anim_dir must be a valid directory!!")
+        sys.exit("anim_dir must be a valid directory!!")
 
     ET.register_namespace("", XMLNS["svg"])
 
@@ -131,7 +136,7 @@ if __name__ == "__main__":
     for frame_number, in_img in enumerate(sorted(frames_files)):
         print(f'Converting frame #{frame_number}.')
         in_img = make_passepartout(in_img)
-        if run_vtrace(in_img):
+        if run_vtrace(in_img, args.vtracer_opts):
             sys.exit(f"A problem occured on frame: {frame_number}")
         os.remove(in_img)
         tmp_svg = ET.parse(os.path.join(TMP_DIR, TMP_SVG_FILE)).getroot()
