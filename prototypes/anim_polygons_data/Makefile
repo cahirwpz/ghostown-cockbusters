@@ -1,7 +1,5 @@
 SCENE ?= cock.blend
 OUTPUT ?= $(SCENE:.blend=.svg)
-OPTS ?= --colormode bw --corner_threshold 30 --color_precision 8 \
-        --filter_speckle 15 --gradient_step 0 --mode polygon
 
 all: $(OUTPUT)
 
@@ -12,7 +10,7 @@ $(OUTPUT): docker
 	docker create --tty --name anim-polygons-env anim-polygons bash
 	docker start anim-polygons-env
 	docker cp docker-files/ anim-polygons-env:/root
-	docker exec anim-polygons-env make -C docker-files SCENE="$(SCENE)" OPTS="$(OPTS)"
+	docker exec anim-polygons-env bash -c "cd docker-files && ./convert.sh run $(SCENE)"
 	docker cp anim-polygons-env:/root/docker-files/$(OUTPUT) $@
 	docker stop anim-polygons-env
 	docker rm anim-polygons-env

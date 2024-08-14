@@ -5,7 +5,7 @@ import sys
 import argparse
 import xml.etree.ElementTree as ET
 
-BORDER = 10
+
 FPS = 25
 XMLNS = {"svg": "http://www.w3.org/2000/svg"}
 
@@ -30,12 +30,12 @@ def append_animate_element(to, anim_id, total_frames, frame_number):
 
 
 def create_svg_root(width, height):
-    svg_root = ET.XML("<svg></svg>")
-    svg_root.attrib["xmlns"] = XMLNS["svg"]
-    svg_root.attrib["version"] = "1.1"
-    svg_root.attrib["width"] = f"{width}"
-    svg_root.attrib["height"] = f"{height}"
-    return svg_root
+    root = ET.XML("<svg></svg>")
+    root.attrib["xmlns"] = XMLNS["svg"]
+    root.attrib["version"] = "1.1"
+    root.attrib["width"] = f"{width}"
+    root.attrib["height"] = f"{height}"
+    return root
 
 
 def append_path(to, verts, path_id, fill):
@@ -48,38 +48,40 @@ def append_path(to, verts, path_id, fill):
     path.attrib["fill"] = fill
 
 
-def get_coords(code):
-    xy = code.split(",")
-    x = int(xy[0]) - BORDER
-    y = int(xy[1]) - BORDER
-    return (x, y)
-
-
-def append_frame(to, frame_svg, total_frames, frame_number):
+def append_frame(to, frame_svg, total_frames, frame_number, border,
+                 remove_color):
     frame_root = ET.parse(frame_svg).getroot()
     frame = append_group(to, f"frame_{frame_number}")
     polys = append_group(frame, f"polygons_frame_{frame_number}")
     append_animate_element(frame, f"anim_frame_{frame_number}",
                            total_frames, frame_number)
 
-    count = -1
+    count = 0
     verts = []
-    for code in frame_root[0].attrib["d"].split():
-        if code[0] == "Z":
-            if len(verts) >= 3:
-                count += 1
-                if count > 0:
+    for stmt in frame_root:
+        color = stmt.attrib.get('fill', '#000000')
+        if color == remove_color:
+            continue
+        translate = stmt.attrib.get('transform', 'translate(0,0)')
+        translate = eval(translate[9:])
+        for code in stmt.attrib["d"].split():
+            if code[0] == "Z":
+                if len(verts) >= 3:
                     append_path(polys, verts,
-                                f"path_{frame_number}_{count}", "#FF0000")
-            verts = []
-        else:
-            verts.append(get_coords(code[1:]))
+                                f"path_{frame_number}_{count}", color)
+                    count += 1
+                verts = []
+            else:
+                x, y = map(int, code[1:].split(","))
+                x += translate[0] - border
+                y += translate[1] - border
+                verts.append((x, y))
 
 
-def get_dimensions(svg_file):
+def get_dimensions(svg_file, border):
     svg_root = ET.parse(svg_file).getroot()
-    width = int(svg_root.attrib["width"]) - 2 * BORDER
-    height = int(svg_root.attrib["height"]) - 2 * BORDER
+    width = int(svg_root.attrib["width"]) - 2 * border
+    height = int(svg_root.attrib["height"]) - 2 * border
     return width, height
 
 
@@ -91,8 +93,16 @@ if __name__ == "__main__":
         "anim_dir",
         help="Directory containing blender animation output.")
     parser.add_argument(
+        "-b", "--border",
+        help="Width of the border around drawable area to be removed",
+        default=0,
+        type=int)
+    parser.add_argument(
+        "-r", "--remove-color",
+        help="Remove areas with color in #RRGGBB format",
+        type=str)
+    parser.add_argument(
         "-o", "--output",
-        metavar="OUT",
         help="Output svg file name.",
         default="dancing.svg")
     args = parser.parse_args()
@@ -107,11 +117,12 @@ if __name__ == "__main__":
              for name in os.listdir(args.anim_dir)
              if name.endswith(".svg")])
     total_frames = len(frames_files)
-    width, height = get_dimensions(frames_files[0])
+    width, height = get_dimensions(frames_files[0], args.border)
     svg_root = create_svg_root(width, height)
     animation = append_group(svg_root, "Animation")
 
     for frame_number, frame_svg in enumerate(frames_files):
-        append_frame(animation, frame_svg, total_frames, frame_number)
+        append_frame(animation, frame_svg, total_frames, frame_number,
+                     args.border, args.remove_color)
 
     ET.ElementTree(svg_root).write(args.output)
