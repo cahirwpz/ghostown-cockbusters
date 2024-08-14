@@ -48,8 +48,7 @@ def append_path(to, verts, path_id, fill):
     path.attrib["fill"] = fill
 
 
-def append_frame(to, frame_svg, total_frames, frame_number, border,
-                 remove_color):
+def append_frame(to, frame_svg, total_frames, frame_number, remove_color):
     frame_root = ET.parse(frame_svg).getroot()
     frame = append_group(to, f"frame_{frame_number}")
     polys = append_group(frame, f"polygons_frame_{frame_number}")
@@ -73,15 +72,15 @@ def append_frame(to, frame_svg, total_frames, frame_number, border,
                 verts = []
             else:
                 x, y = map(int, code[1:].split(","))
-                x += translate[0] - border
-                y += translate[1] - border
+                x += translate[0]
+                y += translate[1]
                 verts.append((x, y))
 
 
-def get_dimensions(svg_file, border):
+def get_dimensions(svg_file):
     svg_root = ET.parse(svg_file).getroot()
-    width = int(svg_root.attrib["width"]) - 2 * border
-    height = int(svg_root.attrib["height"]) - 2 * border
+    width = int(svg_root.attrib["width"])
+    height = int(svg_root.attrib["height"])
     return width, height
 
 
@@ -92,11 +91,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "anim_dir",
         help="Directory containing blender animation output.")
-    parser.add_argument(
-        "-b", "--border",
-        help="Width of the border around drawable area to be removed",
-        default=0,
-        type=int)
     parser.add_argument(
         "-r", "--remove-color",
         help="Remove areas with color in #RRGGBB format",
@@ -117,12 +111,12 @@ if __name__ == "__main__":
              for name in os.listdir(args.anim_dir)
              if name.endswith(".svg")])
     total_frames = len(frames_files)
-    width, height = get_dimensions(frames_files[0], args.border)
+    width, height = get_dimensions(frames_files[0])
     svg_root = create_svg_root(width, height)
     animation = append_group(svg_root, "Animation")
 
     for frame_number, frame_svg in enumerate(frames_files):
         append_frame(animation, frame_svg, total_frames, frame_number,
-                     args.border, args.remove_color)
+                     args.remove_color)
 
     ET.ElementTree(svg_root).write(args.output)
