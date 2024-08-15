@@ -131,7 +131,7 @@ static void Init(void) {
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   Log("&dragon_bp = %p\n", dragon_bp);
  
-  *((short*) dragon_bp.planes[0]) = 0x1111;
+  /* *((short*) dragon_bp.planes[0]) = 0x1111;
   *((short*) dragon_bp.planes[0]+1) = 0x2222;
   *((short*) dragon_bp.planes[0]+2) = 0x3333;
   *((short*) dragon_bp.planes[0]+3) = 0x4444;
@@ -140,7 +140,7 @@ static void Init(void) {
   *((short*) dragon_bp.planes[1]+129) = 0x5555;
   *((short*) dragon_bp.planes[1]+130) = 0x5555;
   *((short*) dragon_bp.planes[1]+131) = 0x5555;
-
+  */
   
   ChunkyToPlanar(&dragon, &dragon_bp);
   Log("c2p done");
@@ -200,7 +200,10 @@ static void Kill(void) {
 #define C2P_MASK1 0x0F0F
 #define C2P_MASK2 0x3333
 #define C2P_MASK3 0x5555
-#define BLTSIZE_VAL(w, h) (h << 6 | (w >> 3))
+//#define BLTSIZE_VAL(w, h) (h << 6 | (w >> 3))
+#define BLTSIZE_VAL(w, h) (h << 6 | (w))
+
+
 
 /* C2P pass 1 is AC + BNC, pass 2 is ANC + BC */
 #define C2P_LF_PASS1 (NABNC | ANBC | ABNC | ABC)
@@ -231,7 +234,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   //przepisać tutaj c2p_1x1_4bpl_sprites.py
   // !! modulos and pointers are in bytes
   // Swap 8x4, pass 1
-  #if 0
   {
     WaitBlitter();
 
@@ -240,144 +242,40 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltcon1 = 0;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
     custom->bltcdat = C2P_MASK0;
 
     custom->bltapt = chunky + 4;
     custom->bltbpt = chunky;
     custom->bltdpt = planes;
-    custom->bltsize = BLTSIZE_VAL(2, blith);
+    custom->bltsize = BLTSIZE_VAL(2, 0);
   }
   WaitBlitter();
-#endif  //skip 8x4 pass 1
-    // SO FAR SO GOOD :D
-  //todo find the right bltsize (the right height, w=2 is OK)
-    
+      
   // Swap 8x4, pass 2
 
-    
   {
-  
     /* ((a << 8) & ~0x00FF) | (b & 0x00FF) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(8);
     custom->bltcon1 = BLITREVERSE;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = C2P_MASK0;
+    //custom->bltafwm = -1;
+    //custom->bltalwm = -1;      //
+    //custom->bltamod = 4;       // These stay unchanged. remove them later
+    //custom->bltbmod = 4;       // 
+    //custom->bltdmod = 4;
+    //custom->bltcdat = C2P_MASK0;
 
-    custom->bltapt = chunky + chunkysz - 2;
-    custom->bltbpt = chunky + chunkysz - 6;
-    custom->bltdpt = planes + planesz - 2;
-    custom->bltsize = BLTSIZE_VAL(2, blith - 32);
+    custom->bltapt = chunky + 0x2000 - 6;
+    custom->bltbpt = chunky + 0x2000 - 2;
+    custom->bltdpt = planes + 0x2000 - 2;
+    custom->bltsize = BLTSIZE_VAL(2, 0);
   }
 
-  WaitBlitter();
-  return;
-  // już tutaj dane sie nie zgadzają z symulacją
-  /*
-
-    b ball.c:373
-    x/16t chunky
-    x/16t planes
-    zauwazmy ze po 8x4:
-       chunky[0] = planes[0], chunky[1] = planes[4]
-       chunky[2] = planes[2], chunky[3] = planes[6] ...
-     trzeba znalezc jak poustawiać wskazniki zeby sie zgadzało.
-  */
-  
-  //Swap 4x2, pass 1
-  {
-    WaitBlitter();
-
-    /* ((a >> 4) & 0x0F0F) | (b & ~0x0F0F) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(4);
-    custom->bltcon1 = 0;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = C2P_MASK1;
-
-    custom->bltapt = planes + 2;
-    custom->bltbpt = planes;
-    custom->bltdpt = chunky;
-    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
-  }
-  // Swap 4x2, pass 2
-  {
-    WaitBlitter();
-
-    /* ((a << 4) & ~0x0F0F) | (b & 0x0F0F) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
-    custom->bltcon1 = BLITREVERSE;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 2;
-    custom->bltbmod = 2;
-    custom->bltdmod = 2;
-    custom->bltcdat = C2P_MASK1;
-
-    custom->bltapt = planes;
-    custom->bltbpt = planes + 2;
-    custom->bltdpt = chunky + 2;
-    custom->bltsize = BLTSIZE_VAL(2, input->height/4);
-  }
-
-
-
-
-  
-  //Swap 2x2, pass 1
-  {
-    WaitBlitter();
-
-    /* ((a >> 4) & 0x3333) | (b & ~0x3333) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(4);
-    custom->bltcon1 = 0;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 4;
-    custom->bltbmod = 4;
-    custom->bltdmod = 4;
-    custom->bltcdat = C2P_MASK2;
-
-    custom->bltapt = chunky + 4;
-    custom->bltbpt = chunky;
-    custom->bltdpt = planes;
-    custom->bltsize = BLTSIZE_VAL(1, input->height/2);
-  }
-  // Swap 2x2, pass 2
-  {
-    WaitBlitter();
-
-    /* ((a << 4) & ~0x0F0F) | (b & 0x0F0F) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
-    custom->bltcon1 = BLITREVERSE;
-    custom->bltafwm = -1;
-    custom->bltalwm = -1;
-    custom->bltamod = 4;
-    custom->bltbmod = 4;
-    custom->bltdmod = 4;
-    custom->bltcdat = C2P_MASK2;
-
-    custom->bltapt = chunky;
-    custom->bltbpt = chunky + 4;
-    custom->bltdpt = planes + 4;
-    custom->bltsize = BLTSIZE_VAL(1, input->height/2);
-  }
-
-
-
-
-
-
-  
+  // SO FAR SO GOOD :D
+  // TODO: maximum blit size is 0x2000 bytes (height = 1024 -> BLITH = 0).
+  // For a full 4bp screen c2p, the field size is 0xa000. Therefore we have to blit 5 times.
   
   WaitBlitter();
   return;
