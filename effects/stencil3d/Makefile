@@ -1,7 +1,6 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/flower.c data/kurak-head.c data/pattern-?-?.c \
-	data/background-data.{c,png} data/background-pal.{c,png}
+CLEAN-FILES := data/kurak-head.c data/background-data.* data/background-pal.*
 
 LIBS := lib3d
 

@@ -22,13 +22,7 @@ static __code int active = 0;
 #include "data/pattern-1-3.c"
 #include "data/pattern-2-1.c"
 
-#define KURAK 1
-
-#if KURAK
 #include "data/kurak-head.c"
-#else
-#include "data/flower.c"
-#endif
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -64,65 +58,8 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 
-static void SortFacesMinZ(Object3D *object) {
-  short *item = (short *)object->visibleFace;
-  short count = 0;
-
-  void *_objdat = object->objdat;
-  short *group = object->faceGroups;
-
-  do {
-    short f;
-
-    while ((f = *group++)) {
-      if (FACE(f)->flags >= 0) {
-        short minZ = 32767;
-
-        short *index = (short *)&FACE(f)->count;
-        short n = (*index++);
-        short i;
-
-        for (i = 0; i < n; i++) {
-          short j = FACE(f)->indices[i].vertex;
-          short z = VERTEX(j)->z;
-          if (z < minZ)
-            minZ = z;
-        }
-
-        *item++ = minZ;
-        *item++ = f;
-        count++;
-      }
-    }
-  } while (*group);
-
-  /* guard element */
-  *item++ = 0;
-  *item++ = -1;
-
-  SortItemArray(object->visibleFace, count);
-}
-
-static void AllFacesDoubleSided(Object3D *object) {
-  void *_objdat = object->objdat;
-  short *group = object->faceGroups;
-  short f;
-
-  do {
-    while ((f = *group++)) {
-      FACE(f)->material |= 0x80;
-    }
-  } while (*group);
-}
-
 static void Init(void) {
-#if KURAK
   object = NewObject3D(&kurak);
-  (void)AllFacesDoubleSided;
-#else
-  object = NewObject3D(&flower);
-  AllFacesDoubleSided(object);
-#endif
   object->translate.z = fx4i(-250);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -487,18 +424,12 @@ static void Render(void) {
 
   ProfilerStart(Transform);
   {
-#if KURAK
     object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
-#else
-    object->rotate.x = 0x400;
-    object->rotate.z = 0x200;
-    object->rotate.y = frameCount * 12;
-#endif
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     UpdateVertexVisibility(object);
     TransformVertices(object);
-    SortFacesMinZ(object);
+    SortFaces(object);
   }
   ProfilerStop(Transform); // Average: 163
 
