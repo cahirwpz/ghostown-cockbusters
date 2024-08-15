@@ -48,19 +48,57 @@ def append_path(to, verts, path_id, fill):
     path.attrib["fill"] = fill
 
 
-def append_frame(to, frame_svg, total_frames, frame_number, remove_color):
+def torgb(c: str) -> tuple:
+    r = int(c[1:3], 16)
+    g = int(c[3:5], 16)
+    b = int(c[5:7], 16)
+    return (r, g, b)
+
+
+def near(c0: str, c1: str) -> bool:
+    a = torgb(c0)
+    b = torgb(c1)
+    d0 = a[0] - b[0]
+    d1 = a[1] - b[1]
+    d2 = a[2] - b[2]
+    return d0 * d1 + d1 * d1 + d2 * d2 < 64
+
+
+def reduce_colors(colors: set[str]) -> dict:
+    cs = sorted(colors)
+    d = {}
+
+    # take care of the first element
+    last = cs[0]
+    d[cs[0]] = last
+
+    for c in cs[1:]:
+        if near(c, last):
+            d[c] = last
+        else:
+            d[c] = c
+            last = c
+
+    return d
+
+
+def append_frame(to, frame_svg, total_frames, frame_number):
     frame_root = ET.parse(frame_svg).getroot()
     frame = append_group(to, f"frame_{frame_number}")
     polys = append_group(frame, f"polygons_frame_{frame_number}")
     append_animate_element(frame, f"anim_frame_{frame_number}",
                            total_frames, frame_number)
 
+    colors = set()
+    for stmt in frame_root:
+        colors.add(stmt.attrib.get('fill', '#000000'))
+    color_map = reduce_colors(colors)
+
     count = 0
     verts = []
     for stmt in frame_root:
         color = stmt.attrib.get('fill', '#000000')
-        if color == remove_color:
-            continue
+        color = color_map[color]
         translate = stmt.attrib.get('transform', 'translate(0,0)')
         translate = eval(translate[9:])
         for code in stmt.attrib["d"].split():
@@ -92,10 +130,6 @@ if __name__ == "__main__":
         "anim_dir",
         help="Directory containing blender animation output.")
     parser.add_argument(
-        "-r", "--remove-color",
-        help="Remove areas with color in #RRGGBB format",
-        type=str)
-    parser.add_argument(
         "-o", "--output",
         help="Output svg file name.",
         default="dancing.svg")
@@ -116,7 +150,6 @@ if __name__ == "__main__":
     animation = append_group(svg_root, "Animation")
 
     for frame_number, frame_svg in enumerate(frames_files):
-        append_frame(animation, frame_svg, total_frames, frame_number,
-                     args.remove_color)
+        append_frame(animation, frame_svg, total_frames, frame_number)
 
     ET.ElementTree(svg_root).write(args.output)
