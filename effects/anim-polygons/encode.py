@@ -191,7 +191,8 @@ if __name__ == '__main__':
         print('static short %s_frame%d[] = {' % (name, num))
 
         if args.has_colors:
-            print('  0x%04x, %s,' % (len(colors), ', '.join(f'0x{c[1:]:03}' for c in colors)))
+            colors = [f'0x{c[1:]:03}' for c in colors]
+            print('  0x%04x, %s,' % (len(colors), ', '.join(colors)))
 
         for color, poly in polys:
             if not args.has_colors:
