@@ -47,7 +47,12 @@ extern short frameTillEnd;
 
 typedef void (*EffectFuncT)(void);
 
+#define EFFECT_MAGIC 0x47544e21 /* GTN! */
+
 typedef struct Effect {
+  /* Filled with 'GTN!' - marker for loader checks. */
+  u_int magic;
+  /* Effect C-symbol dumped to string. */
   const char *name;
   /*
    * Executed in background task when other effect is running.
@@ -95,6 +100,7 @@ void EffectRun(EffectT *effect);
 
 #define EFFECT(NAME, L, U, I, K, R, V)                                         \
   EffectT NAME##Effect = {                                                     \
+    .magic = EFFECT_MAGIC,                                                     \
     .name = #NAME,                                                             \
     .Load = (L),                                                               \
     .UnLoad = (U),                                                             \

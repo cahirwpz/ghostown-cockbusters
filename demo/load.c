@@ -45,7 +45,11 @@ static LoadableT LoadExecutable(const char *path) {
   /* Assume data section is second and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
    * source file. */
-  EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT) - 8];
+  EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT)];
+  if (effect->magic != EFFECT_MAGIC) {
+    Log("%s: missing effect magic marker\n", path);
+    PANIC();
+  }
   Log("Effect: %s\n", effect->name);
   return (LoadableT){hunk, effect};
 }
