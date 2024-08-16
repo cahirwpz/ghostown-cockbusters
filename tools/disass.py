@@ -75,7 +75,7 @@ Section = Literal('.text') | Literal('.data') | Literal('.bss')
 Label = Group(
           Opt(HexDigits + Suppress(White())) +
           Opt(Suppress(HexDigits + White())) +
-          Suppress(Char('<')) + (Section | Regex('[A-Za-z0-9_]+')) +
+          Suppress(Char('<')) + (Section | Regex('[A-Za-z0-9_.]+')) +
           Opt(HexNumber) + Suppress(Char('>')))
 
 # data register direct
@@ -315,13 +315,13 @@ class InsnCost:
             if self.is_dreg(o1):
                 return self.operand_cost(4 if short else l_cost, size, o0)
             if self.is_dreg(o0):
-                return self.operand_cost(8 if short else 12, size, o0)
+                return self.operand_cost(8 if short else 12, size, o1)
 
         if mnemonic in ['eor']:
             if self.is_dreg(o1):
                 return self.operand_cost(4 if short else 8, size, o0)
             if self.is_dreg(o0):
-                return self.operand_cost(8 if short else 12, size, o0)
+                return self.operand_cost(8 if short else 12, size, o1)
 
         if mnemonic in ['cmp', 'cmpa']:
             if self.is_areg(o1):
@@ -733,7 +733,7 @@ class Disassembler:
             return []
         try:
             return Operands.parse_string(s, parse_all=True).as_list()
-        except ParseException as ex:
+        except ParseException:
             return s
 
     def _rewrite_label(self, addend, name, addr, rel):

@@ -9,8 +9,10 @@ SUBDIRS := \
 	blurred3d \
 	bumpmap-rgb \
 	butterfly-gears \
+	carrion \
 	circles \
 	credits \
+	dna3d \
 	empty \
 	flatshade \
 	flatshade-convex \
@@ -39,6 +41,7 @@ SUBDIRS := \
 	sea-anemone \
 	shapes \
 	showpchg \
+	stencil3d \
 	stripes \
 	textscroll \
 	thunders \
