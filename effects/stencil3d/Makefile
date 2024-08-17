@@ -1,6 +1,7 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/kurak-head.c data/background-data.* data/background-pal.* data/pattern-?-?.c
+CLEAN-FILES := data/kurak-head.c data/background-data.* data/background-pal.* \
+	data/pattern-?-?.c data/kurak-head-anim.c
 
 LIBS := lib3d
 
@@ -13,10 +14,15 @@ PNG2C.pattern-2-1 := --bitmap pattern_2_1,256x256x2 --palette pattern_2,4
 PNG2C.pattern-2-2 := --bitmap pattern_2_2,256x256x2
 PNG2C.pattern-2-3 := --bitmap pattern_2_3,256x256x2
 OBJ2C.flower := --scale 30.0 --mesh-name flower
-OBJ2C.kurak-head := --scale 2.7 --mesh-name kurak
+OBJ2C.kurak-head := --scale 127 --mesh-name kurak
+ANIM2C.kurak-head-anim := --name kurak_head_anim --scale 127
 
 include $(TOPDIR)/build/effect.mk
 
 %-data.png %-pal.png: %.png
 	@echo "[SPLITIMG] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(TOPDIR)/effects/carrion/data/split-img.py 4 $<
+
+data/%.c: data/%.csv
+	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(TOPDIR)/effects/stencil3d/data/anim2c.py $(ANIM2C.$*) $< > $@

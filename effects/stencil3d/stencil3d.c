@@ -25,6 +25,7 @@ static __code int active = 0;
 #include "data/pattern-2-3.c"
 
 #include "data/kurak-head.c"
+#include "data/kurak-head-anim.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -62,7 +63,7 @@ static CopListT *MakeCopperList(void) {
 
 static void Init(void) {
   object = NewObject3D(&kurak);
-  object->translate.z = fx4i(-250);
+  object->translate.z = fx4i(-256);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -441,7 +442,23 @@ static void Render(void) {
 
   ProfilerStart(Transform);
   {
+#if 0
+    short *frame = kurak_head_anim[(frameCount >> 1) % kurak_head_anim_frames];
+    object->translate.x = *frame++;
+    object->translate.y = *frame++;
+    object->translate.z = *frame++;
+    object->translate.z += fx4i(-256);
+    object->rotate.x = *frame++;
+    object->rotate.y = *frame++;
+    object->rotate.z = *frame++;
+    object->scale.x = *frame++;
+    object->scale.y = *frame++;
+    object->scale.z = *frame++;
+#else
+    (void)kurak_head_anim;
     object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
+#endif
+
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     UpdateVertexVisibility(object);
