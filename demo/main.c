@@ -38,6 +38,7 @@ static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
 }
 
+#if 0
 static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
@@ -53,6 +54,7 @@ static void UnLoadEffects(EffectT **effects) {
     EffectUnLoad(effect);
   }
 }
+#endif
 
 void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   volatile short *reg = &custom->color[start];
@@ -167,13 +169,9 @@ int main(void) {
       TrackInit(*trkp++);
   }
 
-  LoadEffects(AllEffects);
-
   AllEffects[0]->Init();
   RunEffects();
   AllEffects[0]->Kill();
-
-  UnLoadEffects(AllEffects);
 
   KillFileSys();
 

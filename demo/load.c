@@ -41,7 +41,7 @@ typedef struct Loadable {
 static LoadableT LoadExecutable(const char *path) {
   FileT *file;
   HunkT *hunk;
-  u_int *ptr;
+  u_char *ptr;
 
   Log("[Effect] Downloading '%s'\n", path);
 
@@ -50,11 +50,11 @@ static LoadableT LoadExecutable(const char *path) {
   /* Assume code section is first and effect definition is at its end.
     * That should be the case as the effect definition is always the last in
     * source file. */
-  ptr = (u_int *)&hunk->data[hunk->size - sizeof(EffectT)];
+  ptr = &hunk->data[hunk->size - sizeof(EffectT)];
   while ((u_char *)ptr >= hunk->data) {
-    if (*ptr == EFFECT_MAGIC)
+    if (*(u_int *)ptr == EFFECT_MAGIC)
       goto exit;
-    ptr--;
+    ptr -= 2;
   }
   Log("%s: missing effect magic marker\n", path);
   PANIC();
@@ -124,6 +124,7 @@ void LoadDemo(EffectT **effects) {
   RemIntServer(INTB_VERTB, ProgressBarInterrupt);
 
   DisableDMA(DMAF_RASTER);
+  CopListStop();
   DeleteCopList(cp);
 
   DeleteBitmap(screen);
