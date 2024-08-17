@@ -39,22 +39,27 @@ typedef struct Loadable {
 } LoadableT;
 
 static LoadableT LoadExecutable(const char *path) {
+  FileT *file;
+  HunkT *hunk;
+  u_int *ptr;
+
   Log("[Effect] Downloading '%s'\n", path);
 
-  {
-    FileT *file = OpenFile(path);
-    HunkT *hunk = LoadHunkList(file);
-    HunkT *data = hunk->next;
-    /* Assume data section is second and effect definition is at its end.
-   * That should be the case as the effect definition is always the last in
-   * source file. */
-    EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT)];
-    if (effect->magic != EFFECT_MAGIC) {
-      Log("%s: missing effect magic marker\n", path);
-      PANIC();
-    }
-    return (LoadableT){hunk, effect};
+  file = OpenFile(path);
+  hunk = LoadHunkList(file);
+  /* Assume code section is first and effect definition is at its end.
+    * That should be the case as the effect definition is always the last in
+    * source file. */
+  ptr = (u_int *)&hunk->data[hunk->size - sizeof(EffectT)];
+  while ((u_char *)ptr >= hunk->data) {
+    if (*ptr == EFFECT_MAGIC)
+      goto exit;
+    ptr--;
   }
+  Log("%s: missing effect magic marker\n", path);
+  PANIC();
+exit:
+  return (LoadableT){hunk, (EffectT *)ptr};
 }
 
 LoadableT ProtrackerHandle;

@@ -11,7 +11,7 @@ LDSCRIPT := demo.lds
 CLEAN-FILES := data/loader.c
 
 SOURCES := main.c load.c empty.c
-LOADABLES := spooky-town.exe playpt.exe uvmap-rgb.exe bumpmap-rgb.exe
+LOADABLES := spooky-town.exe playpt.exe dna3d.exe stencil3d.exe
 MAIN := #
 
 DEMO := 1

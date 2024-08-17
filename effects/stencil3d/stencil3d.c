@@ -444,4 +444,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(FlatShade, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Stencil3D, NULL, NULL, Init, Kill, Render, NULL);

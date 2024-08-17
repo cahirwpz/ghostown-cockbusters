@@ -93,7 +93,7 @@ void EffectUnLoad(EffectT *effect);
 void EffectRun(EffectT *effect);
 
 #define EFFECT(NAME, L, U, I, K, R, V)                                         \
-  EffectT NAME##Effect = {                                                     \
+  __code EffectT NAME##Effect = {                                              \
     .magic = EFFECT_MAGIC,                                                     \
     .name = #NAME,                                                             \
     .Load = (L),                                                               \

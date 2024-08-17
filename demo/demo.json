@@ -4,6 +4,6 @@
     "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
     "playpt/playpt.o"
   ],
-  "Stencil3D": ["stencil3d/stencil3d.o"],
-  "Dna3D": ["dna3d/dna3d.o"]
+  "Dna3D": ["dna3d/dna3d.o"],
+  "Stencil3D": ["stencil3d/stencil3d.o"]
 }

@@ -29,12 +29,12 @@
 #include "data/necrocoq-09.c"
 #include "data/necrocoq-10.c"
 
-static Object3D *object;
-static CopListT *cp;
-static BitmapT *screen[2];
-static CopInsPairT *bplptr;
+static __code Object3D *object;
+static __code CopListT *cp;
+static __code BitmapT *screen[2];
+static __code CopInsPairT *bplptr;
 static CopInsT *linecol[necrocoq_height];
-static int active = 0;
+static __code int active = 0;
 
 static u_short *necrochicken_cols[11] = {
   necrocoq_00_cols_pixels,
