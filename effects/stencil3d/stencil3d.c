@@ -68,7 +68,7 @@ static void Init(void) {
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  buffer = NewBitmap(WIDTH, HEIGHT, 1, 0);
+  buffer = NewBitmap(WIDTH, HEIGHT, 1, BM_CLEAR);
 
   /* keep the buffer as the last bitplane of both screens */
   screen[0]->planes[DEPTH] = buffer->planes[0];
@@ -89,8 +89,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  CopListStop();
   DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
+  CopListStop();
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);
