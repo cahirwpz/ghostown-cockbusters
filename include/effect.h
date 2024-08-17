@@ -92,12 +92,6 @@ void EffectKill(EffectT *effect);
 void EffectUnLoad(EffectT *effect);
 void EffectRun(EffectT *effect);
 
-#if defined(INTRO) || defined(DEMO)
-#define EFFECT_ALIAS(NAME)
-#else
-#define EFFECT_ALIAS(NAME) ALIAS(NAME##Effect, Effect)
-#endif
-
 #define EFFECT(NAME, L, U, I, K, R, V)                                         \
   EffectT NAME##Effect = {                                                     \
     .magic = EFFECT_MAGIC,                                                     \
@@ -108,8 +102,7 @@ void EffectRun(EffectT *effect);
     .Kill = (K),                                                               \
     .Render = (R),                                                             \
     .VBlank = (V)                                                              \
-  };                                                                           \
-  EFFECT_ALIAS(NAME);
+  };
 
 typedef struct Profile {
   const char *name;

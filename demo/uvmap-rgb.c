@@ -1,1 +1,0 @@
-../effects/uvmap-rgb/uvmap-rgb.c

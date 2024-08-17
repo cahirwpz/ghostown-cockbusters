@@ -1,4 +1,4 @@
 {
-  "UVMapRGB": ["uvmap-rgb.o"],
-  "BumpMapRGB": ["bumpmap-rgb.o"]
+  "UVMapRGB": ["uvmap-rgb/uvmap-rgb.o"],
+  "BumpMapRGB": ["bumpmap-rgb/bumpmap-rgb.o"]
 }

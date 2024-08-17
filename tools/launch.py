@@ -3,14 +3,16 @@
 import argparse
 import os
 import os.path
-import shutil
 import shlex
 import subprocess
 from libtmux import Server, Session, exc
 
 
 def HerePath(*components):
-    return os.path.join(os.getenv('TOPDIR', ''), *components)
+    path = os.path.join(os.getenv('TOPDIR', ''), *components)
+    if not os.path.exists(path):
+        print(f"warning: '{path}' does not exists")
+    return path
 
 
 SOCKET = 'fsuae'
