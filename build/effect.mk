@@ -47,7 +47,9 @@ include $(TOPDIR)/build/common.mk
 
 ifeq ($(DEMO), 1)
 CFLAGS := $(filter-out -msmall-code, $(CFLAGS))
-EFFECT_NAME := 
+endif
+
+ifneq (,$(wildcard $(EFFECT).c))
 LDFLAGS_EXTRA ?= -defsym=_Effect=_$(shell sed -ne 's/EFFECT.\([^,]*\).*/\1/p' $(EFFECT).c)Effect
 endif
 

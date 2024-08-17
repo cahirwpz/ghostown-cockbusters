@@ -20,12 +20,6 @@
 #include <system/memfile.h>
 #include <system/file.h>
 
-extern u_char Module[];
-extern u_char Samples[];
-#if DELTA == 1
-extern u_char SamplesSize[];
-#endif
-
 extern EffectT EmptyEffect;
 
 short frameFromStart;
@@ -101,18 +95,7 @@ static int VBlankISR(void) {
 
 INTSERVER(VBlankInterrupt, 0, (IntFuncT)VBlankISR, NULL);
 
-#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 3)
-
 static void RunEffects(void) {
-  /* Set the beginning of intro. Useful for effect synchronization! */
-  short pos = 0;
-
-  frameCount = SYNCPOS(pos);
-  SetFrameCounter(frameCount);
-  PtData.mt_SongPos = pos >> 8;
-  PtData.mt_PatternPos = (pos & 0x3f) << 4;
-  PtEnable = -1;
-
   AddIntServer(INTB_VERTB, VBlankInterrupt);
 
   for (;;) {
@@ -151,28 +134,6 @@ static void RunEffects(void) {
   RemIntServer(INTB_VERTB, VBlankInterrupt);
 }
 
-#if DELTA == 1
-static void DecodeSamples(u_char *smp, int size) {
-  u_char data = *smp++;
-  short n = (size + 7) / 8 - 1;
-  short k = size & 7;
-
-  Log("[Init] Decoding delta samples (%d bytes)\n", size);
-
-  switch (k) {
-  case 0: do { data += *smp; *smp++ = data;
-  case 7:      data += *smp; *smp++ = data;
-  case 6:      data += *smp; *smp++ = data;
-  case 5:      data += *smp; *smp++ = data;
-  case 4:      data += *smp; *smp++ = data;
-  case 3:      data += *smp; *smp++ = data;
-  case 2:      data += *smp; *smp++ = data;
-  case 1:      data += *smp; *smp++ = data;
-          } while (--n != -1);
-  }
-}
-#endif
-
 extern void LoadDemo(EffectT **);
 
 #define ROMADDR 0xf80000
@@ -199,12 +160,6 @@ int main(void) {
 
   ResetSprites();
   LoadDemo(AllEffects);
-#if DELTA == 1
-  Log("[Init] Decoding samples\n");
-  DecodeSamples(Samples, (int)SamplesSize);
-#endif
-  PtInstallCIA();
-  PtInit(Module, Samples, 0);
 
   {
     TrackT **trkp = AllTracks;
@@ -214,10 +169,9 @@ int main(void) {
 
   LoadEffects(AllEffects);
 
+  AllEffects[0]->Init();
   RunEffects();
-
-  PtEnd();
-  PtRemoveCIA();
+  AllEffects[0]->Kill();
 
   UnLoadEffects(AllEffects);
 

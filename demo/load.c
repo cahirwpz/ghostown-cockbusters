@@ -54,17 +54,27 @@ static LoadableT LoadExecutable(const char *path) {
   return (LoadableT){hunk, effect};
 }
 
+LoadableT ProtrackerHandle;
 LoadableT UVMapHandle;
 LoadableT BumpMapHandle;
 
 static void LoadData(EffectT **effects) {
-  UVMapHandle = LoadExecutable("uvmap-rgb.exe");
+  LoadProgress = 0;
+
+  ProtrackerHandle = LoadExecutable("playpt.exe");
   LoadProgress = 64;
+  effects[0] = ProtrackerHandle.effect;
+  EffectLoad(effects[0]);
+
+  UVMapHandle = LoadExecutable("uvmap-rgb.exe");
+  LoadProgress = 128;
   effects[1] = UVMapHandle.effect;
+  EffectLoad(effects[1]);
 
   BumpMapHandle = LoadExecutable("bumpmap-rgb.exe");
-  LoadProgress = 128;
+  LoadProgress = 196;
   effects[2] = BumpMapHandle.effect;
+  EffectLoad(effects[2]);
 
   while (LoadProgress < 256) {
     LoadProgress++;

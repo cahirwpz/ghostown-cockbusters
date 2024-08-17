@@ -1,4 +1,9 @@
 {
+  "Protracker": [
+    "playpt/data/JazzCat-ElectricLifeforms-Delta.smp.o",
+    "playpt/data/JazzCat-ElectricLifeforms.trk.o",
+    "playpt/playpt.o"
+  ],
   "UVMapRGB": ["uvmap-rgb/uvmap-rgb.o"],
   "BumpMapRGB": ["bumpmap-rgb/bumpmap-rgb.o"]
 }
