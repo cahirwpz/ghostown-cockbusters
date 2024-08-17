@@ -260,12 +260,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     /* ((a << 8) & ~0x00FF) | (b & 0x00FF) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(8);
     custom->bltcon1 = BLITREVERSE;
-    //custom->bltafwm = -1;
-    //custom->bltalwm = -1;      //
-    //custom->bltamod = 4;       // These stay unchanged. remove them later
-    //custom->bltbmod = 4;       // 
-    //custom->bltdmod = 4;
-    //custom->bltcdat = C2P_MASK0;
 
     custom->bltapt = chunky + 0x2000 - 6;
     custom->bltbpt = chunky + 0x2000 - 2;
@@ -278,6 +272,69 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   // For a full 4bp screen c2p, the field size is 0xa000. Therefore we have to blit 5 times.
   
   WaitBlitter();
+
+  // Swap 4x2, pass 1
+  {
+    WaitBlitter();
+
+    /* ((a >> 4) & 0x0F0F) | (b & ~0x0F0F) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(4);
+    custom->bltcon1 = 0;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 2;
+    custom->bltbmod = 2;
+    custom->bltdmod = 2;
+    custom->bltcdat = C2P_MASK1;
+
+    custom->bltapt = planes + 2;
+    custom->bltbpt = planes;
+    custom->bltdpt = chunky;
+    custom->bltsize = BLTSIZE_VAL(1, 0);
+  }
+  WaitBlitter();
+
+  // Swap 4x2, pass 2
+  {
+    WaitBlitter();
+
+    /* ((a << 4) & ~0x0F0F) | (b & 0x0F0F) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
+    custom->bltcon1 = BLITREVERSE;
+
+    custom->bltapt = planes + 0x1000 - 8; //te ptry są źle
+    custom->bltbpt = planes + 0x1000 - 6;
+    custom->bltdpt = chunky + 0x1000 - 6;
+    custom->bltsize = BLTSIZE_VAL(1, 0);
+  }
+  WaitBlitter();
+  // so far data is OK
+
+
+
+  // Swap 2x2, pass 1
+  {
+    WaitBlitter();
+
+    /* ((a >> 2) & 0x3333) | (b & ~0x3333) */
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(2);
+    custom->bltcon1 = 0;
+    custom->bltafwm = -1;
+    custom->bltalwm = -1;
+    custom->bltamod = 4;
+    custom->bltbmod = 4;
+    custom->bltdmod = 4;
+    custom->bltcdat = C2P_MASK2;
+
+    custom->bltapt = chunky + 4;
+    custom->bltbpt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = BLTSIZE_VAL(2, 0);
+  }
+  WaitBlitter();
+
+  // pierwsze 2 slowa są dobrze, reszty nie rozpisałem na papierze ale chyba OK
+  
   return;
 
 }
