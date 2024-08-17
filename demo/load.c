@@ -39,7 +39,7 @@ typedef struct Loadable {
 } LoadableT;
 
 static LoadableT LoadExecutable(const char *path) {
-  Log("Loading '%s'...\n", path);
+  Log("[Effect] Downloading '%s'\n", path);
 
   {
     FileT *file = OpenFile(path);
@@ -53,7 +53,6 @@ static LoadableT LoadExecutable(const char *path) {
       Log("%s: missing effect magic marker\n", path);
       PANIC();
     }
-    Log("Effect: %s\n", effect->name);
     return (LoadableT){hunk, effect};
   }
 }
