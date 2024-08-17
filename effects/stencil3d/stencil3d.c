@@ -28,6 +28,10 @@ static CopListT *MakeCopperList(void) {
   CopListT *cp =
     NewCopList(100 + background_height * (background_cols_width + 3));
 
+  /* bitplane modulos for both playfields */
+  CopMove16(cp, bpl1mod, 0);
+  CopMove16(cp, bpl2mod, 0);
+
   CopWait(cp, Y(-1), 0);
 
   bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
@@ -85,7 +89,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER);
+  CopListStop();
+  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);

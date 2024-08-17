@@ -62,6 +62,9 @@ CopListT *CopListFinish(CopListT *list);
  * @warning This function busy-waits for vertical blank. */
 void CopListActivate(CopListT *list);
 
+/* @brief Stop executing current copper list immediately. */
+void CopListStop(void);
+
 /* @brief Set up copper list to start after vertical blank. */
 static inline void CopListRun(CopListT *list) {
   custom->cop1lc = (u_int)list->entry;

@@ -11,8 +11,6 @@
 
 #define screen_bplSize (WIDTH * HEIGHT / 8)
 
-#define TZ (-256)
-
 #include "data/bobs.c"
 #include "data/bobs_gradient.c"
 #include "data/dna.c"
@@ -79,6 +77,10 @@ static CopListT *MakeCopperList(void) {
   CopListT *cp = 
     NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
 
+  /* bitplane modulos for both playfields */
+  CopMove16(cp, bpl2mod, WIDTH / 8 * (necrocoq_depth - 1));
+  CopMove16(cp, bpl1mod, WIDTH / 8 * (DEPTH - 1));
+
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
 
@@ -123,7 +125,7 @@ static CopListT *MakeCopperList(void) {
 }
 static void Init(void) {
   object = NewObject3D(&dna_helix);
-  object->translate.z = fx4i(TZ);
+  object->translate.z = fx4i(-256);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
@@ -135,9 +137,6 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
-  /* bitplane modulos for both playfields */
-  custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
-  custom->bpl2mod = WIDTH / 8 * (necrocoq_depth - 1);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -145,8 +144,9 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DeleteCopList(cp);
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
+  CopListStop();
+  DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
   DeleteObject3D(object);

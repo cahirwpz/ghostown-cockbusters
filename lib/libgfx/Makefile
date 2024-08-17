@@ -10,8 +10,9 @@ SOURCES := \
 	ColorTab.c \
 	ColorTransition.c \
 	CopListActivate.c \
-	CopListReset.c \
 	CopListFinish.c \
+	CopListReset.c \
+	CopListStop.c \
 	CopLoadColor.c \
 	CopLoadColorArray.c \
 	CopSetupBitplaneArea.c \
