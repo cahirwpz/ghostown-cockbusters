@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ../..)
 
-MODULE := JazzCat-ElectricLifeforms
+MODULE := JazzCat-XenoCoq
 OBJECTS := data/$(MODULE).trk.o
 DELTA := 1
 
@@ -12,11 +12,11 @@ endif
 
 CPPFLAGS += -DDELTA=$(DELTA)
 
-CLEAN-FILES := data/$(MODULE)*.o data/$(MODULE).smp data/$(MODULE).trk
-
 LIBS := libpt
 
 include $(TOPDIR)/build/effect.mk
+
+CLEAN-FILES += data/$(MODULE)*.o data/$(MODULE).smp data/$(MODULE).trk
 
 data/%.trk data/%.smp: data/%.mod
 	$(PYTHON3) $(TOPDIR)/effects/playpt/data/ptsplit.py $^

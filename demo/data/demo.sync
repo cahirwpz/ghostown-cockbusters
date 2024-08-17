@@ -1,5 +1,5 @@
 @track EffectNumber
 $0000 1 !step
-$0200 2 !step
+$0400 2 !step
 $1000 -1
 @end

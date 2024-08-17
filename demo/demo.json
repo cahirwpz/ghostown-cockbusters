@@ -1,9 +1,9 @@
 {
   "Protracker": [
-    "playpt/data/JazzCat-ElectricLifeforms-Delta.smp.o",
-    "playpt/data/JazzCat-ElectricLifeforms.trk.o",
+    "playpt/data/JazzCat-XenoCoq.trk.o",
+    "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
     "playpt/playpt.o"
   ],
-  "UVMapRGB": ["uvmap-rgb/uvmap-rgb.o"],
-  "BumpMapRGB": ["bumpmap-rgb/bumpmap-rgb.o"]
+  "Stencil3D": ["stencil3d/stencil3d.o"],
+  "Dna3D": ["dna3d/dna3d.o"]
 }

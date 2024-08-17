@@ -39,19 +39,23 @@ typedef struct Loadable {
 } LoadableT;
 
 static LoadableT LoadExecutable(const char *path) {
-  FileT *file = OpenFile(path);
-  HunkT *hunk = LoadHunkList(file);
-  HunkT *data = hunk->next;
-  /* Assume data section is second and effect definition is at its end.
+  Log("Loading '%s'...\n", path);
+
+  {
+    FileT *file = OpenFile(path);
+    HunkT *hunk = LoadHunkList(file);
+    HunkT *data = hunk->next;
+    /* Assume data section is second and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
    * source file. */
-  EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT)];
-  if (effect->magic != EFFECT_MAGIC) {
-    Log("%s: missing effect magic marker\n", path);
-    PANIC();
+    EffectT *effect = (EffectT *)&data->data[data->size - sizeof(EffectT)];
+    if (effect->magic != EFFECT_MAGIC) {
+      Log("%s: missing effect magic marker\n", path);
+      PANIC();
+    }
+    Log("Effect: %s\n", effect->name);
+    return (LoadableT){hunk, effect};
   }
-  Log("Effect: %s\n", effect->name);
-  return (LoadableT){hunk, effect};
 }
 
 LoadableT ProtrackerHandle;
@@ -66,12 +70,12 @@ static void LoadData(EffectT **effects) {
   effects[0] = ProtrackerHandle.effect;
   EffectLoad(effects[0]);
 
-  UVMapHandle = LoadExecutable("uvmap-rgb.exe");
+  UVMapHandle = LoadExecutable("dna3d.exe");
   LoadProgress = 128;
   effects[1] = UVMapHandle.effect;
   EffectLoad(effects[1]);
 
-  BumpMapHandle = LoadExecutable("bumpmap-rgb.exe");
+  BumpMapHandle = LoadExecutable("stencil3d.exe");
   LoadProgress = 196;
   effects[2] = BumpMapHandle.effect;
   EffectLoad(effects[2]);

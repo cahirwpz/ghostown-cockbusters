@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ..)
 
-SUBDIRS := playpt bumpmap-rgb uvmap-rgb
+SUBDIRS := playpt dna3d stencil3d
 
 DELTA := 1
 
@@ -19,7 +19,7 @@ export DEMO
 
 CPPFLAGS += -I.
 LDFLAGS_EXTRA :=
-LIBS := libpt
+LIBS := libpt lib3d
 
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader,2
 

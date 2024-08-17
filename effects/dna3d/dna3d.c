@@ -550,4 +550,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Bobs3D, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, NULL);
