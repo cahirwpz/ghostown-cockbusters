@@ -46,8 +46,8 @@ static short ufo_h = 25;
 static short active = 0;
 static short counter = 0;
 static short active_pal = 0;
-static short coq_pos = 80;
-// static short coq_pos = 255-24;
+// static short coq_pos = 80;
+static short coq_pos = 255-24;
 static short beam_l = X(137);
 static short beam_r = X(167);
 // static short beam_m = Y(56);
@@ -147,13 +147,30 @@ static void Abduct(void) {
       phase = RETRACT_BEAM;
     }
   }
+
+  if (counter % 8 == 0) {
+    (void)SwitchBeamPal;
+    SwitchBeamPal();
+  }
 }
 
 static void RetractBeam(void) {
+  static unsigned short Gradient[15] = {
+    0xcef,0xcdf,0xbce,0xacd,0x9bc,0x8ab,0x79a,0x689,
+    0x578,0x478,0x367,0x356,0x245,0x144,0x034
+  };
+  static short idx = 0;
   static short h = 224;
   Area2D ring_area = {133, h, RING_W, RING_H};
 
-  if (counter % 10 == 0) {
+  if (counter % 2 == 0) {
+      active_pal = 0;
+      beam_pal[0][0] = Gradient[idx];
+      beam_pal[0][1] = Gradient[idx];
+      beam_pal[0][2] = Gradient[idx];
+      SwitchBeamPal();
+      ++idx;
+
     SpriteUpdatePos(&side_beam_l, ++beam_l, Y(56));
     SpriteUpdatePos(&side_beam_r, --beam_r, Y(56));
 
@@ -166,24 +183,25 @@ static void RetractBeam(void) {
     if (beam_l >= X(137+15)) {
       SpriteUpdatePos(&side_beam_l, 0, 0);
       SpriteUpdatePos(&side_beam_r, 0, 0);
-
-      mid_beam.height -= 10;
-      mid_beam.sprdat->ctl = SPRCTL(0, 0, false, mid_beam.height);
-
-      if (mid_beam.height <= 50) {
-        SpriteUpdatePos(&mid_beam, 0, 0);
-        SpriteUpdatePos(&coq, 0, 0);
-        phase = ESCAPE;
-      }
+      SpriteUpdatePos(&coq, 0, 0);
+      phase = ESCAPE;
     }
   }
 }
 
 static void Escape(void) {
+  Area2D ring_area = {132, ufo_h + UFO_H - 2, RING_W, RING_H};
+
+  BitmapClearArea(screen[0], &ring_area);
+  BitmapClearArea(screen[1], &ring_area);
+
   --ufo_h;
   DrawUfo(screen[0]);
   DrawUfo(screen[1]);
   if (ufo_h < -37) {
+    ring_area.y = 0;
+    BitmapClearArea(screen[0], &ring_area);
+    BitmapClearArea(screen[1], &ring_area);
     phase = END;
   }
 }
@@ -279,10 +297,6 @@ static void Render(void) {
   ProfilerStart(Abduction);
   {
     ++counter;
-
-    if (counter % 8 == 0) {
-      SwitchBeamPal();
-    }
 
     switch (phase) {
       case ABDUCT:
