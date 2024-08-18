@@ -7,11 +7,13 @@
 #include <common.h>
 #include <2d.h>
 
+#include "data/bkg.c"
 #include "data/ufo.c"
 #include "data/ring.c"
 #include "data/coq.c"
-#include "data/beam.c"
-#include "data/bkg.c"
+#include "data/mid_beam.c"
+#include "data/side_beam_l.c"
+#include "data/side_beam_r.c"
 
 
 #define WIDTH 320
@@ -25,11 +27,12 @@
 #define UFO_H 39
 
 
-// typedef enum phase {
-//   ABDUCT,
-//   RETRACT_BEAM,
-//   ESCAPE
-// } phaseE;
+typedef enum phase {
+  ABDUCT,
+  RETRACT_BEAM,
+  ESCAPE,
+  END
+} phaseE;
 
 
 static BitmapT *screen[2];
@@ -38,28 +41,41 @@ static CopInsPairT *sprptr;
 static CopListT *cp;
 static CopInsT *beam_pal_cp;
 
-// static phaseE phase = ABDUCT;
+static phaseE phase = ABDUCT;
+static short ufo_h = 25;
 static short active = 0;
 static short counter = 0;
 static short active_pal = 0;
-static short coq_pos = 255-24;
-static short beam_pal[8][3] = {
-  {0x55F, 0x77F, 0xBBF},
-  {0x66F, 0x88F, 0xCCF},
-  {0x77F, 0x99F, 0xDDF},
-  {0x88F, 0xAAF, 0xEEF},
-  {0x99F, 0xBBF, 0xFFF},
-  {0x88F, 0xAAF, 0xEEF},
-  {0x77F, 0x99F, 0xDDF},
-  {0x66F, 0x88F, 0xCCF},
+static short coq_pos = 80;
+// static short coq_pos = 255-24;
+static short beam_l = X(137);
+static short beam_r = X(167);
+// static short beam_m = Y(56);
+static short beam_pal[4][7] = {
+  {0xCEF, 0xCEF, 0xCEF, 0xF0F, 0x2AD, 0x079, 0x046},
+  {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
+  {0xFFF, 0xFFF, 0xFFF, 0xF0F, 0x4CF, 0x29B, 0x268},
+  {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
 };
-Area2D bkg_area = {0, 0, WIDTH, HEIGHT};
 
 
-static void DrawUfo(void) {
+static void DrawBackground(BitmapT *dst) {
+  Area2D bkg_area = {0, 0, WIDTH, HEIGHT};
+
+  BitmapCopyArea(dst, 0, 0, &bkg, &bkg_area);
+}
+
+static void DrawUfo(BitmapT *dst) {
+  short h = ufo_h;
   Area2D ufo_area = {0, 0, UFO_W, UFO_H};
 
-  BitmapCopyArea(screen[active], 108, 25, &ufo, &ufo_area);
+  if (ufo_h <= 0) {
+    ufo_area.y = -ufo_h;
+    ufo_area.h = 39 + ufo_h;
+    h = 0;
+  }
+
+  BitmapCopyArea(dst, 108, h, &ufo, &ufo_area);
 }
 
 static void DrawRing(short height) {
@@ -78,12 +94,34 @@ static void DrawRing(short height) {
   BitmapCopyArea(screen[active], 133, height, &ring, &ring_area);
 }
 
+static void ClearRing(short height) {
+  Area2D ring_area = {133, height, RING_W, RING_H};
+
+  if (height < 64) {
+    ring_area.y = 64 - height;
+    ring_area.h = RING_H - (64 - height);
+    height = 64;
+  }
+
+  if (height + RING_H >= HEIGHT - 16) {
+    ring_area.h = HEIGHT - height - 16;
+  }
+
+  BitmapClearArea(screen[active], &ring_area);
+}
+
 static void SwitchBeamPal(void) {
   CopInsT *ins = beam_pal_cp;
 
   CopInsSet16(ins++, beam_pal[active_pal][0]);
   CopInsSet16(ins++, beam_pal[active_pal][1]);
   CopInsSet16(ins++, beam_pal[active_pal][2]);
+  CopInsSet16(ins++, beam_pal[active_pal][3]);
+  CopInsSet16(ins++, beam_pal[active_pal][4]);
+  CopInsSet16(ins++, beam_pal[active_pal][5]);
+  CopInsSet16(ins++, beam_pal[active_pal][6]);
+
+  active_pal = (active_pal + 1) % 4;
 }
 
 static void Abduct(void) {
@@ -93,7 +131,7 @@ static void Abduct(void) {
   for (i = 64; i <= 256 - 16; i += RING_H) {
     DrawRing(i - mod);
   }
-  
+
   if (counter % 2 == 0) {
     ++mod;
     if (mod >= RING_H) {
@@ -102,19 +140,52 @@ static void Abduct(void) {
   }
 
   if (counter % 3 == 0) {
-    --coq_pos;
-    if (coq_pos <= 32) {
-      coq_pos = 256;
+    if (coq_pos > 32) {
+      --coq_pos;
+      SpriteUpdatePos(&coq,  X(152), Y(coq_pos));
+    } else {
+      phase = RETRACT_BEAM;
     }
-    SpriteUpdatePos(&coq,  X(152), Y(coq_pos));
   }
+}
 
-  if (counter % 6 == 0) {
-    SwitchBeamPal();
-    active_pal = (active_pal + 1) % 8;
+static void RetractBeam(void) {
+  static short h = 224;
+  Area2D ring_area = {133, h, RING_W, RING_H};
+
+  if (counter % 10 == 0) {
+    SpriteUpdatePos(&side_beam_l, ++beam_l, Y(56));
+    SpriteUpdatePos(&side_beam_r, --beam_r, Y(56));
+
+    if (h >= 64) {
+      BitmapClearArea(screen[0], &ring_area);
+      BitmapClearArea(screen[1], &ring_area);
+      h -= 16;
+    }
+
+    if (beam_l >= X(137+15)) {
+      SpriteUpdatePos(&side_beam_l, 0, 0);
+      SpriteUpdatePos(&side_beam_r, 0, 0);
+
+      mid_beam.height -= 10;
+      mid_beam.sprdat->ctl = SPRCTL(0, 0, false, mid_beam.height);
+
+      if (mid_beam.height <= 50) {
+        SpriteUpdatePos(&mid_beam, 0, 0);
+        SpriteUpdatePos(&coq, 0, 0);
+        phase = ESCAPE;
+      }
+    }
   }
+}
 
-  DrawUfo();
+static void Escape(void) {
+  --ufo_h;
+  DrawUfo(screen[0]);
+  DrawUfo(screen[1]);
+  if (ufo_h < -37) {
+    phase = END;
+  }
 }
 
 
@@ -125,23 +196,16 @@ static CopListT *MakeCopperList(void) {
   sprptr = CopSetupSprites(cp);
 
   CopInsSetSprite(&sprptr[0], &coq);
+  CopInsSetSprite(&sprptr[2], &mid_beam);
+  CopInsSetSprite(&sprptr[4], &side_beam_l);
+  CopInsSetSprite(&sprptr[5], &side_beam_r);
 
-  CopInsSetSprite(&sprptr[2], &beam[0]);
-  CopInsSetSprite(&sprptr[3], &beam[1]);
-
-  SpriteUpdatePos(&coq,  X(152), Y(coq_pos));
-  SpriteUpdatePos(&beam[0], X(144), Y(56));
-  SpriteUpdatePos(&beam[1], X(160), Y(56));
+  SpriteUpdatePos(&coq,         X(152), Y(coq_pos));
+  SpriteUpdatePos(&mid_beam,    X(152), Y(56));
+  SpriteUpdatePos(&side_beam_l, X(137), Y(56));
+  SpriteUpdatePos(&side_beam_r, X(167), Y(56));
 
   beam_pal_cp = CopLoadColors(cp, beam_pal[0], 21);
-
-  // CopWait(cp, Y(0), X(0));
-  // CopSetColor(cp, 1, 0xAAA);
-  // CopSetColor(cp, 2, 0x0F0);
-
-  // CopWait(cp, Y(63), X(64));
-  // CopSetColor(cp, 1, 0xDDF);
-  // CopSetColor(cp, 2, 0x66F);
 
   return cp;
 }
@@ -166,6 +230,7 @@ static void Init(void) {
   SetColor(9,  0x035);
   SetColor(10, 0x034);
 
+  // Unused
   SetColor(11, 0xF0F);
   SetColor(12, 0xF0F);
   SetColor(13, 0xF0F);
@@ -178,14 +243,23 @@ static void Init(void) {
   SetColor(18, 0x2AD);
   SetColor(19, 0x00F);
   // Beam
-  SetColor(21, 0x88F);
-  SetColor(22, 0xAAF);
-  SetColor(23, 0xEEF); 
+  SetColor(21, 0xCEF);
+  SetColor(22, 0xCEF);
+  SetColor(23, 0xCEF);
+
+  SetColor(25, 0x2AD);
+  SetColor(26, 0x079);
+  SetColor(27, 0x046);
 
   cp = MakeCopperList();
   CopListActivate(cp);
 
   custom->bplcon2 = BPLCON2_PF2PRI;
+
+  DrawBackground(screen[0]);
+  DrawBackground(screen[1]);
+  DrawUfo(screen[0]);
+  DrawUfo(screen[1]);
 }
 
 static void Kill(void) {
@@ -200,21 +274,32 @@ static void Kill(void) {
 PROFILE(Abduction);
 
 static void Render(void) {
-  (void)DrawRing;
+  (void)ClearRing;
+  (void)phase;
   ProfilerStart(Abduction);
   {
     ++counter;
-    Abduct();
-    BitmapCopyArea(screen[active], 0, 0, &bkg, &bkg_area);
-    // switch (phase) {
 
-    //   case ABDUCT:
-    //     Abduct();
-    //     break;
+    if (counter % 8 == 0) {
+      SwitchBeamPal();
+    }
 
-    //   default:
-    //     break;
-    // }
+    switch (phase) {
+      case ABDUCT:
+        Abduct();
+        break;
+
+      case RETRACT_BEAM:
+        RetractBeam();
+        break;
+
+      case ESCAPE:
+        Escape();
+        break;
+
+      case END:
+        break;
+    }
   }
   ProfilerStop(Abduction);
 
