@@ -1,4 +1,5 @@
 {
+  "Loader": ["loader/loader.o"],
   "Protracker": [
     "playpt/data/JazzCat-XenoCoq.trk.o",
     "playpt/data/JazzCat-XenoCoq-Delta.smp.o",

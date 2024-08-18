@@ -8,6 +8,8 @@
 #include <sprite.h>
 #include <system/task.h>
 #include <system/interrupt.h>
+#include <system/amigahunk.h>
+#include <system/file.h>
 
 #include "demo.h"
 
@@ -19,46 +21,98 @@
 #include <system/filesys.h>
 #include <system/memfile.h>
 #include <system/file.h>
-
-extern EffectT EmptyEffect;
+#include <system/memory.h>
+#include <system/interrupt.h>
 
 short frameFromStart;
 short frameTillEnd;
 
 #include "data/demo.c"
 
-static EffectT *AllEffects[] = {
-  &EmptyEffect,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  NULL,
+#define EFF_DNA3D 0
+#define EFF_COCKSTENCIL 1
+#define EFF_ANIMCOCK 2
+#define EFF_TEXOBJ 3
+
+static __code EffectT *AllEffects[] = {
+  [EFF_DNA3D] = NULL,
+  [EFF_COCKSTENCIL] = NULL,
+  [EFF_ANIMCOCK] = NULL,
+  [EFF_TEXOBJ] = NULL,
 };
+
+static __code EffectT *Loader;
+static __code EffectT *Protracker;
+
+static __code HunkT *LoaderExe;
+static __code HunkT *ProtrackerExe;
+static __code HunkT *Dna3DExe;
+static __code HunkT *CockStencilExe;
+static __code HunkT *AnimCockExe;
+static __code HunkT *TexObjExe;
+
+static HunkT *LoadExe(const char *path, EffectT **effect_p) {
+  FileT *file;
+  HunkT *hunk;
+  u_char *ptr;
+
+  Log("[Effect] Downloading '%s'\n", path);
+
+  file = OpenFile(path);
+  hunk = LoadHunkList(file);
+  /* Assume code section is first and effect definition is at its end.
+   * That should be the case as the effect definition is always the last in
+   * source file. */
+  ptr = &hunk->data[hunk->size - sizeof(EffectT)];
+  while ((u_char *)ptr >= hunk->data) {
+    if (*(u_int *)ptr == EFFECT_MAGIC) {
+      EffectT *effect = (EffectT *)ptr;
+      Log("[Effect] Found '%s'\n", effect->name);
+      EffectLoad(effect);
+      *effect_p = effect;
+      return hunk;
+    }
+    ptr -= 2;
+  }
+  Log("%s: missing effect magic marker\n", path);
+  PANIC();
+  return NULL;
+}
+
+static void LoadDemo(void) {
+  LoaderExe = LoadExe("loader.exe", &Loader);
+  frameCount = 0;
+
+  EffectInit(Loader);
+
+  ProtrackerExe = LoadExe("playpt.exe", &Protracker);
+  frameCount = 64;
+  Loader->Render();
+
+  Dna3DExe = LoadExe("dna3d.exe", &AllEffects[EFF_DNA3D]);
+  frameCount = 96;
+  Loader->Render();
+
+  CockStencilExe = LoadExe("stencil3d.exe", &AllEffects[EFF_COCKSTENCIL]);
+  frameCount = 128;
+  Loader->Render();
+
+  AnimCockExe = LoadExe("anim-polygons.exe", &AllEffects[EFF_ANIMCOCK]);
+  frameCount = 160;
+  Loader->Render();
+
+  TexObjExe = LoadExe("texobj.exe", &AllEffects[EFF_TEXOBJ]);
+  frameCount = 192;
+  Loader->Render();
+
+  EffectKill(Loader);
+  EffectUnLoad(Loader);
+  FreeHunkList(LoaderExe);
+}
 
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
 }
-
-#if 0
-static void LoadEffects(EffectT **effects) {
-  EffectT *effect;
-  for (effect = *effects; effect; effect = *effects++) { 
-    EffectLoad(effect);
-    if (effect->Load)
-      ShowMemStats();
-  }
-}
-
-static void UnLoadEffects(EffectT **effects) {
-  EffectT *effect;
-  for (effect = *effects; effect; effect = *effects++) { 
-    EffectUnLoad(effect);
-  }
-}
-#endif
 
 void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   volatile short *reg = &custom->color[start];
@@ -140,8 +194,6 @@ static void RunEffects(void) {
   RemIntServer(INTB_VERTB, VBlankInterrupt);
 }
 
-extern void LoadDemo(EffectT **);
-
 #define ROMADDR 0xf80000
 #define ROMSIZE 0x07fff0
 #define ROMEXTADDR 0xe00000
@@ -173,7 +225,7 @@ int main(void) {
   }
 
   ResetSprites();
-  LoadDemo(AllEffects);
+  LoadDemo();
 
   {
     TrackT **trkp = AllTracks;
@@ -181,9 +233,9 @@ int main(void) {
       TrackInit(*trkp++);
   }
 
-  AllEffects[0]->Init();
+  EffectInit(Protracker);
   RunEffects();
-  AllEffects[0]->Kill();
+  EffectKill(Protracker);
 
   KillFileSys();
 
