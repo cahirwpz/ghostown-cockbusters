@@ -404,6 +404,7 @@ static void DrawObject(Object3D *object, void **planes,
 
           custom_->bltcon0 = bltcon0;
           custom_->bltcon1 = 0;
+          custom_->bltbmod = bltmod - WIDTH / 16;
           custom_->bltapt = mask;
           custom_->bltbpt = src;
           custom_->bltcpt = dst;
