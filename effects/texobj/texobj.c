@@ -301,7 +301,7 @@ static void DrawObject(Object3D *object) {
 /* If you think you can speed it up (I doubt it) please first look into
  * `c2p_2x1_4bpl_pixels_per_byte_blitter.py` in `prototypes/c2p`. */
 
-#define C2P_LAST 12
+#define C2P_LAST 13
 
 static void ChunkyToPlanar(CustomPtrT custom_) {
   register void **bpl = c2p_bpl;
@@ -451,11 +451,6 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
       break;
 
     case 11:
-      CopInsSet32(&bplptr[0], bpl[2]);
-      CopInsSet32(&bplptr[1], bpl[3]);
-      CopInsSet32(&bplptr[2], bpl[2] + BUFSIZE / 2);
-      CopInsSet32(&bplptr[3], bpl[3] + BUFSIZE / 2);
-
       /* initialize rendering buffer */
       custom_->bltdpt = bpl[0];
 #if 1
@@ -471,6 +466,13 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
 
       /* overall size: BUFSIZE * 2 bytes (chunk buffer size) */
       custom_->bltsize = BLTSIZE(WIDTH / 2, HEIGHT);
+      break;
+
+    case 12:
+      CopInsSet32(&bplptr[0], bpl[2]);
+      CopInsSet32(&bplptr[1], bpl[3]);
+      CopInsSet32(&bplptr[2], bpl[2] + BUFSIZE / 2);
+      CopInsSet32(&bplptr[3], bpl[3] + BUFSIZE / 2);
       break;
 
     default:
@@ -528,7 +530,7 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
   LoadColors(texture_colors, 0);
 
-  cp = MakeCopperList(0);
+  cp = MakeCopperList(1);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);
