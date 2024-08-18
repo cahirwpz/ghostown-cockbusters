@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ..)
 
-SUBDIRS := playpt anim-polygons dna3d stencil3d
+SUBDIRS := playpt anim-polygons dna3d stencil3d texobj
 
 DELTA := 1
 
@@ -11,7 +11,7 @@ LDSCRIPT := demo.lds
 CLEAN-FILES := data/loader.c
 
 SOURCES := main.c load.c empty.c
-LOADABLES := spooky-town.exe playpt.exe anim-polygons.exe dna3d.exe stencil3d.exe
+LOADABLES := spooky-town.exe playpt.exe anim-polygons.exe dna3d.exe stencil3d.exe texobj.exe
 MAIN := #
 
 DEMO := 1

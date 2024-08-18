@@ -90,6 +90,11 @@ static void LoadData(EffectT **effects) {
   effects[3] = AnimCockHandle.effect;
   EffectLoad(effects[3]);
 
+  AnimCockHandle = LoadExecutable("texobj.exe");
+  LoadProgress = 192;
+  effects[4] = AnimCockHandle.effect;
+  EffectLoad(effects[4]);
+
   while (LoadProgress < 256) {
     LoadProgress++;
     WaitVBlank();
