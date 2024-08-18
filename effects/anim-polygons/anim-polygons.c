@@ -19,7 +19,7 @@ static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 
-#include "data/dancing.c"
+#include "data/cock.c"
 #include "data/dancing-pal.c"
 
 /* Reading polygon data */
@@ -135,7 +135,7 @@ static inline void DrawEdge(short *coords, void *dst,
 
 static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
   static __code Point2D points[128];
-  short *data = dancing_frame[current_frame];
+  short *data = cock_frame[current_frame];
   short n;
 
   _WaitBlitter(custom_);
@@ -169,7 +169,7 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
     }
   }
 
-  if (++current_frame > dancing_frames - 5)
+  if (++current_frame > cock_frames - 5)
     current_frame = 0;
 }
 

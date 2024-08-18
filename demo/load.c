@@ -63,8 +63,9 @@ exit:
 }
 
 LoadableT ProtrackerHandle;
-LoadableT UVMapHandle;
-LoadableT BumpMapHandle;
+LoadableT Dna3DHandle;
+LoadableT CockStencilHandle;
+LoadableT AnimCockHandle;
 
 static void LoadData(EffectT **effects) {
   LoadProgress = 0;
@@ -74,15 +75,20 @@ static void LoadData(EffectT **effects) {
   effects[0] = ProtrackerHandle.effect;
   EffectLoad(effects[0]);
 
-  UVMapHandle = LoadExecutable("dna3d.exe");
-  LoadProgress = 128;
-  effects[1] = UVMapHandle.effect;
+  Dna3DHandle = LoadExecutable("dna3d.exe");
+  LoadProgress = 96;
+  effects[1] = Dna3DHandle.effect;
   EffectLoad(effects[1]);
 
-  BumpMapHandle = LoadExecutable("stencil3d.exe");
-  LoadProgress = 196;
-  effects[2] = BumpMapHandle.effect;
+  CockStencilHandle = LoadExecutable("stencil3d.exe");
+  LoadProgress = 128;
+  effects[2] = CockStencilHandle.effect;
   EffectLoad(effects[2]);
+
+  AnimCockHandle = LoadExecutable("anim-polygons.exe");
+  LoadProgress = 160;
+  effects[3] = AnimCockHandle.effect;
+  EffectLoad(effects[3]);
 
   while (LoadProgress < 256) {
     LoadProgress++;

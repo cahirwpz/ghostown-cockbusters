@@ -32,6 +32,7 @@ static EffectT *AllEffects[] = {
   NULL,
   NULL,
   NULL,
+  NULL,
 };
 
 static void ShowMemStats(void) {
