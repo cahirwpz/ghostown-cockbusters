@@ -4,7 +4,7 @@ import argparse
 import json
 from contextlib import redirect_stdout
 from string import Template
-from io import StringIO 
+from io import StringIO
 
 
 LinkerScript = Template("""

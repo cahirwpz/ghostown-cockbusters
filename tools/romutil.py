@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # Read file system image
     with open(args.image, 'rb') as f:
         img = f.read()
-    
+
     # 1024kB ROM is tricky to handle: first half is mapped at
     # 0xe00000, second half is mapped at 0xf80000 and should
     # look like normal Kickstart ROM
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     if rom.tell() + len(img) > ROMSIZE - ROMFOOTER:
         # 1024kB: Complete ROM disk image
         hi_size = ROMSIZE - ROMFOOTER - rom.tell()
-        lo_size = len(img) - hi_size 
+        lo_size = len(img) - hi_size
         rom.write(img[:hi_size])
         write_pad(rom, ROMSIZE)
         write_footer(rom)
