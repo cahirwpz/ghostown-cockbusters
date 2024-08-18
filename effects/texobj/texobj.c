@@ -345,7 +345,7 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
       custom_->bltapt = bpl[0] + BUFSIZE * 2 - 2;
       custom_->bltbpt = bpl[0] + BUFSIZE * 2 - 2;
       custom_->bltdpt = bpl[2] + BUFSIZE * 2 - 2;
-      
+
       /* ((a << 6) & 0xCC00) | (b & ~0xCC00) */
       custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(6);
       custom_->bltcon1 = BLITREVERSE;
@@ -494,13 +494,7 @@ static CopListT *MakeCopperList(short active) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  object = NewObject3D(&cube);
-  object->translate.z = fx4i(-250);
-
-  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
-
+static void Load(void) {
   ScrambleBackground();
 
   texture[0] = ScrambleTexture(texture_0_pixels);
@@ -509,13 +503,35 @@ static void Init(void) {
   texture[3] = ScrambleTexture(texture_3_pixels);
   texture[4] = ScrambleTexture(texture_4_pixels);
 
+  object = NewObject3D(&cube);
+  object->translate.z = fx4i(-256);
+}
+
+static void UnLoad(void) {
+  DeleteObject3D(object);
+
+  MemFree(texture[0]);
+  MemFree(texture[1]);
+  MemFree(texture[2]);
+  MemFree(texture[3]);
+  MemFree(texture[4]);
+}
+
+static void Init(void) {
+  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
+  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
+
+  EnableDMA(DMAF_BLITTER);
+  BitmapClear(screen[0]);
+  BitmapClear(screen[1]);
+
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
   LoadColors(texture_colors, 0);
 
   cp = MakeCopperList(0);
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER);
+  EnableDMA(DMAF_RASTER);
 
   active = 0;
   c2p_bpl = NULL;
@@ -526,23 +542,15 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER);
-
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
 
+  BlitterStop();
+  CopperStop();
   DeleteCopList(cp);
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-
-  MemFree(texture[0]);
-  MemFree(texture[1]);
-  MemFree(texture[2]);
-  MemFree(texture[3]);
-  MemFree(texture[4]);
-
-  DeleteObject3D(object);
 }
 
 PROFILE(UpdateGeometry);
@@ -576,4 +584,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(TexTri, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(TexTri, Load, UnLoad, Init, Kill, Render, NULL);

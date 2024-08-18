@@ -134,8 +134,7 @@ void LoadDemo(EffectT **effects) {
   LoadData(effects);
   RemIntServer(INTB_VERTB, ProgressBarInterrupt);
 
-  DisableDMA(DMAF_RASTER);
-  CopListStop();
+  CopperStop();
   DeleteCopList(cp);
 
   DeleteBitmap(screen);

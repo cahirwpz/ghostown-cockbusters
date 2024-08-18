@@ -12,9 +12,9 @@ SOURCES := \
 	CopListActivate.c \
 	CopListFinish.c \
 	CopListReset.c \
-	CopListStop.c \
 	CopLoadColor.c \
 	CopLoadColorArray.c \
+	CopperStop.c \
 	CopSetupBitplaneArea.c \
 	CopSetupBitplaneFetch.c \
 	CopSetupBitplanes.c \

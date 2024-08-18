@@ -127,8 +127,12 @@ static void Init(void) {
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
 
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR|BM_INTERLEAVED);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
+
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
+  BitmapClear(screen[0]);
+  BitmapClear(screen[1]);
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
@@ -140,12 +144,13 @@ static void Init(void) {
 
   cp = MakeCopperList();
   CopListActivate(cp);
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
+  EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-  CopListStop();
+  BlitterStop();
+  CopperStop();
+
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);

@@ -66,13 +66,19 @@ static void Init(void) {
   object = NewObject3D(&kurak);
   object->translate.z = fx4i(-250);
 
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  buffer = NewBitmap(WIDTH, HEIGHT, 1, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
+  buffer = NewBitmap(WIDTH, HEIGHT, 1, 0);
 
   /* keep the buffer as the last bitplane of both screens */
   screen[0]->planes[DEPTH] = buffer->planes[0];
   screen[1]->planes[DEPTH] = buffer->planes[0];
+
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
+
+  BitmapClear(screen[0]);
+  BitmapClear(screen[1]);
+  BitmapClear(buffer);
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
@@ -85,12 +91,12 @@ static void Init(void) {
 
   cp = MakeCopperList();
   CopListActivate(cp);
-  EnableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
+  EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
-  CopListStop();
+  BlitterStop();
+  CopperStop();
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);
