@@ -1,17 +1,10 @@
 TOPDIR := $(realpath ..)
 
-SUBDIRS := playpt loader anim-polygons dna3d stencil3d texobj
-
-DELTA := 1
-
-DEMONAME = Demo
-
-LDSCRIPT := demo.lds
-
-CLEAN-FILES := data/loader.c
+# the order here must be the same as in main.c and demo.json !!!
+SUBDIRS := loader playpt dna3d stencil3d anim-polygons texobj
 
 SOURCES := main.c
-LOADABLES := xenocoq.exe loader.exe playpt.exe anim-polygons.exe dna3d.exe stencil3d.exe texobj.exe
+LOADABLES := xenocoq.exe $(foreach dir, $(SUBDIRS), $(dir).exe)
 MAIN := #
 
 DEMO := 1
@@ -19,9 +12,8 @@ export DEMO
 
 CPPFLAGS += -I.
 LDFLAGS_EXTRA :=
+LDSCRIPT := demo.lds
 LIBS := libpt lib3d
-
-PNG2C.loader := --bitmap loader,64x64x1 --palette loader,2
 
 include $(TOPDIR)/build/effect.mk
 
@@ -33,11 +25,4 @@ demo.lds: demo.json
 	@echo "[LDS] $< -> $@"
 	$(PYTHON3) gen-lds.py $< $@
 
-CLEAN-FILES += demo.lds
-
-REPOHEAD := $(shell git rev-parse --short HEAD)
-
-%.exe.packed: %.exe
-	@echo "[PACK] $(DIR)$< -> $(DIR)$@"
-	Shrinkler -o -f 0xdff180 \
-	  -t "$(DEMONAME) by Ghostown (build: $(REPOHEAD))" $< $@
+CLEAN-FILES += demo.lds data/demo.c
