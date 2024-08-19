@@ -40,17 +40,16 @@ static CopInsPairT *bplptr;
 static CopInsPairT *sprptr;
 static CopListT *cp;
 static CopInsT *beam_pal_cp;
+static short active = 0;
 
 static phaseE phase = ABDUCT;
-static short ufo_h = 25;
-static short active = 0;
 static short counter = 0;
-static short active_pal = 0;
-// static short coq_pos = 80;
+
+static short ufo_pos = 25;
 static short coq_pos = 255-24;
-static short beam_l = X(137);
-static short beam_r = X(167);
-// static short beam_m = Y(56);
+static short beam_pos[2] = {X(137), X(167)};
+
+static short active_pal = 0;
 static short beam_pal[4][7] = {
   {0xCEF, 0xCEF, 0xCEF, 0xF0F, 0x2AD, 0x079, 0x046},
   {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
@@ -60,25 +59,23 @@ static short beam_pal[4][7] = {
 
 
 static void DrawBackground(BitmapT *dst) {
-  Area2D bkg_area = {0, 0, WIDTH, HEIGHT};
-
-  BitmapCopyArea(dst, 0, 0, &bkg, &bkg_area);
+  BitmapCopyArea(dst, 0, 0, &bkg, &((Area2D){0, 0, WIDTH, HEIGHT}));
 }
 
 static void DrawUfo(BitmapT *dst) {
-  short h = ufo_h;
   Area2D ufo_area = {0, 0, UFO_W, UFO_H};
+  short h = ufo_pos;
 
-  if (ufo_h <= 0) {
-    ufo_area.y = -ufo_h;
-    ufo_area.h = 39 + ufo_h;
+  if (ufo_pos <= 0) {
+    ufo_area.y = -ufo_pos;
+    ufo_area.h = 39 + ufo_pos;
     h = 0;
   }
 
   BitmapCopyArea(dst, 108, h, &ufo, &ufo_area);
 }
 
-static void DrawRing(short height) {
+static void DrawRing(BitmapT *dst, short height) {
   Area2D ring_area = {0, 0, RING_W, RING_H};
 
   if (height < 64) {
@@ -91,10 +88,10 @@ static void DrawRing(short height) {
     ring_area.h = HEIGHT - height - 16;
   }
 
-  BitmapCopyArea(screen[active], 133, height, &ring, &ring_area);
+  BitmapCopyArea(dst, 133, height, &ring, &ring_area);
 }
 
-static void ClearRing(short height) {
+static void ClearRing(BitmapT *dst, short height) {
   Area2D ring_area = {133, height, RING_W, RING_H};
 
   if (height < 64) {
@@ -107,34 +104,33 @@ static void ClearRing(short height) {
     ring_area.h = HEIGHT - height - 16;
   }
 
-  BitmapClearArea(screen[active], &ring_area);
+  BitmapClearArea(dst, &ring_area);
 }
 
 static void SwitchBeamPal(void) {
   CopInsT *ins = beam_pal_cp;
+  short i = 0;
 
-  CopInsSet16(ins++, beam_pal[active_pal][0]);
-  CopInsSet16(ins++, beam_pal[active_pal][1]);
-  CopInsSet16(ins++, beam_pal[active_pal][2]);
-  CopInsSet16(ins++, beam_pal[active_pal][3]);
-  CopInsSet16(ins++, beam_pal[active_pal][4]);
-  CopInsSet16(ins++, beam_pal[active_pal][5]);
-  CopInsSet16(ins++, beam_pal[active_pal][6]);
+  for (i = 0; i < 7; ++i) {
+    CopInsSet16(ins, beam_pal[active_pal][i]);
+    ++ins;
+  }
 
   active_pal = (active_pal + 1) % 4;
 }
+
 
 static void Abduct(void) {
   static short mod = 1;
   short i = 0;
 
-  for (i = 64; i <= 256 - 16; i += RING_H) {
-    DrawRing(i - mod);
+  for (i = 64+16; i <= 256 - 16; i += RING_H*2) {
+    DrawRing(screen[active], i - mod);
   }
 
   if (counter % 2 == 0) {
     ++mod;
-    if (mod >= RING_H) {
+    if (mod >= RING_H*2) {
       mod = 1;
     }
   }
@@ -149,13 +145,12 @@ static void Abduct(void) {
   }
 
   if (counter % 8 == 0) {
-    (void)SwitchBeamPal;
     SwitchBeamPal();
   }
 }
 
 static void RetractBeam(void) {
-  static unsigned short Gradient[15] = {
+  static unsigned short beam_gradient[15] = {
     0xcef,0xcdf,0xbce,0xacd,0x9bc,0x8ab,0x79a,0x689,
     0x578,0x478,0x367,0x356,0x245,0x144,0x034
   };
@@ -165,14 +160,14 @@ static void RetractBeam(void) {
 
   if (counter % 2 == 0) {
       active_pal = 0;
-      beam_pal[0][0] = Gradient[idx];
-      beam_pal[0][1] = Gradient[idx];
-      beam_pal[0][2] = Gradient[idx];
+      beam_pal[0][0] = beam_gradient[idx];
+      beam_pal[0][1] = beam_gradient[idx];
+      beam_pal[0][2] = beam_gradient[idx];
       SwitchBeamPal();
       ++idx;
 
-    SpriteUpdatePos(&side_beam_l, ++beam_l, Y(56));
-    SpriteUpdatePos(&side_beam_r, --beam_r, Y(56));
+    SpriteUpdatePos(&side_beam_l, ++beam_pos[0], Y(56));
+    SpriteUpdatePos(&side_beam_r, --beam_pos[1], Y(56));
 
     if (h >= 64) {
       BitmapClearArea(screen[0], &ring_area);
@@ -180,7 +175,7 @@ static void RetractBeam(void) {
       h -= 16;
     }
 
-    if (beam_l >= X(137+15)) {
+    if (beam_pos[0] >= X(137+15)) {
       SpriteUpdatePos(&side_beam_l, 0, 0);
       SpriteUpdatePos(&side_beam_r, 0, 0);
       SpriteUpdatePos(&coq, 0, 0);
@@ -190,15 +185,15 @@ static void RetractBeam(void) {
 }
 
 static void Escape(void) {
-  Area2D ring_area = {132, ufo_h + UFO_H - 2, RING_W, RING_H};
+  Area2D ring_area = {132, ufo_pos + UFO_H - 2, RING_W, RING_H};
 
   BitmapClearArea(screen[0], &ring_area);
   BitmapClearArea(screen[1], &ring_area);
 
-  --ufo_h;
+  --ufo_pos;
   DrawUfo(screen[0]);
   DrawUfo(screen[1]);
-  if (ufo_h < -37) {
+  if (ufo_pos < -37) {
     ring_area.y = 0;
     BitmapClearArea(screen[0], &ring_area);
     BitmapClearArea(screen[1], &ring_area);
