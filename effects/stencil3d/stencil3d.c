@@ -47,17 +47,11 @@ static CopListT *MakeCopperList(void) {
     short i;
 
     for (i = 0; i < background_height; i++) {
-      short bgcol = *data++;
-
-      /* Start exchanging palette colors at the end of previous line. */
-      CopWaitSafe(cp, Y(i - 1), HP(320 - 32 - 4));
-      CopMove16(cp, color[0], 0);
-
-      CopWaitSafe(cp, Y(i), HP(0));
+      CopWaitSafe(cp, Y(i), 0);
+      CopMove16(cp, color[0], *data++);
       CopMove16(cp, color[9], *data++);
       CopMove16(cp, color[10], *data++);
       CopMove16(cp, color[11], *data++);
-      CopMove16(cp, color[0], bgcol);
     }
   }
 

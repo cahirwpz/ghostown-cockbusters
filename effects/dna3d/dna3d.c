@@ -96,12 +96,10 @@ static CopListT *MakeCopperList(void) {
     short i;
 
     for (i = 0; i < necrocoq_height; i++) {
-      short bgcol = *pf2_data++;
       short fgcol;
 
       /* Start exchanging palette colors at the end of previous line. */
       CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
-      CopMove16(cp, color[0], 0);
       fgcol = *pf1_data++;
       CopMove16(cp, color[1], fgcol);
       fgcol = *pf1_data++;
@@ -113,11 +111,11 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, color[6], fgcol);
       CopMove16(cp, color[7], fgcol);
 
-      CopWaitSafe(cp, Y(i), HP(0));
-      linecol[i] = CopMove16(cp, color[9], *pf2_data++);
+      CopWaitSafe(cp, Y(i), 0);
+      linecol[i] = CopMove16(cp, color[0], *pf2_data++);
+      CopMove16(cp, color[9], *pf2_data++);
       CopMove16(cp, color[10], *pf2_data++);
       CopMove16(cp, color[11], *pf2_data++);
-      CopMove16(cp, color[0], bgcol);
     }
   }
 
@@ -511,12 +509,11 @@ static void ChangeBackgroundColor(short n) {
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
-    short bgcol = *data++;
 
     CopInsSet16(ins++, *data++);
     CopInsSet16(ins++, *data++);
     CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, bgcol);
+    CopInsSet16(ins++, *data++);
   }
 }
 
