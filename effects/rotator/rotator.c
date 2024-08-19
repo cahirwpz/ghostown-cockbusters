@@ -17,7 +17,7 @@ static u_short active = 0;
 static CopListT *cp;
 static CopInsPairT *bplptr;
 
-#include "data/rork-128.c"
+#include "data/texture.c"
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] x 2 */
 static u_short PixelHi[16] = {
