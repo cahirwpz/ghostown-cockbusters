@@ -5,18 +5,20 @@
 #include <line.h>
 
 #include "data/loader.c"
+#include "data/ufo.c"
 
 static __code BitmapT *screen;
 static __code CopListT *cp;
+// static short ufo_x = 16;
 
-#define X1 96
-#define Y1 (120 + 32)
-#define X2 224
-#define Y2 (136 + 24)
+#define X1 99
+#define Y1 230
+#define X2 220
+#define Y2 238
 
 #define WIDTH 320
 #define HEIGHT 256
-#define DEPTH 1
+#define DEPTH 3
 
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
@@ -32,9 +34,10 @@ static void Init(void) {
   LoadColors(loader_colors, 0);
 
   EnableDMA(DMAF_BLITTER);
-  BitmapCopy(screen, (WIDTH - loader_width) / 2, Y1 - loader_height - 16,
-             &loader);
+  BitmapCopy(screen, 0, 0, &loader);
   WaitBlitter();
+  // BitmapCopyArea(screen, 16, 16, &ufo, &((Area2D){0, 0, 44, 15}));
+  // WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 
   CopSetupBitplanes(cp, screen, DEPTH);
@@ -51,14 +54,18 @@ static void Kill(void) {
   DeleteBitmap(screen);
 }
 
+static void MoveUfo(void) {
+  Log("Move ufo\n");
+}
+
 static void Render(void) {
   static __code short x = 0;
   short newX = frameCount >> 1;
-  if (newX > 128)
-    newX = 129;
+  if (newX > 121)
+    newX = 122;
   for (; x < newX; x++) {
     CpuLine(X1 + x, Y1, X1 + x, Y2);
   }
 }
 
-EFFECT(Loader, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Loader, NULL, NULL, Init, Kill, Render, MoveUfo);
