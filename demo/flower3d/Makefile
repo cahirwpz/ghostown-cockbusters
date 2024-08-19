@@ -13,7 +13,7 @@ PNG2C.pattern-1-3 := --bitmap pattern_1_3,128x128x2
 PNG2C.pattern-2-1 := --bitmap pattern_2_1,128x128x2
 PNG2C.pattern-2-2 := --bitmap pattern_2_2,128x128x2 --palette pattern_2,4
 PNG2C.pattern-2-3 := --bitmap pattern_2_3,128x128x2
-OBJ2C.kurak-head := --scale 2.7 --mesh-name kurak
+OBJ2C.kurak-head := --scale 2.7 --mesh-name flower
 
 include $(TOPDIR)/build/effect.mk
 

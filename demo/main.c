@@ -33,12 +33,20 @@ short frameTillEnd;
 #define EFF_COCKSTENCIL 1
 #define EFF_ANIMCOCK 2
 #define EFF_TEXOBJ 3
+#define EFF_FLOWER3D 4
+#define EFF_LOGO 5 
+#define EFF_ROTATOR 6
+#define EFF_TEXTSCROLL 7
 
 static __code EffectT *AllEffects[] = {
   [EFF_DNA3D] = NULL,
   [EFF_COCKSTENCIL] = NULL,
   [EFF_ANIMCOCK] = NULL,
   [EFF_TEXOBJ] = NULL,
+  [EFF_FLOWER3D] = NULL,
+  [EFF_LOGO] = NULL,
+  [EFF_ROTATOR] = NULL,
+  [EFF_TEXTSCROLL] = NULL,
 };
 
 static __code EffectT *Loader;

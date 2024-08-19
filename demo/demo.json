@@ -11,5 +11,14 @@
   "TexObj": [
     "texobj/texobj.o",
     "texobj/mainloop.o"
+  ],
+  "Flower3D": ["flower3d/flower3d.o"],
+  "Logo": ["logo/logo.o"],
+  "Rotator": [
+    "rotator/rotator.o",
+    "rotator/mainloop.o"],
+  "TextScroll": [
+    "textscroll/textscroll.o",
+    "textscroll/data/text-scroll.o"
   ]
 }

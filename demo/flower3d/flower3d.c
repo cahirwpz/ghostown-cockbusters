@@ -59,7 +59,7 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  object = NewObject3D(&kurak);
+  object = NewObject3D(&flower);
   object->translate.z = fx4i(-256);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
@@ -467,4 +467,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Stencil3D, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Flower3D, NULL, NULL, Init, Kill, Render, NULL);
