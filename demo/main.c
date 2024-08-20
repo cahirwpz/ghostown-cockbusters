@@ -1,8 +1,6 @@
 #include <custom.h>
 #include <effect.h>
-#include <ptplayer.h>
 #include <color.h>
-#include <copper.h>
 #include <palette.h>
 #include <sync.h>
 #include <sprite.h>
@@ -15,58 +13,60 @@
 
 #define _SYSTEM
 #include <system/boot.h>
-#include <system/memory.h>
 #include <system/cia.h>
 #include <system/floppy.h>
 #include <system/filesys.h>
 #include <system/memfile.h>
-#include <system/file.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 
 short frameFromStart;
 short frameTillEnd;
 
 #include "data/demo.c"
 
-#define EFF_DNA3D 0
-#define EFF_COCKSTENCIL 1
-#define EFF_ANIMCOCK 2
-#define EFF_TEXOBJ 3
-#define EFF_FLOWER3D 4
-#define EFF_LOGO 5 
-#define EFF_ROTATOR 6
-#define EFF_TEXTSCROLL 7
-#define EFF_ABDUCTION 8
+#define EXE_DNA3D 0
+#define EXE_COCKSTENCIL 1
+#define EXE_ANIMCOCK 2
+#define EXE_TEXOBJ 3
+#define EXE_FLOWER3D 4
+#define EXE_LOGO 5 
+#define EXE_ROTATOR 6
+#define EXE_TEXTSCROLL 7
+#define EXE_ABDUCTION 8
+#define EXE_LOADER 9
+#define EXE_PROTRACKER 10
 
-static __code EffectT *AllEffects[] = {
-  [EFF_DNA3D] = NULL,
-  [EFF_COCKSTENCIL] = NULL,
-  [EFF_ANIMCOCK] = NULL,
-  [EFF_TEXOBJ] = NULL,
-  [EFF_FLOWER3D] = NULL,
-  [EFF_LOGO] = NULL,
-  [EFF_ROTATOR] = NULL,
-  [EFF_TEXTSCROLL] = NULL,
-  [EFF_ABDUCTION] = NULL,
+typedef struct ExeFile {
+  const char *path;
+  HunkT *hunk;
+  EffectT *effect;
+} ExeFileT;
+
+#define EXEFILE(NUM, PATH) [NUM] = { .path = PATH, .hunk = NULL, .effect = NULL }
+
+static __code ExeFileT ExeFile[] = {
+  EXEFILE(EXE_DNA3D, "dna3d.exe"),
+  EXEFILE(EXE_COCKSTENCIL, "stencil3d.exe"),
+  EXEFILE(EXE_ANIMCOCK, "anim-polygons.exe"),
+  EXEFILE(EXE_TEXOBJ, "texobj.exe"),
+  EXEFILE(EXE_FLOWER3D, "flower3d.exe"),
+  EXEFILE(EXE_LOGO, "logo.exe"),
+  EXEFILE(EXE_ROTATOR, "rotator.exe"),
+  EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
+  EXEFILE(EXE_ABDUCTION, "abduction.exe"),
+  EXEFILE(EXE_LOADER, "loader.exe"),
+  EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
 
-static __code EffectT *Protracker;
-
-static __code HunkT *ProtrackerExe;
-static __code HunkT *Dna3DExe;
-static __code HunkT *CockStencilExe;
-static __code HunkT *AnimCockExe;
-static __code HunkT *TexObjExe;
-
-static HunkT *LoadExe(const char *path, EffectT **effect_p) {
+static EffectT *LoadExe(int num) {
+  ExeFileT *exe = &ExeFile[num];
   FileT *file;
   HunkT *hunk;
   u_char *ptr;
 
-  Log("[Effect] Downloading '%s'\n", path);
+  Log("[Effect] Downloading '%s'\n", exe->path);
 
-  file = OpenFile(path);
+  file = OpenFile(exe->path);
   hunk = LoadHunkList(file);
   /* Assume code section is first and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
@@ -76,15 +76,22 @@ static HunkT *LoadExe(const char *path, EffectT **effect_p) {
     if (*(u_int *)ptr == EFFECT_MAGIC) {
       EffectT *effect = (EffectT *)ptr;
       Log("[Effect] Found '%s'\n", effect->name);
+      exe->effect = effect;
+      exe->hunk = hunk;
       EffectLoad(effect);
-      *effect_p = effect;
-      return hunk;
+      return effect;
     }
     ptr -= 2;
   }
-  Log("%s: missing effect magic marker\n", path);
+  Log("%s: missing effect magic marker\n", exe->path);
   PANIC();
   return NULL;
+}
+
+static void UnLoadExe(int num) {
+  ExeFileT *exe = &ExeFile[num];
+  EffectUnLoad(exe->effect);
+  FreeHunkList(exe->hunk);
 }
 
 static void ShowMemStats(void) {
@@ -132,19 +139,30 @@ static int VBlankISR(void) {
 
 INTSERVER(VBlankInterrupt, 0, (IntFuncT)VBlankISR, NULL);
 
-static __code volatile bool BgTaskIdle = false;
+typedef enum {
+  BG_IDLE = 0,
+  BG_INIT = 1,
+} BgTaskStateT;
+
+static __code volatile BgTaskStateT BgTaskState = BG_IDLE;
 
 static void BgTaskLoop(__unused void *ptr) {
   Log("Inside background task!\n");
 
-  ProtrackerExe = LoadExe("playpt.exe", &Protracker);
-  Dna3DExe = LoadExe("dna3d.exe", &AllEffects[EFF_DNA3D]);
-  CockStencilExe = LoadExe("stencil3d.exe", &AllEffects[EFF_COCKSTENCIL]);
-  AnimCockExe = LoadExe("anim-polygons.exe", &AllEffects[EFF_ANIMCOCK]);
-  TexObjExe = LoadExe("texobj.exe", &AllEffects[EFF_TEXOBJ]);
-
   for (;;) {
-    BgTaskIdle = true;
+    switch (BgTaskState) {
+      case BG_INIT:
+        LoadExe(EXE_PROTRACKER);
+        LoadExe(EXE_DNA3D);
+        LoadExe(EXE_COCKSTENCIL);
+        LoadExe(EXE_ANIMCOCK);
+        LoadExe(EXE_TEXOBJ);
+        BgTaskState = BG_IDLE;
+        break;
+
+      default:
+        break;
+    }
   }
 }
 
@@ -152,20 +170,17 @@ static __aligned(8) char BgTaskStack[512];
 static TaskT BgTask;
 
 static void RunLoader(void) {
-  EffectT *Loader;
-  HunkT *LoaderExe;
-
-  LoaderExe = LoadExe("loader.exe", &Loader);
+  EffectT *Loader = LoadExe(EXE_LOADER);
 
   EffectInit(Loader);
   VBlankHandler = Loader->VBlank;
+
+  SetFrameCounter(0);
   lastFrameCount = 0;
   frameCount = 0;
+  BgTaskState = BG_INIT;
 
-  TaskInit(&BgTask, "background", BgTaskStack, sizeof(BgTaskStack));
-  TaskRun(&BgTask, 1, BgTaskLoop, NULL);
-
-  while (!BgTaskIdle) {
+  while (BgTaskState != BG_IDLE) {
     short t = UpdateFrameCount();
     if (lastFrameCount != frameCount) {
       Loader->Render();
@@ -175,11 +190,14 @@ static void RunLoader(void) {
   }
 
   EffectKill(Loader);
-  EffectUnLoad(Loader);
-  FreeHunkList(LoaderExe);
+  UnLoadExe(EXE_LOADER);
 }
 
 static void RunEffects(void) {
+  SetFrameCounter(0);
+  lastFrameCount = 0;
+  frameCount = 0;
+
   for (;;) {
     static short prev = -1;
     short curr = TrackValueGet(&EffectNumber, frameCount);
@@ -189,21 +207,21 @@ static void RunEffects(void) {
     if (prev != curr) {
       if (prev >= 0) {
         VBlankHandler = NULL;
-        EffectKill(AllEffects[prev]);
+        EffectKill(ExeFile[prev].effect);
         ShowMemStats();
       }
       if (curr == -1)
         break;
-      EffectInit(AllEffects[curr]);
-      VBlankHandler = AllEffects[curr]->VBlank;
+      EffectInit(ExeFile[curr].effect);
+      VBlankHandler = ExeFile[curr].effect->VBlank;
       ShowMemStats();
       Log("[Effect] Transition to %s took %d frames!\n",
-          AllEffects[curr]->name, ReadFrameCounter() - lastFrameCount);
+          ExeFile[curr].effect->name, ReadFrameCounter() - lastFrameCount);
       lastFrameCount = ReadFrameCounter() - 1;
     }
 
     {
-      EffectT *effect = AllEffects[curr];
+      EffectT *effect = ExeFile[curr].effect;
       short t = UpdateFrameCount();
       if ((lastFrameCount != frameCount) && effect->Render)
         effect->Render();
@@ -247,17 +265,21 @@ int main(void) {
   ResetSprites();
   AddIntServer(INTB_VERTB, VBlankInterrupt);
 
+  /* Background thread may use tracks as well. */
   {
     TrackT **trkp = AllTracks;
     while (*trkp)
       TrackInit(*trkp++);
   }
 
+  TaskInit(&BgTask, "background", BgTaskStack, sizeof(BgTaskStack));
+  TaskRun(&BgTask, 1, BgTaskLoop, NULL);
+
   RunLoader();
 
-  EffectInit(Protracker);
+  EffectInit(ExeFile[EXE_PROTRACKER].effect);
   RunEffects();
-  EffectKill(Protracker);
+  EffectKill(ExeFile[EXE_PROTRACKER].effect);
 
   RemIntServer(INTB_VERTB, VBlankInterrupt);
   KillFileSys();
