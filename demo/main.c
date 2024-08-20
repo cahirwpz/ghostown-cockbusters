@@ -29,7 +29,7 @@ short frameTillEnd;
 #define EXE_ANIMCOCK 2
 #define EXE_TEXOBJ 3
 #define EXE_FLOWER3D 4
-#define EXE_LOGO 5 
+#define EXE_LOGO 5
 #define EXE_ROTATOR 6
 #define EXE_TEXTSCROLL 7
 #define EXE_ABDUCTION 8
@@ -157,6 +157,7 @@ static void BgTaskLoop(__unused void *ptr) {
         LoadExe(EXE_COCKSTENCIL);
         LoadExe(EXE_ANIMCOCK);
         LoadExe(EXE_TEXOBJ);
+        LoadExe(EXE_LOGO);
         BgTaskState = BG_IDLE;
         break;
 
