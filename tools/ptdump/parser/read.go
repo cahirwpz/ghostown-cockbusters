@@ -1,8 +1,9 @@
-package main
+package parser
 
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 )
@@ -154,4 +155,15 @@ func ReadModule(r io.ReadSeeker) Module {
 		Patterns: patterns,
 		Samples:  samples,
 	}
+}
+
+func (cd ChanData) String() string {
+	var note string
+	if cd.Note != nil {
+		note = cd.Note.String()
+	} else {
+		note = " _ "
+	}
+	return fmt.Sprintf(" %s %02X %01X%02X ", note, cd.SampleNumber, cd.Effect,
+		cd.EffectParams)
 }

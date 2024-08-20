@@ -5,9 +5,16 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
-	"text/template"
+
+	"ghostown.pl/ptdump/parser"
+)
+
+var (
+	printHelp bool
+	timing    bool
 )
 
 var moduleReportTemplate = `Module Name: {{.Name}}
@@ -25,18 +32,7 @@ Patterns Order: [{{- range .Song}}{{.}} {{end}}]
 {{- end}}
 `
 
-func (cd ChanData) String() string {
-	var note string
-	if cd.Note != nil {
-		note = cd.Note.String()
-	} else {
-		note = " _ "
-	}
-	return fmt.Sprintf(" %s %02X %01X%02X ", note, cd.SampleNumber, cd.Effect,
-		cd.EffectParams)
-}
-
-func dumpModule(m Module) string {
+func dumpModule(m parser.Module) string {
 	t, err := template.New("export").Parse(moduleReportTemplate)
 	if err != nil {
 		log.Fatal(err)
@@ -48,11 +44,6 @@ func dumpModule(m Module) string {
 	}
 	return b.String()
 }
-
-var (
-	printHelp bool
-	timing    bool
-)
 
 func init() {
 	flag.BoolVar(&printHelp, "help", false,
@@ -75,7 +66,7 @@ func main() {
 	}
 
 	writer := bufio.NewWriter(os.Stdout)
-	mod := ReadModule(file)
+	mod := parser.ReadModule(file)
 
 	if timing {
 		framesPerRow := 6
