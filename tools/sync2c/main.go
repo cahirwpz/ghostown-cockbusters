@@ -3,14 +3,18 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"text/template"
+
+	ptdump "ghostown.pl/ptdump/parser"
 )
 
 var printHelp bool
+var timings [][64]int
 
 const (
 	TrkCtrl = -2 // control key
@@ -74,24 +78,18 @@ func parseFrame(token string) (frame int64, err error) {
 			return
 		}
 
-		frame, err = strconv.ParseInt(token[1:], 16, 16)
+		patt, err := strconv.ParseInt(token[1:3], 16, 16)
 		if err != nil {
-			return
+			return 0, err
 		}
 
-		if frame&0xC0 != 0 {
-			err = &parseError{"not a valid pattern row"}
-			return
+		pos, err := strconv.ParseInt(token[3:5], 16, 16)
+		if err != nil {
+			return 0, err
 		}
 
-		frame = frame&63 | (frame>>2)&-64
-		frame *= FramesPerRow
-	} else {
-		var f float64
-		f, err = strconv.ParseFloat(token, 64)
-		if err == nil {
-			frame = int64(f * 50.0)
-		}
+		frame = int64(timings[patt][pos])
+
 	}
 
 	if prevFrame >= 0 {
@@ -156,13 +154,18 @@ func parseTrack(tokens []string, track *Track) (err error) {
 	return nil
 }
 
-func parseSyncFile(path string) []Track {
+func openFile(path string) *os.File {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
 
+	return file
+}
+
+func parseSyncFile(path string) []Track {
+	file := openFile(path)
+	defer file.Close()
 	scanner := bufio.NewScanner(file)
 
 	var tracks []Track
@@ -188,6 +191,13 @@ func parseSyncFile(path string) []Track {
 		// Split track data into tokens
 		tokens := strings.Fields(line)
 
+		if tokens[0] == "@module" {
+			module := ptdump.ReadModule(openFile(tokens[1]))
+			calculateTimings(module)
+
+			continue
+		}
+
 		// Create new track
 		if tokens[0] == "@track" {
 			prevFrame = -1
@@ -206,7 +216,7 @@ func parseSyncFile(path string) []Track {
 			continue
 		}
 
-		if err = parseTrack(tokens, track); err != nil {
+		if err := parseTrack(tokens, track); err != nil {
 			log.Println(origLine)
 			log.Fatalf("Parse error at line %d: %s", num, err)
 		}
@@ -270,4 +280,32 @@ func main() {
 	}
 
 	exportTracks(parseSyncFile(flag.Arg(0)))
+}
+
+func calculateTimings(module ptdump.Module) {
+	framesPerRow := 6
+	frame := 0
+	timings = make([][64]int, len(module.Song))
+	for _, pat := range module.Song {
+		fmt.Printf("pattern: %v \n", pat)
+		for i := 0; i < 64; i++ {
+			row := module.Patterns[pat][i]
+			// fmt.Printf("pattern %v row %v: %v \n", pat, i, frame)
+			timings[pat][i] = frame
+			for _, ch := range row {
+				if ch.Effect == 0xf {
+					if ch.EffectParams < 0x20 {
+						// F-speed
+						framesPerRow = int(ch.EffectParams)
+					} else {
+						// F-speed
+						if ch.EffectParams != 0x7D {
+							log.Fatal("only default CIA tempo is supported")
+						}
+					}
+				}
+			}
+			frame += framesPerRow
+		}
+	}
 }
