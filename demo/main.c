@@ -51,10 +51,8 @@ static __code EffectT *AllEffects[] = {
   [EFF_ABDUCTION] = NULL,
 };
 
-static __code EffectT *Loader;
 static __code EffectT *Protracker;
 
-static __code HunkT *LoaderExe;
 static __code HunkT *ProtrackerExe;
 static __code HunkT *Dna3DExe;
 static __code HunkT *CockStencilExe;
@@ -89,43 +87,12 @@ static HunkT *LoadExe(const char *path, EffectT **effect_p) {
   return NULL;
 }
 
-static void LoadDemo(void) {
-  LoaderExe = LoadExe("loader.exe", &Loader);
-  frameCount = 0;
-
-  EffectInit(Loader);
-
-  ProtrackerExe = LoadExe("playpt.exe", &Protracker);
-  frameCount = 64;
-  Loader->Render();
-
-  Dna3DExe = LoadExe("dna3d.exe", &AllEffects[EFF_DNA3D]);
-  frameCount = 96;
-  Loader->Render();
-
-  CockStencilExe = LoadExe("stencil3d.exe", &AllEffects[EFF_COCKSTENCIL]);
-  frameCount = 128;
-  Loader->Render();
-
-  AnimCockExe = LoadExe("anim-polygons.exe", &AllEffects[EFF_ANIMCOCK]);
-  frameCount = 160;
-  Loader->Render();
-
-  TexObjExe = LoadExe("texobj.exe", &AllEffects[EFF_TEXOBJ]);
-  frameCount = 192;
-  Loader->Render();
-
-  EffectKill(Loader);
-  EffectUnLoad(Loader);
-  FreeHunkList(LoaderExe);
-}
-
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
 }
 
 void FadeBlack(const u_short *colors, short count, u_int start, short step) {
-  volatile short *reg = &custom->color[start];
+  volatile u_short *reg = &custom->color[start];
   
   if (step < 0)
     step = 0;
@@ -165,9 +132,54 @@ static int VBlankISR(void) {
 
 INTSERVER(VBlankInterrupt, 0, (IntFuncT)VBlankISR, NULL);
 
-static void RunEffects(void) {
-  AddIntServer(INTB_VERTB, VBlankInterrupt);
+static __code volatile bool BgTaskIdle = false;
 
+static void BgTaskLoop(__unused void *ptr) {
+  Log("Inside background task!\n");
+
+  ProtrackerExe = LoadExe("playpt.exe", &Protracker);
+  Dna3DExe = LoadExe("dna3d.exe", &AllEffects[EFF_DNA3D]);
+  CockStencilExe = LoadExe("stencil3d.exe", &AllEffects[EFF_COCKSTENCIL]);
+  AnimCockExe = LoadExe("anim-polygons.exe", &AllEffects[EFF_ANIMCOCK]);
+  TexObjExe = LoadExe("texobj.exe", &AllEffects[EFF_TEXOBJ]);
+
+  for (;;) {
+    BgTaskIdle = true;
+  }
+}
+
+static __aligned(8) char BgTaskStack[512];
+static TaskT BgTask;
+
+static void RunLoader(void) {
+  EffectT *Loader;
+  HunkT *LoaderExe;
+
+  LoaderExe = LoadExe("loader.exe", &Loader);
+
+  EffectInit(Loader);
+  VBlankHandler = Loader->VBlank;
+  lastFrameCount = 0;
+  frameCount = 0;
+
+  TaskInit(&BgTask, "background", BgTaskStack, sizeof(BgTaskStack));
+  TaskRun(&BgTask, 1, BgTaskLoop, NULL);
+
+  while (!BgTaskIdle) {
+    short t = UpdateFrameCount();
+    if (lastFrameCount != frameCount) {
+      Loader->Render();
+      TaskWaitVBlank();
+    }
+    lastFrameCount = t;
+  }
+
+  EffectKill(Loader);
+  EffectUnLoad(Loader);
+  FreeHunkList(LoaderExe);
+}
+
+static void RunEffects(void) {
   for (;;) {
     static short prev = -1;
     short curr = TrackValueGet(&EffectNumber, frameCount);
@@ -200,8 +212,6 @@ static void RunEffects(void) {
 
     prev = curr;
   }
-
-  RemIntServer(INTB_VERTB, VBlankInterrupt);
 }
 
 #define ROMADDR 0xf80000
@@ -235,7 +245,7 @@ int main(void) {
   }
 
   ResetSprites();
-  LoadDemo();
+  AddIntServer(INTB_VERTB, VBlankInterrupt);
 
   {
     TrackT **trkp = AllTracks;
@@ -243,10 +253,13 @@ int main(void) {
       TrackInit(*trkp++);
   }
 
+  RunLoader();
+
   EffectInit(Protracker);
   RunEffects();
   EffectKill(Protracker);
 
+  RemIntServer(INTB_VERTB, VBlankInterrupt);
   KillFileSys();
 
   return 0;
