@@ -59,6 +59,7 @@ def c2p(bitplane_output=True):
 
     Blit(lambda a, b: ((a << 2) & ~m2) | (b & m2),
          N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2), Channel(planes, 2, 2))
+    
     Array.Print("Swap 2x2: planar:", *planes)
 
     if bitplane_output:
