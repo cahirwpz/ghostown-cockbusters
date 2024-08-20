@@ -20,5 +20,6 @@
   "TextScroll": [
     "textscroll/textscroll.o",
     "textscroll/data/text-scroll.o"
-  ]
+  ],
+  "Abduction": ["abduction/abduction.o"]
 }

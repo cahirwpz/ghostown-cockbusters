@@ -37,6 +37,7 @@ short frameTillEnd;
 #define EFF_LOGO 5 
 #define EFF_ROTATOR 6
 #define EFF_TEXTSCROLL 7
+#define EFF_ABDUCTION 8
 
 static __code EffectT *AllEffects[] = {
   [EFF_DNA3D] = NULL,
@@ -47,6 +48,7 @@ static __code EffectT *AllEffects[] = {
   [EFF_LOGO] = NULL,
   [EFF_ROTATOR] = NULL,
   [EFF_TEXTSCROLL] = NULL,
+  [EFF_ABDUCTION] = NULL,
 };
 
 static __code EffectT *Loader;

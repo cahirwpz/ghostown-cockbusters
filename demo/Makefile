@@ -2,7 +2,7 @@ TOPDIR := $(realpath ..)
 
 # the order here must be the same as in main.c and demo.json !!!
 SUBDIRS := loader playpt dna3d stencil3d anim-polygons texobj \
-           flower3d logo rotator textscroll
+           flower3d logo rotator textscroll abduction
 
 SOURCES := main.c
 LOADABLES := xenocoq.exe $(foreach dir, $(SUBDIRS), $(dir).exe)
