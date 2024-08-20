@@ -81,7 +81,6 @@ typedef struct Effect {
   EffectFuncT Render;
   /*
    * Called each frame during VBlank interrupt.
-   * Effect::data will be passed as the argument.
    */
   EffectFuncT VBlank;
 } EffectT;

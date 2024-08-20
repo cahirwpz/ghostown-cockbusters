@@ -24,7 +24,7 @@ static __code int active = 0;
 #include "data/pattern-2-2.c"
 #include "data/pattern-2-3.c"
 
-#include "data/kurak-head.c"
+#include "data/lotus.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
