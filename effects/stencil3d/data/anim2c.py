@@ -23,7 +23,7 @@ if __name__ == "__main__":
         for tx, ty, tz, rx, ry, rz, sx, sy, sz in reader[1:]:
             tx = int(float(tx) * 16 * args.scale)
             ty = int(float(ty) * 16 * args.scale)
-            tz = int(float(tz) * 16 * args.scale)
+            tz = -int(float(tz) * 16 * args.scale)
             rx = int(float(rx) * 4096.0 / 360.0) & 0xfff
             ry = int(float(ry) * 4096.0 / 360.0) & 0xfff
             rz = int(float(rz) * 4096.0 / 360.0) & 0xfff

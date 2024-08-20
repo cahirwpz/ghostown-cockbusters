@@ -369,7 +369,7 @@ static void DrawObject(Object3D *object, void **planes,
 
         u_short bltcon0;
 
-        if (FACE(ii)->material & 1) {
+        if (FACE(ii)->material > 0) {
           bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
         } else {
           bltcon0 = (SRCA | SRCB | DEST) | A_AND_NOT_B;
@@ -390,7 +390,7 @@ static void DrawObject(Object3D *object, void **planes,
         void **dstbpl = planes;
         void *mask = planes[DEPTH] + bltstart;
         short shade = pattern_shade[(short)FACE(ii)->flags];
-        short pat = FACE(ii)->material & 1;
+        short pat = FACE(ii)->material > 0 ? 1 : 0;
         short i;
 
         srcbpl = patterns[pat][shade];
@@ -453,7 +453,6 @@ static void Render(void) {
 
   ProfilerStart(Transform);
   {
-#if 0
     short *frame = kurak_head_anim[(frameCount >> 1) % kurak_head_anim_frames];
     object->translate.x = *frame++;
     object->translate.y = *frame++;
@@ -465,10 +464,6 @@ static void Render(void) {
     object->scale.x = *frame++;
     object->scale.y = *frame++;
     object->scale.z = *frame++;
-#else
-    (void)kurak_head_anim;
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
-#endif
 
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
