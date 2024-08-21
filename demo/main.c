@@ -25,16 +25,19 @@ short frameTillEnd;
 #include "data/demo.c"
 
 #define EXE_DNA3D 0
-#define EXE_COCKSTENCIL 1
-#define EXE_ANIMCOCK 2
+#define EXE_STENCIL3D 1
+#define EXE_COCK_FOLK 2
 #define EXE_TEXOBJ 3
 #define EXE_FLOWER3D 4
 #define EXE_LOGO 5
 #define EXE_ROTATOR 6
 #define EXE_TEXTSCROLL 7
 #define EXE_ABDUCTION 8
-#define EXE_LOADER 9
-#define EXE_PROTRACKER 10
+#define EXE_COCK_TECHNO 9
+#define EXE_MAGNIFYING_GLASS 10
+#define EXE_LOADER 11
+#define EXE_PROTRACKER 12
+#define EXE_LAST 13
 
 typedef struct ExeFile {
   const char *path;
@@ -44,16 +47,18 @@ typedef struct ExeFile {
 
 #define EXEFILE(NUM, PATH) [NUM] = { .path = PATH, .hunk = NULL, .effect = NULL }
 
-static __code ExeFileT ExeFile[] = {
+static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_DNA3D, "dna3d.exe"),
-  EXEFILE(EXE_COCKSTENCIL, "stencil3d.exe"),
-  EXEFILE(EXE_ANIMCOCK, "anim-polygons.exe"),
+  EXEFILE(EXE_STENCIL3D, "stencil3d.exe"),
+  EXEFILE(EXE_COCK_FOLK, "anim-polygons.exe"),
   EXEFILE(EXE_TEXOBJ, "texobj.exe"),
   EXEFILE(EXE_FLOWER3D, "flower3d.exe"),
   EXEFILE(EXE_LOGO, "logo.exe"),
   EXEFILE(EXE_ROTATOR, "rotator.exe"),
   EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
+  EXEFILE(EXE_COCK_TECHNO, "empty.exe"),
+  EXEFILE(EXE_MAGNIFYING_GLASS, "empty.exe"),
   EXEFILE(EXE_LOADER, "loader.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
@@ -146,6 +151,20 @@ typedef enum {
 
 static __code volatile BgTaskStateT BgTaskState = BG_IDLE;
 
+#if 0
+$0000  magnifying glass
+$0400  flower3d
+$0800  anim-cock folk
+$0c00  abduction
+$0e00  dna3d
+$1000  logo
+$1200  anim-cock techno
+$1600  stencil3d
+$1a00  rotator
+$1c00  textured object
+$1e00  text scroll
+#endif
+
 static void BgTaskLoop(__unused void *ptr) {
   Log("Inside background task!\n");
 
@@ -153,10 +172,11 @@ static void BgTaskLoop(__unused void *ptr) {
     switch (BgTaskState) {
       case BG_INIT:
         LoadExe(EXE_PROTRACKER);
+        LoadExe(EXE_MAGNIFYING_GLASS);
+        LoadExe(EXE_FLOWER3D);
+        LoadExe(EXE_COCK_FOLK);
+        LoadExe(EXE_ABDUCTION);
         LoadExe(EXE_DNA3D);
-        LoadExe(EXE_COCKSTENCIL);
-        LoadExe(EXE_ANIMCOCK);
-        LoadExe(EXE_TEXOBJ);
         LoadExe(EXE_LOGO);
         BgTaskState = BG_IDLE;
         break;
