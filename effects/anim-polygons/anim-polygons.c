@@ -134,7 +134,7 @@ static inline void DrawEdge(short *coords, void *dst,
       : "i" (WIDTH));
 
 static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
-  static __code Point2D points[128];
+  static __code Point2D points[256];
   short *data = cock_frame[current_frame];
   short n;
 
@@ -169,7 +169,7 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
     }
   }
 
-  if (++current_frame > cock_frames - 5)
+  if (++current_frame > cock_frames)
     current_frame = 0;
 }
 
