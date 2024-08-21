@@ -1,4 +1,5 @@
 {
+  "Empty": ["empty/empty.o"],
   "Loader": ["loader/loader.o"],
   "Protracker": [
     "playpt/data/JazzCat-XenoCoq.trk.o",
