@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	ptdump "ghostown.pl/ptdump/parser"
+	"ghostown.pl/protracker"
 )
 
 var printHelp bool
@@ -192,7 +192,7 @@ func parseSyncFile(path string) []Track {
 		tokens := strings.Fields(line)
 
 		if tokens[0] == "@module" {
-			module := ptdump.ReadModule(openFile(tokens[1]))
+			module := protracker.ReadModule(openFile(tokens[1]))
 			calculateTimings(module)
 
 			continue
@@ -282,7 +282,7 @@ func main() {
 	exportTracks(parseSyncFile(flag.Arg(0)))
 }
 
-func calculateTimings(module ptdump.Module) {
+func calculateTimings(module protracker.Module) {
 	framesPerRow := 6
 	frame := 0
 	timings = make([][64]int, len(module.Song))

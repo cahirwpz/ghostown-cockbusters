@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"ghostown.pl/ptdump/parser"
+	"ghostown.pl/protracker"
 )
 
 var (
@@ -32,7 +32,7 @@ Patterns Order: [{{- range .Song}}{{.}} {{end}}]
 {{- end}}
 `
 
-func dumpModule(m parser.Module) string {
+func dumpModule(m protracker.Module) string {
 	t, err := template.New("export").Parse(moduleReportTemplate)
 	if err != nil {
 		log.Fatal(err)
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	writer := bufio.NewWriter(os.Stdout)
-	mod := parser.ReadModule(file)
+	mod := protracker.ReadModule(file)
 
 	if timing {
 		framesPerRow := 6
