@@ -147,6 +147,7 @@ INTSERVER(VBlankInterrupt, 0, (IntFuncT)VBlankISR, NULL);
 typedef enum {
   BG_IDLE = 0,
   BG_INIT = 1,
+  BG_DEMO = 2,
 } BgTaskStateT;
 
 static __code volatile BgTaskStateT BgTaskState = BG_IDLE;
@@ -179,6 +180,9 @@ static void BgTaskLoop(__unused void *ptr) {
         LoadExe(EXE_DNA3D);
         LoadExe(EXE_LOGO);
         BgTaskState = BG_IDLE;
+        break;
+
+      case BG_DEMO:
         break;
 
       default:
@@ -218,6 +222,7 @@ static void RunEffects(void) {
   SetFrameCounter(0);
   lastFrameCount = 0;
   frameCount = 0;
+  BgTaskState = BG_DEMO;
 
   for (;;) {
     static short prev = -1;
