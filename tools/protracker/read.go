@@ -138,6 +138,7 @@ func ReadModule(r io.ReadSeeker) Module {
 			patternCount = int(patNum)
 		}
 	}
+	patternCount += 1
 
 	patterns := make([]Pattern, patternCount)
 	for i := 0; i < len(patterns); i++ {
