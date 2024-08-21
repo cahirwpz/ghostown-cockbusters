@@ -3,18 +3,17 @@ package main
 import (
 	"bufio"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"text/template"
 
-	"ghostown.pl/protracker"
+	pt "ghostown.pl/protracker"
 )
 
 var printHelp bool
-var timings [][64]int
+var timings pt.Timings
 
 const (
 	TrkCtrl = -2 // control key
@@ -78,7 +77,7 @@ func parseFrame(token string) (frame int64, err error) {
 			return
 		}
 
-		patt, err := strconv.ParseInt(token[1:3], 16, 16)
+		pat, err := strconv.ParseInt(token[1:3], 16, 16)
 		if err != nil {
 			return 0, err
 		}
@@ -88,8 +87,23 @@ func parseFrame(token string) (frame int64, err error) {
 			return 0, err
 		}
 
-		frame = int64(timings[patt][pos])
+		if pos&0xC0 != 0 {
+			err = &parseError{"not a valid pattern row"}
+			return 0, err
+		}
 
+		if len(timings) > 0 {
+			frame = int64(timings[pat][pos])
+		} else {
+			frame = pos&63 | (pat>>2)&-64
+			frame *= FramesPerRow
+		}
+	} else {
+		var f float64
+		f, err = strconv.ParseFloat(token, 64)
+		if err == nil {
+			frame = int64(f * 50.0)
+		}
 	}
 
 	if prevFrame >= 0 {
@@ -132,19 +146,20 @@ func parseTrack(tokens []string, track *Track) (err error) {
 
 	if len(tokens) == 3 && tokens[2][0] == '!' {
 		typ := tokens[2][1:]
-		if typ == "step" {
+		switch typ {
+		case "step":
 			track.AddItem(TrkCtrl, TrkStep)
-		} else if typ == "linear" {
+		case "linear":
 			track.AddItem(TrkCtrl, TrkLinear)
-		} else if typ == "smooth" {
+		case "smooth":
 			track.AddItem(TrkCtrl, TrkSmooth)
-		} else if typ == "quadratic" {
+		case "quadratic":
 			track.AddItem(TrkCtrl, TrkQuadratic)
-		} else if typ == "trigger" {
+		case "trigger":
 			track.AddItem(TrkCtrl, TrkTrigger)
-		} else if typ == "event" {
+		case "event":
 			track.AddItem(TrkCtrl, TrkEvent)
-		} else {
+		default:
 			return &parseError{"unknown track type"}
 		}
 	}
@@ -192,9 +207,8 @@ func parseSyncFile(path string) []Track {
 		tokens := strings.Fields(line)
 
 		if tokens[0] == "@module" {
-			module := protracker.ReadModule(openFile(tokens[1]))
-			calculateTimings(module)
-
+			module := pt.ReadModule(openFile(tokens[1]))
+			timings = pt.CalculateTimings(module)
 			continue
 		}
 
@@ -263,8 +277,6 @@ func exportTracks(tracks []Track) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return
 }
 
 func init() {
@@ -280,32 +292,4 @@ func main() {
 	}
 
 	exportTracks(parseSyncFile(flag.Arg(0)))
-}
-
-func calculateTimings(module protracker.Module) {
-	framesPerRow := 6
-	frame := 0
-	timings = make([][64]int, len(module.Song))
-	for _, pat := range module.Song {
-		fmt.Printf("pattern: %v \n", pat)
-		for i := 0; i < 64; i++ {
-			row := module.Patterns[pat][i]
-			// fmt.Printf("pattern %v row %v: %v \n", pat, i, frame)
-			timings[pat][i] = frame
-			for _, ch := range row {
-				if ch.Effect == 0xf {
-					if ch.EffectParams < 0x20 {
-						// F-speed
-						framesPerRow = int(ch.EffectParams)
-					} else {
-						// F-speed
-						if ch.EffectParams != 0x7D {
-							log.Fatal("only default CIA tempo is supported")
-						}
-					}
-				}
-			}
-			frame += framesPerRow
-		}
-	}
 }
