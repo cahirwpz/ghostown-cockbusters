@@ -1,23 +1,16 @@
 package protracker
 
 import "log"
-import "fmt"
 
 type Timings [][64]int 
 
 func CalculateTimings(mod Module) Timings {
 	timings := make(Timings, len(mod.Song))
 
-	fmt.Println(len(mod.Song), mod.Song)
-	fmt.Println(len(mod.Patterns))
-
 	framesPerRow := 6
 	frame := 0
 
-
 	for j, pat := range mod.Song {
-		println(j, pat)
-
 		for i := 0; i < 64; i++ {
 			timings[j][i] = frame
 
