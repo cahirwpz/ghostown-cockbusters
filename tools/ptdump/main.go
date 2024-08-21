@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"ghostown.pl/protracker"
+	pt "ghostown.pl/protracker"
 )
 
 var (
@@ -32,7 +32,7 @@ Patterns Order: [{{- range .Song}}{{.}} {{end}}]
 {{- end}}
 `
 
-func dumpModule(m protracker.Module) string {
+func dumpModule(m pt.Module) string {
 	t, err := template.New("export").Parse(moduleReportTemplate)
 	if err != nil {
 		log.Fatal(err)
@@ -66,30 +66,16 @@ func main() {
 	}
 
 	writer := bufio.NewWriter(os.Stdout)
-	mod := protracker.ReadModule(file)
+	mod := pt.ReadModule(file)
 
 	if timing {
-		framesPerRow := 6
-		time := 0.0
-		for _, pat := range mod.Song {
+		timings := pt.CalculateTimings(mod)
+		for j, pat := range mod.Song {
 			for i := 0; i < 64; i++ {
 				row := mod.Patterns[pat][i]
-				ts := fmt.Sprintf("%.2f", time)
-				fmt.Printf("%7ss | %02x/%02x %s\n", ts, pat, i, row)
-				for _, ch := range row {
-					if ch.Effect == 0xf {
-						if ch.EffectParams < 0x20 {
-							// F-speed
-							framesPerRow = int(ch.EffectParams)
-						} else {
-							// F-speed
-							if ch.EffectParams != 0x7D {
-								log.Fatal("only default CIA tempo is supported")
-							}
-						}
-					}
-				}
-				time += float64(framesPerRow) / 50.0
+				frame := timings[j][i]
+				ts := fmt.Sprintf("%.2f", float64(frame) / 50.0)
+				fmt.Printf("%7ss | $%02x:%02x %s\n", ts, pat, i, row)
 			}
 		}
 	} else {
