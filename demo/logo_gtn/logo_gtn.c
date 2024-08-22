@@ -3,7 +3,7 @@
 #include <blitter.h>
 #include <gfx.h>
 
-#include "data/logo.c"
+#include "data/logo_gtn.c"
 
 static CopListT *cp;
 
@@ -28,4 +28,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(LogoGtn, NULL, NULL, Init, Kill, Render, NULL);

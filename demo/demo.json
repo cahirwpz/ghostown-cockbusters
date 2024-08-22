@@ -22,5 +22,6 @@
     "textscroll/textscroll.o",
     "textscroll/data/text-scroll.o"
   ],
-  "Abduction": ["abduction/abduction.o"]
+  "Abduction": ["abduction/abduction.o"],
+  "LogoGTN": ["logo_gtn/logo_gtn.o"]
 }

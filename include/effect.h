@@ -85,6 +85,7 @@ typedef struct Effect {
   EffectFuncT VBlank;
 } EffectT;
 
+bool EffectIsRunning(EffectT *effect);
 void EffectLoad(EffectT *effect);
 void EffectInit(EffectT *effect);
 void EffectKill(EffectT *effect);

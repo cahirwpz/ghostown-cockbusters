@@ -31,6 +31,10 @@ static void SendEffectStatus(EffectT *effect) {
 
 #define DONE 1
 
+bool EffectIsRunning(EffectT *effect) {
+  return ((intptr_t)effect->Init & DONE) ? true : false; 
+}
+
 void EffectLoad(EffectT *effect) {
   if ((intptr_t)effect->Load & DONE)
     return;

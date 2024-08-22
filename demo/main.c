@@ -24,20 +24,25 @@ short frameTillEnd;
 
 #include "data/demo.c"
 
-#define EXE_DNA3D 0
-#define EXE_STENCIL3D 1
-#define EXE_COCK_FOLK 2
-#define EXE_TEXOBJ 3
-#define EXE_FLOWER3D 4
-#define EXE_LOGO 5
-#define EXE_ROTATOR 6
-#define EXE_TEXTSCROLL 7
-#define EXE_ABDUCTION 8
-#define EXE_COCK_TECHNO 9
-#define EXE_MAGNIFYING_GLASS 10
-#define EXE_LOADER 11
-#define EXE_PROTRACKER 12
-#define EXE_LAST 13
+static void ShowMemStats(void) {
+  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+}
+
+#define EXE_LOADER 0
+#define EXE_DNA3D 1
+#define EXE_STENCIL3D 2
+#define EXE_COCK_FOLK 3
+#define EXE_TEXOBJ 4
+#define EXE_FLOWER3D 5
+#define EXE_LOGO 6
+#define EXE_ROTATOR 7
+#define EXE_TEXTSCROLL 8
+#define EXE_ABDUCTION 9
+#define EXE_COCK_TECHNO_1 10
+#define EXE_COCK_TECHNO_2 11
+#define EXE_LOGO_GTN 12
+#define EXE_PROTRACKER 13
+#define EXE_LAST 14
 
 typedef struct ExeFile {
   const char *path;
@@ -48,6 +53,7 @@ typedef struct ExeFile {
 #define EXEFILE(NUM, PATH) [NUM] = { .path = PATH, .hunk = NULL, .effect = NULL }
 
 static __code ExeFileT ExeFile[EXE_LAST] = {
+  EXEFILE(EXE_LOADER, "loader.exe"),
   EXEFILE(EXE_DNA3D, "dna3d.exe"),
   EXEFILE(EXE_STENCIL3D, "stencil3d.exe"),
   EXEFILE(EXE_COCK_FOLK, "anim-polygons.exe"),
@@ -57,9 +63,9 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_ROTATOR, "rotator.exe"),
   EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
-  EXEFILE(EXE_COCK_TECHNO, "empty.exe"),
-  EXEFILE(EXE_MAGNIFYING_GLASS, "empty.exe"),
-  EXEFILE(EXE_LOADER, "loader.exe"),
+  EXEFILE(EXE_COCK_TECHNO_1, "empty.exe"),
+  EXEFILE(EXE_COCK_TECHNO_2, "empty.exe"),
+  EXEFILE(EXE_LOGO_GTN, "logo_gtn.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
 
@@ -84,6 +90,7 @@ static EffectT *LoadExe(int num) {
       exe->effect = effect;
       exe->hunk = hunk;
       EffectLoad(effect);
+      Log("[Effect] '%s' is ready\n", effect->name);
       return effect;
     }
     ptr -= 2;
@@ -95,12 +102,14 @@ static EffectT *LoadExe(int num) {
 
 static void UnLoadExe(int num) {
   ExeFileT *exe = &ExeFile[num];
-  EffectUnLoad(exe->effect);
-  FreeHunkList(exe->hunk);
-}
 
-static void ShowMemStats(void) {
-  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+  Log("[Effect] Removing '%s'\n", exe->path);
+
+  EffectUnLoad(exe->effect);
+  exe->effect = NULL;
+  FreeHunkList(exe->hunk);
+  exe->hunk = NULL;
+  ShowMemStats();
 }
 
 void FadeBlack(const u_short *colors, short count, u_int start, short step) {
@@ -167,22 +176,43 @@ $1e00  text scroll
 #endif
 
 static void BgTaskLoop(__unused void *ptr) {
-  Log("Inside background task!\n");
+  Log("[BgTask] Started!\n");
 
   for (;;) {
     switch (BgTaskState) {
       case BG_INIT:
         LoadExe(EXE_PROTRACKER);
-        LoadExe(EXE_MAGNIFYING_GLASS);
+        LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
         LoadExe(EXE_COCK_FOLK);
         LoadExe(EXE_ABDUCTION);
         LoadExe(EXE_DNA3D);
         LoadExe(EXE_LOGO);
+
+        Log("[BgTask] Done initial loading!\n");
         BgTaskState = BG_IDLE;
         break;
 
       case BG_DEMO:
+        {
+          short cmd = TrackValueGet(&EffectLoader, ReadFrameCounter());
+          if (cmd == 0)
+            continue;
+
+          Log("[BgTask] Got command %d!\n", cmd);
+
+          if (cmd > 0) {
+            /* load effect */
+            LoadExe(cmd);
+          } else {
+            /* unload effect */
+            cmd = -cmd;
+
+            while (EffectIsRunning(ExeFile[cmd].effect));
+
+            UnLoadExe(cmd);
+          }
+        }
         break;
 
       default:
