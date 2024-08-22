@@ -261,9 +261,9 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(8);
     custom->bltcon1 = BLITREVERSE;
 
-    custom->bltapt = chunky + 0x2000 - 6;
-    custom->bltbpt = chunky + 0x2000 - 2;
-    custom->bltdpt = planes + 0x2000 - 2;
+    custom->bltapt = chunky + 0x2000 - 6;//-6
+    custom->bltbpt = chunky + 0x2000 -2;//-2
+    custom->bltdpt = planes + 0x2000 -2;//-2
     custom->bltsize = BLTSIZE_VAL(2, 0);
   }
 
@@ -302,9 +302,9 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(4);
     custom->bltcon1 = BLITREVERSE;
 
-    custom->bltapt = planes + 0x1000 - 8;  // czy tu nie powinno być 4, 2, 2?
-    custom->bltbpt = planes + 0x1000 - 6;
-    custom->bltdpt = chunky + 0x1000 - 6;
+    custom->bltapt = planes + 0x1000 - 8 ;   // czy tu nie powinno być 4, 2, 2?
+    custom->bltbpt = planes + 0x1000 - 6 ;
+    custom->bltdpt = chunky + 0x1000 - 6 ;
     custom->bltsize = BLTSIZE_VAL(1, 0);
   }
   WaitBlitter();
@@ -340,25 +340,29 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     WaitBlitter();
 
     /* ((a << 2) & ~0x3333) | (b & 0x3333) */
-    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(2);  // (DEST) | C2P_LF_PASS2 | ASHIFT(2); 
+    custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(2);  
     custom->bltcon1 = BLITREVERSE;
     //custom->bltadat = 0xFFFF;
     //custom->bltbdat = 0x0000;
     
-    custom->bltapt = chunky + 0x2000 - 6;
-    custom->bltbpt = chunky + 0x2000 - 2;
-    custom->bltdpt = planes + 0x2000 - 2;  // OK - nie ruszać
+    custom->bltapt = chunky + 0x2000 - 6;//-6
+    custom->bltbpt = chunky + 0x2000 - 2;//-2
+    custom->bltdpt = planes + 0x2000 - 2;//2  // OK - nie ruszać
     custom->bltsize = BLTSIZE_VAL(2, 0);
   }
   WaitBlitter();
   // słowa są dobrze w planes - nie ruszać
 
+  //********************
+  // Copy to bitplanes - last swap
+  //********************
 
 
 
+  
 
-  //kopia do bitplanu 0 - MSB OK
-  // Swap 2x2, pass 1
+#if 1
+  //kopia do bitplanu 0 - MSB OK "4"
   {
     WaitBlitter();
 
@@ -374,20 +378,21 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 
     custom->bltapt = planes + 2;
     custom->bltbpt = planes;
-    custom->bltdpt = chunky;
-    custom->bltsize = BLTSIZE_VAL(1, 0);
+    custom->bltdpt = chunky + 0xc00;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
   }
   WaitBlitter();
+#endif
 
 
-
-#if 0
-  //kopia do bitplanu 1 OK
+#if 1
+  //kopia do bitplanu 1 OK, "3"
   {
     WaitBlitter();
 
-    /* ((a >> 1) & 0x5555) | (b & ~0x5555) */
+    /* ((a << 1) & ~0x5555) | (b & 0x5555) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(1);
+    //custom->bltcon0 = DEST | A_TO_D;
     custom->bltcon1 = BLITREVERSE;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
@@ -395,25 +400,27 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltbmod = 6;
     custom->bltdmod = 0;
     custom->bltcdat = C2P_MASK3;
+    custom->bltadat = 0x5555;
 
-    custom->bltapt = planes + 0x1000 - 2 - 4;
-    custom->bltbpt = planes + 0x1000 - 2 - 6;
-    custom->bltdpt = chunky + 0x400 - 2;
-    custom->bltsize = BLTSIZE_VAL(1, 0);
+    custom->bltapt = planes + 0x1000;
+    custom->bltbpt = planes + 0x1000 + 2;
+    custom->bltdpt = chunky + 0x400 + 0x800 ;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
   }
   WaitBlitter();
 
 #endif
 
     
-
-  //kopia do bitplanu 2
-  // Swap 2x2, pass 1
+#if 1
+  //kopia do bitplanu 2 OK "2"
   {
     WaitBlitter();
 
     /* ((a >> 1) & 0x5555) | (b & ~0x5555) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(1);
+    //   custom->bltcon0 = DEST | A_TO_D;
+
     custom->bltcon1 = 0;
     custom->bltafwm = -1;
     custom->bltalwm = -1;
@@ -422,23 +429,21 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltdmod = 0;
     custom->bltcdat = C2P_MASK3;
 
-    custom->bltapt = planes + 6;
-    custom->bltbpt = planes + 4;
-    custom->bltdpt = chunky;
-    custom->bltsize = BLTSIZE_VAL(1, 0);
+    custom->bltapt = planes +6 ;
+    custom->bltbpt = planes +4;
+    custom->bltdpt = chunky  + 0x400;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
   }
   WaitBlitter();
+#endif 
 
-
-
-  
 
 #if 1
-  //kopia do bitplanu 3 OK
+  //kopia do bitplanu 3 "1"
   {
     WaitBlitter();
 
-    /* ((a >> 1) & 0x5555) | (b & ~0x5555) */
+    /* ((a << 1) & ~0x5555) | (b & 0x5555) */
     custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(1);
     custom->bltcon1 = BLITREVERSE;
     custom->bltafwm = -1;
@@ -448,22 +453,78 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltdmod = 0;
     custom->bltcdat = C2P_MASK3;
 
-    custom->bltapt = planes + 0x1000 - 4;
-    custom->bltbpt = planes + 0x1000 - 2;
-    custom->bltdpt = chunky + 0x400 - 2;
-    custom->bltsize = BLTSIZE_VAL(1, 0);
+    custom->bltapt = planes + 0x1000 +4 ;    //+4
+    custom->bltbpt = planes + 0x1000 + 6;    //+6
+    custom->bltdpt = chunky + 0x400;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
   }
   WaitBlitter();
 
 #endif
 
-
+  memset(planes, 0, 0xa000);
 
 
 
   
+#if 1
+  //ok
 
-  
+  // Copy bpl0 "1"
+  {
+    WaitBlitter();
+    custom->bltcon0 = (SRCA| DEST) | A_TO_D;
+    custom->bltcon1 = 0;
+    custom->bltamod = 0;
+    custom->bltdmod = 0;
+    custom->bltadat = 0x5555;
+    custom->bltapt = chunky;
+    custom->bltdpt = planes;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
+  }
+#endif
+#if 1
+  // Copy bpl1 "2"
+  {
+    WaitBlitter();
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+    custom->bltcon1 = 0;
+    custom->bltamod = 0;
+    custom->bltdmod = 0;
+    custom->bltadat = 0x3333;
+    custom->bltapt = chunky + 0x400;
+    custom->bltdpt = planes + 0x2800;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
+  }
+#endif
+#if 0
+  // Copy bpl2  OK "3"
+  {
+    WaitBlitter();
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+    custom->bltcon1 = 0;
+    custom->bltamod = 0;
+    custom->bltdmod = 0;
+    custom->bltadat = 0xFF00;
+    custom->bltapt = chunky + 0x800;
+    custom->bltdpt = planes + 2*0x2800;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
+  }
+#endif
+#if 0
+
+  // Copy bpl3 OK
+  {
+    WaitBlitter();
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
+    custom->bltcon1 = 0;
+    custom->bltamod = 0;
+    custom->bltdmod = 0;
+    custom->bltapt = chunky + 0xc00;
+    custom->bltdpt = planes + 3*0x2800;
+    custom->bltsize = BLTSIZE_VAL(1, 512);
+  }
+#endif
   
 
   
