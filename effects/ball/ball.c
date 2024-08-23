@@ -21,6 +21,8 @@ static BitmapT *segment_bp;
 static BitmapT dragon_bp;
 static __data_chip char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
 
+static PixmapT *dragon_chip;
+
 static BitmapT *screen;
 static SprDataT *sprdat;
 static SpriteT sprite[8];
@@ -103,6 +105,7 @@ static void Init(void) {
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP8, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
+  dragon_chip = NewPixmap(dragon_width, dragon_height, PM_CMAP4, MEMF_CHIP);
 
   // c2p requires target bitplanes to be contiguous in memory, therefore we
   // allocate the BitmapT manually
@@ -142,20 +145,19 @@ static void Init(void) {
   *((short*) dragon_bp.planes[1]+131) = 0x5555;
   */
 
-  ChunkyToPlanar(&dragon, &dragon_bp);
+#if 1
+  memcpy(dragon_chip, &dragon, dragon_width * dragon_height / 2); 
+  
+  // Warning: c2p works in place. dragon_chip is destroyed.
+  ChunkyToPlanar(dragon_chip, &dragon_bp);
   Log("c2p done");
 
   //Copy dragon bitmap to background
   memcpy(screen->planes[0], dragon_bp.planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
-
+#endif
   ///UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   if(0) MakeUVMapRenderCode();
-
-  //textureHi = NewPixmap(texture.width, texture.height * 2,
-  //                      PM_CMAP8, MEMF_PUBLIC);
-  //textureLo = NewPixmap(texture.width, texture.height * 2,
-  //                      PM_CMAP8, MEMF_PUBLIC);
 
 
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP|MEMF_CLEAR);
@@ -177,7 +179,19 @@ static void Init(void) {
 
   cp = MakeCopperList(0);
   CopListActivate(cp);
+#if 0
+  sprite[0].sprdat[0].data[0][0] = 0x1111;
+  sprite[0].sprdat[0].data[1][0] = 0x2222;
+  sprite[0].sprdat[0].data[2][0] = 0x4444;
+  sprite[0].sprdat[0].data[3][0] = 0x8888;
+  sprite[0].sprdat[1].data[3][0] = 0x1111;
+  sprite[0].sprdat[1].data[2][0] = 0x2222;
+  sprite[0].sprdat[1].data[1][0] = 0x4444;
+  sprite[0].sprdat[1].data[0][0] = 0x8888;
+#endif
 
+
+  
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
@@ -681,10 +695,10 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 //PROFILE(UVMapRender);
 //PROFILE(PlanarToSprite);
 static void Render(void) {
-  //short xo = 0x40;
-  //short yo = 0x40;
-  //short xo = normfx(SIN(frameCount * 8) * 128);
-  //xshort yo = normfx(COS(frameCount * 7)  * 100);
+  short xo = 0x40;
+  short yo = 0x40;
+  xo = normfx(SIN(frameCount * 8) * 128);
+  yo = normfx(COS(frameCount * 7)  * 100);
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
   //u_char *txtLo = textureLo->pixels + offset;
@@ -694,6 +708,7 @@ static void Render(void) {
     //CropPixmap(&dragon, 0, 0, WIDTH, HEIGHT, segment_p);
 
     //ChunkyToPlanar(segment_p, segment_bp);
+   
 
     //PositionSprite(sprite, xo / 2, yo / 2);
     //PositionSprite(sprite, 20, 20);
