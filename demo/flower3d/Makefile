@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/lotus.c data/background-data.* data/background-pal.* \
-	data/pattern-?-?.c
+	data/pattern-?-?.c data/lotus-anim.c
 
 LIBS := lib3d
 
@@ -14,9 +14,14 @@ PNG2C.pattern-2-1 := --bitmap pattern_2_1,128x128x2
 PNG2C.pattern-2-2 := --bitmap pattern_2_2,128x128x2 --palette pattern_2,4
 PNG2C.pattern-2-3 := --bitmap pattern_2_3,128x128x2
 OBJ2C.lotus := --scale 127.0 --mesh-name flower
+ANIM2C.lotus-anim := --name lotus_anim --scale 127
 
 include $(TOPDIR)/build/effect.mk
 
 %-data.png %-pal.png: %.png
 	@echo "[SPLITIMG] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(TOPDIR)/effects/carrion/data/split-img.py 4 $<
+
+data/%.c: data/%.csv
+	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) anim2c.py $(ANIM2C.$*) $< > $@

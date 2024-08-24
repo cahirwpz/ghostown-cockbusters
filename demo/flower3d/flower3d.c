@@ -25,6 +25,7 @@ static __code int active = 0;
 #include "data/pattern-2-3.c"
 
 #include "data/lotus.c"
+#include "data/lotus-anim.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -61,6 +62,7 @@ static CopListT *MakeCopperList(void) {
 static void Init(void) {
   object = NewObject3D(&flower);
   object->translate.z = fx4i(-256);
+  AllFacesDoubleSided(object);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
@@ -445,14 +447,27 @@ PROFILE(Draw);
 static void Render(void) {
   BitmapClearFast(screen[active]);
 
+  {
+    short *frame = lotus_anim[frameCount % lotus_anim_frames];
+    object->translate.x = *frame++;
+    object->translate.y = *frame++;
+    object->translate.z = *frame++;
+    object->translate.z += fx4i(-256);
+    object->rotate.x = *frame++;
+    object->rotate.y = *frame++;
+    object->rotate.z = *frame++;
+    object->scale.x = *frame++;
+    object->scale.y = *frame++;
+    object->scale.z = *frame++;
+  }
+
   ProfilerStart(Transform);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     UpdateVertexVisibility(object);
     TransformVertices(object);
-    SortFaces(object);
+    SortFacesMinZ(object);
   }
   ProfilerStop(Transform); // Average: 163
 
