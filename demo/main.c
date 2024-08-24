@@ -88,7 +88,6 @@ static EffectT *LoadExe(int num) {
       exe->effect = effect;
       exe->hunk = hunk;
       EffectLoad(effect);
-      Log("[Effect] '%s' is ready\n", effect->name);
       return effect;
     }
     ptr -= 2;
@@ -158,20 +157,6 @@ typedef enum {
 } BgTaskStateT;
 
 static __code volatile BgTaskStateT BgTaskState = BG_IDLE;
-
-#if 0
-$0000  magnifying glass
-$0400  flower3d
-$0800  anim-cock folk
-$0c00  abduction
-$0e00  dna3d
-$1000  logo
-$1200  anim-cock techno
-$1600  stencil3d
-$1a00  rotator
-$1c00  textured object
-$1e00  text scroll
-#endif
 
 static void BgTaskLoop(__unused void *ptr) {
   Log("[BgTask] Started!\n");
