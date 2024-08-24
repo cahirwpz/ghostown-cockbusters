@@ -533,6 +533,8 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
+  Load();
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
 
@@ -571,6 +573,8 @@ static void Kill(void) {
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
+
+  UnLoad();
 }
 
 PROFILE(UpdateGeometry);
@@ -599,4 +603,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(TexTri, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(TexTri, NULL, NULL, Init, Kill, Render, NULL);

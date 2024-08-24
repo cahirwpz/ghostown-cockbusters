@@ -8,7 +8,7 @@
   ],
   "Dna3D": ["dna3d/dna3d.o"],
   "Stencil3D": ["stencil3d/stencil3d.o"],
-  "AnimCock": ["anim-polygons/anim-polygons.o"],
+  "CockFolk": ["cock-folk/cock-folk.o"],
   "TexObj": [
     "texobj/texobj.o",
     "texobj/mainloop.o"
@@ -23,5 +23,6 @@
     "textscroll/data/text-scroll.o"
   ],
   "Abduction": ["abduction/abduction.o"],
-  "LogoGTN": ["logo_gtn/logo_gtn.o"]
+  "LogoGTN": ["logo_gtn/logo_gtn.o"],
+  "CockTechno": ["cock-techno/cock-techno.o"]
 }

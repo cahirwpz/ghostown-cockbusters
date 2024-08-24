@@ -16,7 +16,6 @@
 
 static __code short active = 0;
 
-
 static CopListT *cp[2];
 static CopInsPairT *(*linebpl)[2][HEIGHT];
 static BitmapT *scroll;

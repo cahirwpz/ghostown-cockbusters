@@ -38,11 +38,10 @@ static void ShowMemStats(void) {
 #define EXE_ROTATOR 7
 #define EXE_TEXTSCROLL 8
 #define EXE_ABDUCTION 9
-#define EXE_COCK_TECHNO_1 10
-#define EXE_COCK_TECHNO_2 11
-#define EXE_LOGO_GTN 12
-#define EXE_PROTRACKER 13
-#define EXE_LAST 14
+#define EXE_COCK_TECHNO 10
+#define EXE_LOGO_GTN 11
+#define EXE_PROTRACKER 12
+#define EXE_LAST 13
 
 typedef struct ExeFile {
   const char *path;
@@ -56,15 +55,14 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_LOADER, "loader.exe"),
   EXEFILE(EXE_DNA3D, "dna3d.exe"),
   EXEFILE(EXE_STENCIL3D, "stencil3d.exe"),
-  EXEFILE(EXE_COCK_FOLK, "anim-polygons.exe"),
+  EXEFILE(EXE_COCK_FOLK, "cock-folk.exe"),
   EXEFILE(EXE_TEXOBJ, "texobj.exe"),
   EXEFILE(EXE_FLOWER3D, "flower3d.exe"),
   EXEFILE(EXE_LOGO, "logo.exe"),
   EXEFILE(EXE_ROTATOR, "rotator.exe"),
   EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
-  EXEFILE(EXE_COCK_TECHNO_1, "empty.exe"),
-  EXEFILE(EXE_COCK_TECHNO_2, "empty.exe"),
+  EXEFILE(EXE_COCK_TECHNO, "cock-techno.exe"),
   EXEFILE(EXE_LOGO_GTN, "logo_gtn.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };

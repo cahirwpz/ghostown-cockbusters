@@ -209,13 +209,22 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
-
+static void Load(void) {
   textureHi = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
   textureLo = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
   PixmapToTexture(&texture, textureHi, textureLo);
+}
+
+static void UnLoad(void) {
+  MemFree(textureHi);
+  MemFree(textureLo);
+}
+
+static void Init(void) {
+  Load();
+
+  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
   EnableDMA(DMAF_BLITTER);
 
@@ -241,11 +250,11 @@ static void Kill(void) {
   ResetIntVector(INTB_BLIT);
 
   DeleteCopList(cp);
-  MemFree(textureHi);
-  MemFree(textureLo);
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
+
+  UnLoad();
 }
 
 void GenDrawSpan(short du asm("d2"), short dv asm("d3"));
