@@ -66,7 +66,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER|DMAF_BLITTER|DMAF_COPPER);
+  CopperStop();
+  BlitterStop();
 
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);

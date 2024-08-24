@@ -50,13 +50,55 @@ static short coq_pos = 255-24;
 static short beam_pos[2] = {X(137), X(167)};
 
 static short active_pal = 0;
-static short beam_pal[4][7] = {
+static u_short beam_pal[4][7] = {
   {0xCEF, 0xCEF, 0xCEF, 0xF0F, 0x2AD, 0x079, 0x046},
   {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
   {0xFFF, 0xFFF, 0xFFF, 0xF0F, 0x4CF, 0x29B, 0x268},
   {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
 };
 
+#define pal_count 32
+static const u_short pal[pal_count] = {
+  [0]  = 0x034,
+  [1]  = 0x000,
+  [2]  = 0xFFF,
+  [3]  = 0x9EF,
+  [4]  = 0x6DF,
+  [5]  = 0x3BE,
+  [6]  = 0x29B,
+  [7]  = 0x289,
+  [8]  = 0x157,
+  [9]  = 0x035,
+  [10] = 0x034,
+
+  // Unused
+  [11] = 0xF0F,
+  [12] = 0xF0F,
+  [13] = 0xF0F,
+  [14] = 0xF0F,
+  [15] = 0xF0F,
+
+  // Coq
+  [16] = 0x000,
+  [17] = 0x035,
+  [18] = 0x2AD,
+  [19] = 0x00F,
+  // Beam
+  [20] = 0x000,
+  [21] = 0xCEF,
+  [22] = 0xCEF,
+  [23] = 0xCEF,
+
+  [24] = 0x000,
+  [25] = 0x2AD,
+  [26] = 0x079,
+  [27] = 0x046,
+
+  [28] = 0x000,
+  [29] = 0x000,
+  [30] = 0x000,
+  [31] = 0x000,
+};
 
 static void DrawBackground(BitmapT *dst) {
   BitmapCopyArea(dst, 0, 0, &bkg, &((Area2D){0, 0, WIDTH, HEIGHT}));
@@ -159,12 +201,12 @@ static void RetractBeam(void) {
   Area2D ring_area = {133, h, RING_W, RING_H};
 
   if (counter % 2 == 0) {
-      active_pal = 0;
-      beam_pal[0][0] = beam_gradient[idx];
-      beam_pal[0][1] = beam_gradient[idx];
-      beam_pal[0][2] = beam_gradient[idx];
-      SwitchBeamPal();
-      ++idx;
+    active_pal = 0;
+    beam_pal[0][0] = beam_gradient[idx];
+    beam_pal[0][1] = beam_gradient[idx];
+    beam_pal[0][2] = beam_gradient[idx];
+    SwitchBeamPal();
+    ++idx;
 
     SpriteUpdatePos(&side_beam_l, ++beam_pos[0], Y(56));
     SpriteUpdatePos(&side_beam_r, --beam_pos[1], Y(56));
@@ -201,12 +243,33 @@ static void Escape(void) {
   }
 }
 
-
 static CopListT *MakeCopperList(void) {
-  cp = NewCopList(128);
-  bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
+  CopListT *cp = NewCopList(128);
 
+  bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
   sprptr = CopSetupSprites(cp);
+  CopLoadColors(cp, pal, 0);
+  beam_pal_cp = CopLoadColors(cp, beam_pal[0], 21);
+
+  return cp;
+}
+
+static void Init(void) {
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
+
+  EnableDMA(DMAF_BLITTER);
+
+  DrawBackground(screen[0]);
+  DrawBackground(screen[1]);
+  DrawUfo(screen[0]);
+  DrawUfo(screen[1]);
+
+  cp = MakeCopperList();
+  CopListActivate(cp);
+
+  custom->bplcon2 = BPLCON2_PF2PRI;
 
   CopInsSetSprite(&sprptr[0], &coq);
   CopInsSetSprite(&sprptr[2], &mid_beam);
@@ -218,66 +281,12 @@ static CopListT *MakeCopperList(void) {
   SpriteUpdatePos(&side_beam_l, X(137), Y(56));
   SpriteUpdatePos(&side_beam_r, X(167), Y(56));
 
-  beam_pal_cp = CopLoadColors(cp, beam_pal[0], 21);
-
-  return cp;
-}
-
-static void Init(void) {
-  EnableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
-  // EnableDMA(DMAF_BLITHOG);
-
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-
-  SetColor(0,  0x034);
-  SetColor(1,  0x000);
-  SetColor(2,  0xFFF);
-  SetColor(3,  0x9EF);
-  SetColor(4,  0x6DF);
-  SetColor(5,  0x3BE);
-  SetColor(6,  0x29B);
-  SetColor(7,  0x289);
-  SetColor(8,  0x157);
-  SetColor(9,  0x035);
-  SetColor(10, 0x034);
-
-  // Unused
-  SetColor(11, 0xF0F);
-  SetColor(12, 0xF0F);
-  SetColor(13, 0xF0F);
-  SetColor(14, 0xF0F);
-  SetColor(15, 0xF0F);
-
-  SetColor(16, 0x000);
-  // Coq
-  SetColor(17, 0x035);
-  SetColor(18, 0x2AD);
-  SetColor(19, 0x00F);
-  // Beam
-  SetColor(21, 0xCEF);
-  SetColor(22, 0xCEF);
-  SetColor(23, 0xCEF);
-
-  SetColor(25, 0x2AD);
-  SetColor(26, 0x079);
-  SetColor(27, 0x046);
-
-  cp = MakeCopperList();
-  CopListActivate(cp);
-
-  custom->bplcon2 = BPLCON2_PF2PRI;
-
-  DrawBackground(screen[0]);
-  DrawBackground(screen[1]);
-  DrawUfo(screen[0]);
-  DrawUfo(screen[1]);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
-  // DisableDMA(DMAF_BLITHOG);
+  CopperStop();
+  BlitterStop();
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);

@@ -44,6 +44,7 @@ static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
+  WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
   cp = MakeCopperList();
@@ -52,7 +53,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER);
+  BlitterStop();
+  CopperStop();
   DeleteCopList(cp);
   DeleteBitmap(screen);
 }
@@ -133,9 +135,19 @@ static inline void DrawEdge(short *coords, void *dst,
       : "=d" (x), "=r" (y), "+a" (data) \
       : "i" (WIDTH));
 
+static short *PickFrame(void) {
+  short num = current_frame++;
+
+  for (;;) {
+    if (num < cock_scene_3_frames)
+      return cock_scene_3_frame[num];
+    num -= cock_scene_3_frames;
+  }
+}
+
 static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
   static __code Point2D points[256];
-  short *data = cock_scene_3_frame[current_frame];
+  short *data = PickFrame();
   short n;
 
   _WaitBlitter(custom_);
@@ -168,9 +180,6 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
         DrawEdge((short *)point++, dst, custom_);
     }
   }
-
-  if (++current_frame > cock_scene_3_frames)
-    current_frame = 0;
 }
 
 PROFILE(AnimRender);

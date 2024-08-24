@@ -131,6 +131,7 @@ static void Init(void) {
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   BitmapClear(screen[0]);
   BitmapClear(screen[1]);
+  WaitBlitter();
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);

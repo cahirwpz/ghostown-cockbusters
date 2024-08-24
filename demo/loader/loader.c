@@ -84,7 +84,7 @@ static void MoveUfo(void) {
 
 static void Render(void) {
   static __code short x = 0;
-  short newX = frameCount >> 1;
+  short newX = frameCount >> 3;
   if (newX > 121)
     newX = 122;
   for (; x < newX; x++) {

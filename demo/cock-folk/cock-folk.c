@@ -43,8 +43,10 @@ static CopListT *MakeCopperList(void) {
 
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
+
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
+  WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
   cp = MakeCopperList();
@@ -53,7 +55,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER);
+  BlitterStop();
+  CopperStop();
   DeleteCopList(cp);
   DeleteBitmap(screen);
 }
