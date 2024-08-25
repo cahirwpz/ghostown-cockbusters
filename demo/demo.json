@@ -1,6 +1,10 @@
 {
   "Empty": ["empty/empty.o"],
-  "Loader": ["loader/loader.o"],
+  "Loader": [
+    "loader/data/JazzCat-CockbustersLoader.smp.o",
+    "loader/data/JazzCat-CockbustersLoader.trk.o",
+    "loader/loader.o"
+  ],
   "Protracker": [
     "playpt/data/JazzCat-XenoCoq.trk.o",
     "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
