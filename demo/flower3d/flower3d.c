@@ -81,8 +81,8 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_DUALPF, DEPTH + background_depth);
-  LoadColors(pattern_1_colors, 0);
-  LoadColors(pattern_2_colors, 4);
+  LoadColors(pattern_1_colors, 4);
+  LoadColors(pattern_2_colors, 0);
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
@@ -185,9 +185,9 @@ static __code void **patterns[2][3] = {
   },
 };
 
-static __code short pattern_shade[16] = {
+static __code short pattern_shade[17] = {
   0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 2, 2, 2, 2
+  0, 1, 1, 1, 2, 2, 2, 2, 2
 };
 
 static void DrawObject(Object3D *object, void **planes,
@@ -379,6 +379,11 @@ static void DrawObject(Object3D *object, void **planes,
         custom_->bltdpt = dst;
         custom_->bltsize = bltsize;
       }
+
+#if 0
+      Assert(FACE(ii)->flags <= 16);
+      Assert(FACE(ii)->flags >= 0);
+#endif
 
       {
         void **srcbpl;

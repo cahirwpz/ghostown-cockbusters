@@ -25,6 +25,7 @@ static __code int active = 0;
 #include "data/pattern-2-3.c"
 
 #include "data/kurak-head.c"
+#include "data/cock-anim.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -183,9 +184,9 @@ static __code void **patterns[2][3] = {
   },
 };
 
-static __code short pattern_shade[16] = {
+static __code short pattern_shade[17] = {
   0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 2, 2, 2, 2
+  0, 1, 1, 1, 2, 2, 2, 2, 2
 };
 
 static void DrawObject(Object3D *object, void **planes,
@@ -378,6 +379,11 @@ static void DrawObject(Object3D *object, void **planes,
         custom_->bltsize = bltsize;
       }
 
+#if 0
+      Assert(FACE(ii)->flags <= 16);
+      Assert(FACE(ii)->flags >= 0);
+#endif
+
       {
         void **srcbpl;
         void **dstbpl = planes;
@@ -445,9 +451,22 @@ PROFILE(Draw);
 static void Render(void) {
   BitmapClearFast(screen[active]);
 
+  {
+    short *frame = cock_anim[frameCount % cock_anim_frames];
+    object->translate.x = *frame++;
+    object->translate.y = *frame++;
+    object->translate.z = *frame++;
+    object->translate.z += fx4i(-256);
+    object->rotate.x = *frame++;
+    object->rotate.y = *frame++;
+    object->rotate.z = *frame++;
+    object->scale.x = *frame++;
+    object->scale.y = *frame++;
+    object->scale.z = *frame++;
+  }
+
   ProfilerStart(Transform);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 8;
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     UpdateVertexVisibility(object);
