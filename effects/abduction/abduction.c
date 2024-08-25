@@ -248,16 +248,16 @@ static CopListT *MakeCopperList(void) {
 
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
   sprptr = CopSetupSprites(cp);
-  CopLoadColors(cp, pal, 0);
   beam_pal_cp = CopLoadColors(cp, beam_pal[0], 21);
 
-  return cp;
+  return CopListFinish(cp);
 }
 
 static void Init(void) {
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
+  LoadColors(pal, 0);
 
   EnableDMA(DMAF_BLITTER);
 
