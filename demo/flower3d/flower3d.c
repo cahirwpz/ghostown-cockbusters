@@ -24,6 +24,7 @@ static __code int active = 0;
 #include "data/pattern-2-2.c"
 #include "data/pattern-2-3.c"
 
+#include "data/flower3d.c"
 #include "data/lotus.c"
 #include "data/lotus-anim.c"
 
@@ -60,6 +61,8 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
+  TimeWarp(flower3d_start);
+
   object = NewObject3D(&flower);
   object->translate.z = fx4i(-256);
   AllFacesDoubleSided(object);
@@ -453,7 +456,7 @@ static void Render(void) {
   BitmapClearFast(screen[active]);
 
   {
-    short *frame = lotus_anim[frameCount % lotus_anim_frames];
+    short *frame = lotus_anim[(frameCount - flower3d_start) % lotus_anim_frames];
     object->translate.x = *frame++;
     object->translate.y = *frame++;
     object->translate.z = *frame++;

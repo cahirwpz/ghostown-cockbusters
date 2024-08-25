@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/lotus.c data/background-data.* data/background-pal.* \
-	data/pattern-?-?.c data/lotus-anim.c
+	data/pattern-?-?.c data/lotus-anim.c data/flower3d.c
 
 LIBS := lib3d
 

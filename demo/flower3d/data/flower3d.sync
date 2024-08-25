@@ -1,0 +1,3 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start $0200
+@event end $0600

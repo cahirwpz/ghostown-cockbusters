@@ -26,6 +26,7 @@ static __code int active = 0;
 
 #include "data/kurak-head.c"
 #include "data/cock-anim.c"
+#include "data/stencil3d.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -60,6 +61,8 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
+  TimeWarp(stencil3d_start);
+
   object = NewObject3D(&kurak);
   object->translate.z = fx4i(-256);
 
@@ -452,7 +455,7 @@ static void Render(void) {
   BitmapClearFast(screen[active]);
 
   {
-    short *frame = cock_anim[frameCount % cock_anim_frames];
+    short *frame = cock_anim[(frameCount - stencil3d_start) % cock_anim_frames];
     object->translate.x = *frame++;
     object->translate.y = *frame++;
     object->translate.z = *frame++;

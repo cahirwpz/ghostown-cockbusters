@@ -92,7 +92,7 @@ void EffectUnLoad(EffectT *effect) {
 }
 
 void EffectRun(EffectT *effect) {
-  SetFrameCounter(0);
+  SetFrameCounter(frameCount);
 
   lastFrameCount = ReadFrameCounter();
 
@@ -104,4 +104,8 @@ void EffectRun(EffectT *effect) {
       effect->Render();
     lastFrameCount = t;
   } while (!exitLoop);
+}
+
+void TimeWarp(u_short frame) {
+  frameCount = frame;
 }
