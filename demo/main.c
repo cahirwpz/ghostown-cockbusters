@@ -305,11 +305,8 @@ int main(void) {
   AddIntServer(INTB_VERTB, VBlankInterrupt);
 
   /* Background thread may use tracks as well. */
-  {
-    TrackT **trkp = AllTracks;
-    while (*trkp)
-      TrackInit(*trkp++);
-  }
+  TrackInit(&EffectNumber);
+  TrackInit(&EffectLoader);
 
   TaskInit(&BgTask, "background", BgTaskStack, sizeof(BgTaskStack));
   TaskRun(&BgTask, 1, BgTaskLoop, NULL);
