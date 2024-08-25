@@ -40,11 +40,6 @@ extern short lastFrameCount;
  */
 extern bool exitLoop;
 
-#ifdef INTRO
-extern short frameFromStart;
-extern short frameTillEnd;
-#endif
-
 #ifndef DEMO
 void TimeWarp(u_short frame);
 #else

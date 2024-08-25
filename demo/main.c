@@ -19,9 +19,6 @@
 #include <system/memfile.h>
 #include <system/memory.h>
 
-short frameFromStart;
-short frameTillEnd;
-
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
@@ -132,12 +129,8 @@ void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   }
 }
 
-short UpdateFrameCount(void) {
-  short t = ReadFrameCounter();
-  frameCount = t;
-  frameFromStart = t - CurrKeyFrame(&EffectNumber);
-  frameTillEnd = NextKeyFrame(&EffectNumber) - t;
-  return t;
+short ReadFrameCount(void) {
+  return ReadFrameCounter();
 }
 
 static volatile EffectFuncT VBlankHandler = NULL;
@@ -219,12 +212,12 @@ static void RunLoader(void) {
   BgTaskState = BG_INIT;
 
   while (BgTaskState != BG_IDLE) {
-    short t = UpdateFrameCount();
+    frameCount = ReadFrameCount();
     if (lastFrameCount != frameCount) {
       Loader->Render();
       TaskWaitVBlank();
     }
-    lastFrameCount = t;
+    lastFrameCount = frameCount;
   }
 
   EffectKill(Loader);
@@ -261,7 +254,8 @@ static void RunEffects(void) {
 
     {
       EffectT *effect = ExeFile[curr].effect;
-      short t = UpdateFrameCount();
+      short t = ReadFrameCount();
+      frameCount = t;
       if ((lastFrameCount != frameCount) && effect->Render)
         effect->Render();
       lastFrameCount = t;
