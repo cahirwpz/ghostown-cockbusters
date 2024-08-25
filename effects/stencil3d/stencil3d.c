@@ -80,8 +80,8 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_DUALPF, DEPTH + background_depth);
-  LoadColors(pattern_1_colors, 0);
-  LoadColors(pattern_2_colors, 4);
+  LoadColors(pattern_1_colors, 4);
+  LoadColors(pattern_2_colors, 0);
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
