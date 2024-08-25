@@ -80,7 +80,7 @@ static void MakeUVMapRenderCode(void) {
     } else {
       *code++ = 0x7000;  /* 7000      | moveq  #0,d0 */
     }
-    if ((uv = *data++) >= 0) {
+     if ((uv = *data++) >= 0) {
       *code++ = 0x802a;  /* 802a yyyy | or.b   yyyy(a2),d0 */
       *code++ = uv;
     }
@@ -105,8 +105,7 @@ static CopListT *MakeCopperList(int active) {
 
 static void Init(void) {
   u_short bitplanesz = ((dragon_width + 15) & ~15) / 8 * dragon_height;
-    
-
+  
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
   //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
@@ -140,31 +139,12 @@ static void Init(void) {
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   Log("&dragon_bp = %p\n", dragon_bp);
 
-  /* *((short*) dragon_bp.planes[0]) = 0x1111;
-  *((short*) dragon_bp.planes[0]+1) = 0x2222;
-  *((short*) dragon_bp.planes[0]+2) = 0x3333;
-  *((short*) dragon_bp.planes[0]+3) = 0x4444;
-
-  *((short*) dragon_bp.planes[1]+128) = 0x5555;
-  *((short*) dragon_bp.planes[1]+129) = 0x5555;
-  *((short*) dragon_bp.planes[1]+130) = 0x5555;
-  *((short*) dragon_bp.planes[1]+131) = 0x5555;
-  */
-
 #if 1
   {
     void *tmp;
-    Log("dragon.pixels = %p\n", dragon.pixels);
-
     tmp = dragon_chip->pixels;
-    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
-
     memcpy(dragon_chip, &dragon, sizeof(dragon));
-    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
-
     dragon_chip->pixels = tmp;
-    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
-
     memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
     Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
   }
@@ -176,21 +156,19 @@ static void Init(void) {
   Log("c2p done");
 
   
-
+#if 1
   //Copy dragon bitmap to background
   memcpy(screen->planes[0], dragon_bp.planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
+#endif
 
-  ///UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  if(0) MakeUVMapRenderCode();
-
+#if 0
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode();
+#endif
+  
   Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
-  Log("Begin 64x64 c2p\n");
   
-  ChunkyToPlanar(segment_p, segment_bp);
-
-  
-
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP | MEMF_CLEAR);
 
   {
@@ -210,10 +188,10 @@ static void Init(void) {
 
   cp = MakeCopperList(0);
   CopListActivate(cp);
-#if 1
+#if 0
   {
     short i;
-    for(i = 0; i < 4; i++){
+    for(i = 0; i < 8; i++){
       sprite[i].sprdat[0].data[0][0] = 0x1111;
       sprite[i].sprdat[0].data[1][0] = 0x2222;
       sprite[i].sprdat[0].data[2][0] = 0x4444;
@@ -226,8 +204,6 @@ static void Init(void) {
   }
 #endif
 
-
-  
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
@@ -607,49 +583,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 
 }
 #endif
-#if 0
-static void BitmapToSprite(BitmapT *input, SpriteT sprite[8]) {
-  //void *planes = input->planes[0];
-  short bltsize = (input->height << 6) | 1;
-  short i = 0;
 
-  WaitBlitter();
-
-  custom->bltafwm = -1;
-  custom->bltalwm = -1;
-  custom->bltcon0 = (SRCA | DEST) | A_TO_D;
-  custom->bltcon1 = 0;
-  custom->bltamod = 1;
-  custom->bltdmod = 3;
-
-  for (i = 0; i < 4; i++) {
-    SprDataT *sprdat0 = (sprite++)->sprdat;
-    SprDataT *sprdat1 = (sprite++)->sprdat;
-
-    WaitBlitter();
-    custom->bltapt = input->planes[0];
-    custom->bltdpt = &sprdat0->data[0][0];
-    custom->bltsize = bltsize;
-
-    WaitBlitter();
-    custom->bltapt = input->planes[1];
-    custom->bltdpt = &sprdat0->data[0][1];
-    custom->bltsize = bltsize;
-
-    WaitBlitter();
-    custom->bltapt = input->planes[2];
-    custom->bltdpt = &sprdat1->data[0][0];
-    custom->bltsize = bltsize;
-
-    WaitBlitter();
-    custom->bltapt = input->planes[3];
-
-    custom->bltdpt = &sprdat1->data[0][1];
-    custom->bltsize = bltsize;
-
-  }
-}
-#endif
 static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
   short x = X((S_WIDTH - WIDTH) / 2) + xo;
   short y = Y((S_HEIGHT - HEIGHT) / 2) + yo;
@@ -707,23 +641,24 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 
       custom->bltapt = planar->planes[0] + 2*i;
       custom->bltdpt = sprdat;
-      custom->bltsize = BLITTERSZ(HEIGHT, 1);
+      custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
-
     //Sprite 0, plane 1
     {
       WaitBlitter();
 
-      custom->bltcon0 = SRCA | DEST | A_OR_B;
+      custom->bltcon0 = SRCA | DEST | A_TO_D;
       custom->bltafwm = -1;
       custom->bltalwm = -1;
       custom->bltamod = 6;
       custom->bltdmod = 2;
-
+      custom->bltadat = 0xFFFF;
       custom->bltapt = planar->planes[1] + 2*i;
       custom->bltdpt = sprdat + 2;
-      custom->bltsize = BLITTERSZ(HEIGHT, 1);
+      custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
+    WaitBlitter();
+
     sprdat = sprites[i*2 + 1].sprdat->data;
 
     //Sprite 1, plane 2
@@ -738,14 +673,14 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 
       custom->bltapt = planar->planes[2] + 2*i;
       custom->bltdpt = sprdat;
-      custom->bltsize = BLITTERSZ(HEIGHT, 1);
+      custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
 
     //Sprite 1, plane 3
     {
       WaitBlitter();
 
-      custom->bltcon0 = SRCA | DEST | A_OR_B;
+      custom->bltcon0 = SRCA | DEST | A_TO_D;
       custom->bltafwm = -1;
       custom->bltalwm = -1;
       custom->bltamod = 6;
@@ -753,10 +688,11 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 
       custom->bltapt = planar->planes[3] + 2*i;
       custom->bltdpt = sprdat + 2;
-      custom->bltsize = BLITTERSZ(HEIGHT, 1);
+      custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
   }
   WaitBlitter();
+
 }
 #endif
 
@@ -764,9 +700,9 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 //PROFILE(PlanarToSprite);
 static void Render(void) {
   short xo = 0x80;
-  short yo = 0x40;
-  //xo = normfx(SIN(frameCount * 8) * 128);
-  //yo = normfx(COS(frameCount * 7)  * 100);
+  short yo = 0x00;
+  xo = normfx(SIN(frameCount * 8) * 0x30);
+  yo = normfx(COS(frameCount * 7)  * 0x20);
  
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
@@ -774,13 +710,12 @@ static void Render(void) {
 
   //ProfilerStart(UVMapRender);
   {
-    CropPixmap(&dragon, 320-64, 0, WIDTH, HEIGHT, segment_p);
-    
+    //CropPixmap(&dragon, 320-64, 0, WIDTH, HEIGHT, segment_p);
+    CropPixmap(&dragon, yo+0x80, xo+0x80, WIDTH, HEIGHT, segment_p);
     ChunkyToPlanar(segment_p, segment_bp);
     PlanarToSprite(segment_bp, sprite);
     
-    PositionSprite(sprite, xo / 2, yo / 2);
-    //PositionSprite(sprite, 20, 20);
+    PositionSprite(sprite, xo, yo);
     CopListActivate(cp);
   }
   //ProfilerStop(UVMapRender);
