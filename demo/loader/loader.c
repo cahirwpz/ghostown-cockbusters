@@ -4,9 +4,16 @@
 #include <gfx.h>
 #include <line.h>
 #include <sprite.h>
+#include <ptplayer.h>
+
+#define _SYSTEM
+#include <system/cia.h>
 
 #include "data/loader.c"
 #include "data/ufo.c"
+
+extern u_char LoaderModule[];
+extern u_char LoaderSamples[];
 
 static __code BitmapT *screen;
 static __code CopListT *cp;
@@ -22,6 +29,10 @@ static __code CopInsPairT *sprptr;
 #define DEPTH 3
 
 static void Init(void) {
+  PtInstallCIA();
+  PtInit(LoaderModule, LoaderSamples, 1);
+  PtEnable = 1;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   cp = NewCopList(40);
 
@@ -51,6 +62,7 @@ static void Init(void) {
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
+
 }
 
 static void Kill(void) {
@@ -58,6 +70,10 @@ static void Kill(void) {
   DeleteCopList(cp);
 
   DeleteBitmap(screen);
+
+  PtEnd();
+  PtRemoveCIA();
+  DisableDMA(DMAF_AUDIO);
 }
 
 static void MoveUfo(void) {

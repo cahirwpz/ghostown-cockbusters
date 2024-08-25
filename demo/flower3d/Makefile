@@ -24,4 +24,4 @@ include $(TOPDIR)/build/effect.mk
 
 data/%.c: data/%.csv
 	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) anim2c.py $(ANIM2C.$*) $< > $@
+	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@
