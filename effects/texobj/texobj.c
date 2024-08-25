@@ -38,12 +38,12 @@ static const short Pixel[16] = {
   0x8080, 0x8484, 0x8888, 0x8c8c, 0xc0c0, 0xc4c4, 0xc8c8, 0xcccc,
 };
 
-static const short texture_light[16] = {
+static const short texture_light[17] = {
   4, 4, 4, 4,
   3, 3, 3,
   2, 2, 2,
   1, 1, 1,
-  0, 0, 0,
+  0, 0, 0, 0,
 };
 
 static void ScrambleBackground(void) {
