@@ -7,9 +7,10 @@
 #  7 - ROTATOR
 #  8 - TEXTSCROLL
 #  9 - ABDUCTION
-# 10 - COCK_TECHNO_1
+# 10 - COCK_TECHNO
 # 11 - LOGO_GTN
-# 12 - PROTRACKER
+# 12 - COCK_FREEDOM
+# 13 - PROTRACKER
 
 @module playpt/data/JazzCat-XenoCoq.mod
 

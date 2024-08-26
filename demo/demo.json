@@ -28,5 +28,6 @@
   ],
   "Abduction": ["abduction/abduction.o"],
   "LogoGTN": ["logo_gtn/logo_gtn.o"],
-  "CockTechno": ["cock-techno/cock-techno.o"]
+  "CockTechno": ["cock-techno/cock-techno.o"],
+  "CockFreedom": ["cock-freedom/cock-freedom.o"]
 }

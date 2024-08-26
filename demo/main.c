@@ -37,8 +37,9 @@ static void ShowMemStats(void) {
 #define EXE_ABDUCTION 9
 #define EXE_COCK_TECHNO 10
 #define EXE_LOGO_GTN 11
-#define EXE_PROTRACKER 12
-#define EXE_LAST 13
+#define EXE_COCK_FREEDOM 12
+#define EXE_PROTRACKER 13
+#define EXE_LAST 14
 
 typedef struct ExeFile {
   const char *path;
@@ -60,6 +61,7 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
   EXEFILE(EXE_COCK_TECHNO, "cock-techno.exe"),
+  EXEFILE(EXE_COCK_FREEDOM, "cock-freedom.exe"),
   EXEFILE(EXE_LOGO_GTN, "logo_gtn.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
