@@ -17,11 +17,16 @@
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
+
+
 // target screen bitplanes
 static BitmapT dragon_bp;
 static __data_chip char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
 
 static PixmapT *dragon_chip;
+
+static u_char *texture_hi;
+static u_char *texture_lo;
 
 static BitmapT *screen;
 static SprDataT *sprdat;
@@ -111,6 +116,10 @@ static void Init(void) {
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
+
+  texture_hi = MemAlloc(WIDTH*HEIGHT/2, MEMF_CHIP);
+  texture_lo = MemAlloc(WIDTH*HEIGHT/2, MEMF_CHIP);
+  
   
   dragon_chip = NewPixmap(dragon_width, dragon_height, PM_CMAP4, MEMF_CHIP);
 
@@ -152,8 +161,8 @@ static void Init(void) {
 #endif
   
   // Warning: c2p works in place. dragon_chip is destroyed.
-  ChunkyToPlanar(dragon_chip, &dragon_bp);
-  Log("c2p done");
+  //ChunkyToPlanar(dragon_chip, &dragon_bp);
+  //Log("c2p done");
 
   
 #if 1
@@ -162,7 +171,7 @@ static void Init(void) {
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
 #endif
 
-#if 0
+#if 1
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode();
 #endif
@@ -239,6 +248,9 @@ static void Kill(void) {
 #define C2P_LF_PASS1 (NABNC | ANBC | ABNC | ABC)
 #define C2P_LF_PASS2 (NABC | ANBNC | ABNC | ABC)
 
+/*
+ * Chunky to Planar conversion using blitter
+ */
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   char *planes = output->planes[0];
   char *chunky = input->pixels;
@@ -617,6 +629,89 @@ static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
 }
 
 
+#define POS4BPP(pixels, iw, x0, y0) ((pixels) + (y0)*(iw)/2 + (x0)/2)
+static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
+			      short width, short height, u_char* thi, u_char *tlo){
+
+  u_char *chunky = input->pixels;
+  if(x0 & 0x1){
+    //x is odd - we have to shift left by 4 bits
+    {
+      WaitBlitter();
+      /* (A << 4) & 0xF0F0  */
+      custom->bltcon0 = (SRCA | DEST) | ANBC | ABC | ASHIFT(4);
+      custom->bltcon1 = BLITREVERSE;
+      custom->bltafwm = -1;
+      custom->bltalwm = -1;
+      custom->bltamod = (input->width - width) / 2;
+      custom->bltdmod = 0;
+      custom->bltcdat = 0xf0f0;
+      custom->bltadat = 0xcafe;
+
+      custom->bltapt = POS4BPP(chunky, input->width, x0+width, y0+width) - 2;
+      custom->bltdpt = thi + (width*height/2) - 2; //ok
+      //BLTSIZE_VAL is in words. 4px per word
+      custom->bltsize = BLTSIZE_VAL(width/4, height);
+  }
+  {
+      WaitBlitter();
+      /* (A << 4) & 0xF0F0  */
+      custom->bltcon0 = (SRCA | DEST) | ANBC | ABC | ASHIFT(4);
+      custom->bltcon1 = BLITREVERSE;
+      custom->bltafwm = -1;
+      custom->bltalwm = -1;
+      custom->bltamod = (input->width - width) / 2;
+      custom->bltdmod = 0;
+      custom->bltcdat = 0x0f0f;
+      custom->bltadat = 0xcafe;
+
+      custom->bltapt = POS4BPP(chunky, input->width, x0+width, y0+width) - 2;
+      custom->bltdpt = tlo + (width*height/2) - 2; //ok
+      //BLTSIZE_VAL is in words. 4px per word
+      custom->bltsize = BLTSIZE_VAL(width/4, height);
+  }
+  WaitBlitter();
+  } else {
+  // x is even
+  {
+      WaitBlitter();
+      /* A & 0xF0F0  */
+      custom->bltcon0 = (SRCA | DEST) | ANBC | ABC ;
+      custom->bltcon1 = 0;
+      custom->bltafwm = -1;
+      custom->bltalwm = -1;
+      custom->bltamod = (input->width - width) / 2;
+      custom->bltdmod = 0;
+      custom->bltcdat = 0xf0f0;
+
+      custom->bltapt = POS4BPP(chunky, input->width, x0, y0);
+      custom->bltdpt = thi;
+      custom->bltsize = BLTSIZE_VAL(width/4, height);
+  }
+  {
+      WaitBlitter();
+      /* A & 0xF0F0  */
+      custom->bltcon0 = (SRCA | DEST) | ANBC | ABC ;
+      custom->bltcon1 = 0;
+      custom->bltafwm = -1;
+      custom->bltalwm = -1;
+      custom->bltamod = (input->width - width) / 2;
+      custom->bltdmod = 0;
+      custom->bltcdat = 0x0f0f;
+
+      custom->bltapt = POS4BPP(chunky, input->width, x0, y0);
+      custom->bltdpt = tlo;
+      custom->bltsize = BLTSIZE_VAL(width/4, height);
+    }
+  WaitBlitter();
+  }
+
+  
+  Log("CPB done\n");
+}
+
+
+
 #if 1
 #define BLITTERSZ(h, w) ((h << 6) | w)
 static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
@@ -697,7 +792,9 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 #endif
 
 //PROFILE(UVMapRender);
-//PROFILE(PlanarToSprite);
+PROFILE(ChunkyToPlanar);
+PROFILE(CropPixmap);
+PROFILE(PlanarToSprite);
 static void Render(void) {
   short xo = 0x80;
   short yo = 0x00;
@@ -710,13 +807,24 @@ static void Render(void) {
 
   //ProfilerStart(UVMapRender);
   {
-    //CropPixmap(&dragon, 320-64, 0, WIDTH, HEIGHT, segment_p);
-    CropPixmap(&dragon, yo+0x80, xo+0x80, WIDTH, HEIGHT, segment_p);
+    CropPixmap(&dragon, 0, 112, WIDTH, HEIGHT, segment_p);
+    //ProfilerStart(CropPixmap);
+    CropPixmapBlitter(dragon_chip, 0, 112, WIDTH, HEIGHT, texture_hi, texture_lo);
+    //ProfilerStop(CropPixmap);
+
+    UVMapRender(segment_p->pixels, texture_lo, texture_lo);
+
+    
+    ProfilerStart(ChunkyToPlanar);
     ChunkyToPlanar(segment_p, segment_bp);
+    ProfilerStop(ChunkyToPlanar);
+  
+    ProfilerStart(PlanarToSprite);
     PlanarToSprite(segment_bp, sprite);
+    ProfilerStop(PlanarToSprite);
     
     PositionSprite(sprite, xo, yo);
-    CopListActivate(cp);
+    CopListActivate(cp); 
   }
   //ProfilerStop(UVMapRender);
 
