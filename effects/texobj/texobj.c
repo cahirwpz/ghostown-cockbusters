@@ -20,6 +20,9 @@
 #include "data/cube-tex2.c"
 #include "data/cube-tex3.c"
 #include "data/cube-tex4.c"
+#include "data/cube-anim.c"
+
+#include "data/texobj.c"
 
 static __code BitmapT *screen[2];
 static __code CopListT *cp[2];
@@ -191,6 +194,10 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2, int color) {
         u = s02.dudy - s12.dudy;
         v = s02.dvdy - s12.dvdy;
       }
+
+      /* TODO needs debugging */
+      if (x == 0)
+        return;
 
       du = div16(u << 8, x);
       dv = div16(v << 8, x);
@@ -534,6 +541,7 @@ static void UnLoad(void) {
 
 static void Init(void) {
   Load();
+  TimeWarp(texobj_start);
 
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
@@ -583,10 +591,22 @@ PROFILE(DrawObject);
 static void Render(void) {
   chunky = screen[active]->planes[0];
 
+  {
+    short *frame = cube_anim[(frameCount - texobj_start) % cube_anim_frames];
+    object->translate.x = *frame++;
+    object->translate.y = *frame++;
+    object->translate.z = *frame++;
+    object->translate.z += fx4i(-256);
+    object->rotate.x = *frame++;
+    object->rotate.y = *frame++;
+    object->rotate.z = *frame++;
+    object->scale.x = *frame++;
+    object->scale.y = *frame++;
+    object->scale.z = *frame++;
+  }
+
   ProfilerStart(UpdateGeometry);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
-
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     TransformVertices(object);

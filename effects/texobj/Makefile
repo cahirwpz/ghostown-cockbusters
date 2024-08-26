@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 SOURCES := texobj.c mainloop.asm
-CLEAN-FILES := data/cube-bg.c data/cube-tex?.c data/cube.c
+CLEAN-FILES := data/cube-bg.c data/cube-tex?.c data/cube.c data/texobj.c data/cube-anim.c
 
 LIBS := lib3d
 
@@ -12,5 +12,10 @@ PNG2C.cube-tex2 := --pixmap texture_2,128x128x8,+onlydata
 PNG2C.cube-tex3 := --pixmap texture_3,128x128x8,+onlydata
 PNG2C.cube-tex4 := --pixmap texture_4,128x128x8,+onlydata
 OBJ2C.cube := --scale 48.0 --mesh-name cube --no-edges --textured --texture-scale 2048.0
+ANIM2C.cube-anim := --name cube_anim --scale 127
 
 include $(TOPDIR)/build/effect.mk
+
+data/%.c: data/%.csv
+	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@
