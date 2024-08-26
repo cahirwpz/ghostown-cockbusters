@@ -19,9 +19,9 @@ $0000 11 !step  # logo ghostown (*)
 $0200 5         # flower3d (*)
 $0600 3         # anim-cock folk (*)
 $0a00 9         # abduction (*)
-$0c00 1         # dna3d (*)
-$1000 6         # logo (*)
-$1200 10        # anim-cock techno
+$0c00 1         # dna3d
+$1000 6         # logo
+$1200 12        # anim-cock techno
 $1400 2         # stencil3d
 $1600 7         # rotator (!)
 $1800 4         # textured object (!)
@@ -32,18 +32,21 @@ $243f -1        # the end
 
 @track EffectLoader
 $0200 -11 !event
+$0201   1
 $0600  -5
-$0a00  10
-$0a01  -3
-$0c00   2
-$0c01  -9
-$1000   7
-$1001  -1
-$1200   4
-$1201  -6
+$0601   6
+$0a00  -3
+$0a01  12
+$0c00  -9
+$0c01   2
+$1000  -1
+$1001   7
+$1200  -6
+$1201   4
+$1202  10
 $1600  -2
 $1800  -7
-$1c00   8
-$1c01  -4
+$1c00  -4
+$1c01   8
 $243f  -8
 @end
