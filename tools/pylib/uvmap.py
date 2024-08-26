@@ -57,21 +57,32 @@ def Ball(x, y):
         pass
 
 
+def Copy(x, y):
+    #r = dist(x, y, 0.0, 0.0)
+    #if r > 1:
+    #    return None
+    return (x,y)
+    
 def Lens(x, y):
-    r = dist(x, y, 0.0, 0.0)
+    # T4bpp representation makes the address->pixel mapping non 1:1
+    # and there are twice as many pixels in a row than in a col. y/2
+    # is there to make up for it
+    r = dist(x, y, 0, 0)
     if r > 1:
         return None
+    #if x < 0: #or y < 0:
+    #    return (0,0)
     r2 = r*r
     # mnożnik r - zoom
     # mnożnik r2 - zniekształcenie
-    r = 0.5*r + 0.3*r2
+    r = 0.2*r + 0.1*r2
 
     # TODO: zrobic funkcje phi albo angle z tych ifow
     try:
         phi = atan2(x, y)
         u = r * cos(phi)
         v = r * sin(phi)
-        return (u, v)
+        return (u+0.5, v+0.5)
     except ValueError:
         pass
 

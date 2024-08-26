@@ -17,7 +17,7 @@
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
-
+#define Log(...) 
 
 // target screen bitplanes
 static BitmapT dragon_bp;
@@ -157,12 +157,24 @@ static void Init(void) {
     memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
     Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
   }
-  
 #endif
   
   // Warning: c2p works in place. dragon_chip is destroyed.
-  //ChunkyToPlanar(dragon_chip, &dragon_bp);
-  //Log("c2p done");
+  ChunkyToPlanar(dragon_chip, &dragon_bp);
+  Log("c2p done");
+  // We have to use blitter to crop the pixmap in Render(),
+  //so dragon needs to stay in chipmem.
+#if 1
+  {
+    void *tmp;
+    tmp = dragon_chip->pixels;
+    memcpy(dragon_chip, &dragon, sizeof(dragon));
+    dragon_chip->pixels = tmp;
+    memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
+    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
+  }
+#endif
+
 
   
 #if 1
@@ -633,6 +645,12 @@ static void CropPixmap(const PixmapT *input, u_short x0, u_short y0,
 static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
 			      short width, short height, u_char* thi, u_char *tlo){
 
+  // The blitter operated on words, therefore we have 4 different shift cases
+  // depending how the edge of cropped pixmap is aligned to word boundaries.
+  // That is, if x0 % 4 equals...
+  // 0: no shift,        1: left shift by 4
+  // 2: left shift by 8, 3: left shift by 12
+  // TODO: implement <<8 and <<12 blocks
   u_char *chunky = input->pixels;
   if(x0 & 0x1){
     //x is odd - we have to shift left by 4 bits
@@ -791,29 +809,30 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 }
 #endif
 
-//PROFILE(UVMapRender);
+PROFILE(UVMapRender);
 PROFILE(ChunkyToPlanar);
-PROFILE(CropPixmap);
+PROFILE(CropPixmapBlitter);
 PROFILE(PlanarToSprite);
 static void Render(void) {
-  short xo = 0x80;
+  short xo = 0x00;
   short yo = 0x00;
-  xo = normfx(SIN(frameCount * 8) * 0x30);
-  yo = normfx(COS(frameCount * 7)  * 0x20);
+  xo = normfx(SIN(frameCount * 4) * 0x50);
+  //yo = normfx(COS(frameCount * 7)  * 0x20);
+  yo = normfx(COS(frameCount * 6)  * 0x30);
  
   //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
   //u_char *txtHi = textureHi->pixels + offset;
   //u_char *txtLo = textureLo->pixels + offset;
 
-  //ProfilerStart(UVMapRender);
+  ProfilerStart(UVMapRender);
   {
-    CropPixmap(&dragon, 0, 112, WIDTH, HEIGHT, segment_p);
-    //ProfilerStart(CropPixmap);
-    CropPixmapBlitter(dragon_chip, 0, 112, WIDTH, HEIGHT, texture_hi, texture_lo);
-    //ProfilerStop(CropPixmap);
-
-    UVMapRender(segment_p->pixels, texture_lo, texture_lo);
-
+    //CropPixmap(&dragon, 0, 112, WIDTH, HEIGHT, segment_p);
+    ProfilerStart(CropPixmapBlitter);
+    CropPixmapBlitter(dragon_chip, xo+S_WIDTH/2-WIDTH/2, yo+S_HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
+    ProfilerStop(CropPixmapBlitter);
+    ProfilerStart(UVMapRender);
+    UVMapRender(segment_p->pixels, texture_hi, texture_lo);
+    ProfilerStop(UVMapRender);
     
     ProfilerStart(ChunkyToPlanar);
     ChunkyToPlanar(segment_p, segment_bp);
@@ -826,7 +845,6 @@ static void Render(void) {
     PositionSprite(sprite, xo, yo);
     CopListActivate(cp); 
   }
-  //ProfilerStop(UVMapRender);
 
   TaskWaitVBlank();
   active ^= 1;
