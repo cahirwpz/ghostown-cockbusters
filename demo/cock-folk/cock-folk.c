@@ -27,15 +27,23 @@ static __code short maybeSkipFrame = 0;
 static __code short current_frame = 0;
 
 static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1));
+  CopListT *cp = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
-    short i, j;
+    short i, j, k, n;
 
     for (i = 0; i < HEIGHT / 10; i++) {
+      u_short c;
+
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
-      for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
+
+      CopSetColor(cp, 0, 0);
+      for (j = 1, n = 1; j < 16; n += n) {
+        c = *pixels++;
+        for (k = 0; k < n; k++, j++)
+          CopSetColor(cp, j, c);
+      }
     }
   }
   return CopListFinish(cp);
