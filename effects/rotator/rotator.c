@@ -10,14 +10,14 @@
 #define HEIGHT 100
 #define DEPTH 4
 
-static BitmapT *screen[2];
-static CopInsPairT *bplptr[2];
-static CopListT *cp[2];
-static short active = 0;
+static __code BitmapT *screen[2];
+static __code CopInsPairT *bplptr[2];
+static __code CopListT *cp[2];
+static __code short active = 0;
 static __code volatile short c2p_phase;
 static __code short c2p_active;
 static __code void **c2p_bpl;
-static u_short *textureHi, *textureLo;
+static __code u_short *textureHi, *textureLo;
 
 #include "data/texture.c"
 
@@ -238,10 +238,9 @@ static void Init(void) {
   cp[1] = MakeCopperList(1);
 
   SetIntVector(INTB_BLIT, (IntHandlerT)ChunkyToPlanar, (void *)custom);
+  ClearIRQ(INTF_BLIT);
   EnableINT(INTF_BLIT);
 
-  active = 0;
-  c2p_phase = 256;
   ChunkyToPlanarStart();
   ChunkyToPlanarWait();
 

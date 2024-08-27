@@ -21,6 +21,9 @@ extern void DummyInterruptHandler(void *);
 /* Set up ISR for given interrupt number. */
 void SetIntVector(u_int irq, IntHandlerT code, void *data) {
   IntVecEntryT *iv = &IntVec[irq];
+  /* Do not ever try to swap handler, when the interrupt is enabled. */
+  if (custom->intenar & (1 << irq))
+    PANIC();
   iv->code = code ? code : DummyInterruptHandler;
   iv->data = data;
 }

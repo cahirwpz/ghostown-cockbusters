@@ -250,13 +250,13 @@ void TaskDebug(void) {
         (int)(curtsk->stkUpper - curtsk->stkLower));
   }
   if (!TAILQ_EMPTY(&ReadyList)) {
-    Log("Ready queue:\n")
+    Log("Ready queue:\n");
     TAILQ_FOREACH(tsk, &ReadyList, node) {
       Log(" - " TI_FMT "\n", TI_ARGS(tsk));
     }
   }
   if (!TAILQ_EMPTY(&WaitList)) {
-    Log("Wait queue:\n")
+    Log("Wait queue:\n");
     TAILQ_FOREACH(tsk, &WaitList, node) {
       Log(" - " TI_FMT "\n", TI_ARGS(tsk));
     }
