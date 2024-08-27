@@ -7,6 +7,7 @@ from math import atan2, cos, sin, pi, sqrt
 
 import sys
 
+
 # Dummy UV-Map for testing
 def Copy(x, y):
     return (y, x)
@@ -34,7 +35,6 @@ class Lens(object):
             return (u+0.5, v+0.5)
         except ValueError:
             pass
-
 
 
 class NonUniformUVMap(UVMap):
