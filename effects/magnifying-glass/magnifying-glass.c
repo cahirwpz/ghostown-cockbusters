@@ -29,7 +29,7 @@ static BitmapT *screen;
 static SprDataT *sprdat;
 static SpriteT sprite[8];
 
-#include "data/dragon-bg.c"
+#include "data/logo-gtn.c"
 #include "data/ball.c"
 
 static CopListT *cp;
@@ -92,14 +92,14 @@ static void Init(void) {
   texture_lo = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
 
 
-  dragon_chip = NewPixmap(dragon_width, dragon_height, PM_CMAP4, MEMF_CHIP);
+  dragon_chip = NewPixmap(logo_width, logo_height, PM_CMAP4, MEMF_CHIP);
 
   // c2p requires target bitplanes to be contiguous in memory, therefore we
   // allocate the BitmapT manually
 
-  dragon_bp.width  = dragon_width;
-  dragon_bp.height = dragon_height;
-  dragon_bp.bytesPerRow = ((dragon_width + 15) & ~15) / 8;
+  dragon_bp.width  = logo_width;
+  dragon_bp.height = logo_height;
+  dragon_bp.bytesPerRow = ((logo_width + 15) & ~15) / 8;
   dragon_bp.bplSize = dragon_bp.bytesPerRow * dragon_bp.height;
   dragon_bp.depth = 4;
   dragon_bp.flags = BM_STATIC;
@@ -113,9 +113,9 @@ static void Init(void) {
   {
     void *tmp;
     tmp = dragon_chip->pixels;
-    memcpy(dragon_chip, &dragon, sizeof(dragon));
+    memcpy(dragon_chip, &logo, sizeof(logo));
     dragon_chip->pixels = tmp;
-    memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
+    memcpy(dragon_chip->pixels, logo.pixels, logo_width * logo_height / 2);
   }
 
   // Warning: c2p works in place. dragon_chip is destroyed.
@@ -126,9 +126,9 @@ static void Init(void) {
   {
     void *tmp;
     tmp = dragon_chip->pixels;
-    memcpy(dragon_chip, &dragon, sizeof(dragon));
+    memcpy(dragon_chip, &logo, sizeof(logo));
     dragon_chip->pixels = tmp;
-    memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
+    memcpy(dragon_chip->pixels, logo.pixels, logo_width * logo_height / 2);
   }
 
   //Copy dragon bitmap to background
@@ -152,8 +152,8 @@ static void Init(void) {
   }
 
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
-  LoadColors(dragon_pal_colors, 0);
-  LoadColors(dragon_pal_colors, 16);
+  LoadColors(logo_pal_colors, 0);
+  LoadColors(logo_pal_colors, 16);
 
   cp = MakeCopperList(0);
   //CopListActivate(cp);
@@ -611,7 +611,6 @@ static void Render(void) {
   xo = normfx(SIN(frameCount * 8) * 0x50);
   yo = normfx(COS(frameCount * 7) * 0x20) + 0x10;
 
-  ProfilerStart(UVMapRender);
   {
     ProfilerStart(CropPixmapBlitter);
     CropPixmapBlitter(dragon_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
