@@ -11,6 +11,7 @@
 
 #define screen_bplSize (WIDTH * HEIGHT / 8)
 
+#include "data/dna3d.c"
 #include "data/bobs.c"
 #include "data/bobs_gradient.c"
 #include "data/dna.c"
@@ -122,6 +123,8 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 static void Init(void) {
+  TimeWarp(dna3d_start);
+
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
 
@@ -502,6 +505,20 @@ static void BitmapClearI(BitmapT *bm) {
   custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
 }
 
+static void SetBackgroundColor(short color) {
+  CopInsT **lineptr = linecol;
+  short i;
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *lineptr++;
+
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+  }
+}
+
 static void ChangeBackgroundColor(short n) {
   short p = envelope[n % envelope_length];
   u_short *data = necrochicken_cols[p];
@@ -522,9 +539,20 @@ PROFILE(TransformObject);
 PROFILE(DrawObject);
 
 static void Render(void) {
+  static bool aux = true;
   BitmapClearI(screen[active]);
 
-  ChangeBackgroundColor(frameCount >> 1);
+  if (frameCount < dna3d_start + (dna3d_end / 4)) {
+    SetBackgroundColor(0x000);
+  } else if (aux) {
+    ChangeBackgroundColor(frameCount >> 1);
+    aux = false;
+  } else if (frameCount > dna3d_start + (dna3d_end / 2)){
+    Log("qpa\n");
+    ChangeBackgroundColor(frameCount >> 1);
+  }
+  (void)SetBackgroundColor;
+  (void)ChangeBackgroundColor;
 
   ProfilerStart(TransformObject);
   {
