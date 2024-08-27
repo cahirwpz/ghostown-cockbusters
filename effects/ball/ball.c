@@ -771,20 +771,13 @@ PROFILE(PlanarToSprite);
 static void Render(void) {
   short xo = 0x00;
   short yo = 0x00;
-  xo = normfx(SIN(frameCount * 4) * 0x50);
-  yo = normfx(COS(frameCount * 7)  * 0x20);
-  //yo = normfx(COS(frameCount * 6)  * 0x30);
-
-  //short offset = ((64 - xo) + (64 - yo) * 128) & 16383;
-  //u_char *txtHi = textureHi->pixels + offset;
-  //u_char *txtLo = textureLo->pixels + offset;
+  xo = normfx(SIN(frameCount * 8) * 0x50);
+  yo = normfx(COS(frameCount * 7) * 0x20) + 0x10;
 
   ProfilerStart(UVMapRender);
   {
-    //CropPixmap(&dragon, 0, 112, WIDTH, HEIGHT, segment_p);
     ProfilerStart(CropPixmapBlitter);
     CropPixmapBlitter(dragon_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
-    //CropPixmapBlitter(dragon_chip, 0, 0, WIDTH, HEIGHT, texture_hi, texture_lo);
     ProfilerStop(CropPixmapBlitter);
     ProfilerStart(UVMapRender);
     UVMapRender(segment_p->pixels, texture_lo, texture_hi);
@@ -799,7 +792,6 @@ static void Render(void) {
     ProfilerStop(PlanarToSprite);
 
     PositionSprite(sprite, xo, yo);
-    //PositionSprite(sprite, 0, 0);
     CopListActivate(cp);
   }
 
