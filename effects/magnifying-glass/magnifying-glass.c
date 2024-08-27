@@ -17,8 +17,6 @@
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
-
-// target screen bitplanes
 static BitmapT dragon_bp;
 static __data_chip char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
 
@@ -46,31 +44,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output);
 static void
 CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
 		  short width, short height, u_char* thi, u_char *tlo);
-#if 0
-static void PixmapToTexture(const PixmapT *image,
-                            PixmapT *imageHi, PixmapT *imageLo)
-{
-  u_char *data = image->pixels;
-  int size = image->width * image->height;
-  /* Extra halves for cheap texture motion. */
-  u_short *hi0 = imageHi->pixels;
-  u_short *hi1 = imageHi->pixels + size;
-  u_short *lo0 = imageLo->pixels;
-  u_short *lo1 = imageLo->pixels + size;
-  short n = size / 2;
 
-  while (--n >= 0) {
-    u_char a = *data++;
-    u_short b = ((a << 8) | (a << 1)) & 0xAAAA;
-    /* [a0 b0 a1 b1 a2 b2 a3 b3] => [a0 -- a2 -- a1 -- a3 --] */
-    *hi0++ = b;
-    *hi1++ = b;
-    /* [a0 b0 a1 b1 a2 b2 a3 b3] => [-- b0 -- b2 -- b1 -- b3] */
-    *lo0++ = b >> 1;
-    *lo1++ = b >> 1;
-  }
-}
-#endif
 static void MakeUVMapRenderCode(void) {
   u_short *code = (void *)UVMapRender;
   u_short *data = uvmap;
@@ -134,61 +108,35 @@ static void Init(void) {
   dragon_bp.planes[2] = dragon_bp.planes[1] + dragon_bp.bplSize;
   dragon_bp.planes[3] = dragon_bp.planes[2] + dragon_bp.bplSize;
 
-  Log("sizeof(dragon_pixels) =  $%lx\n", sizeof(dragon_pixels));
-  Log("sizeof bitplane =  $%x * depth $%x = total $%lx\n",
-      dragon_bp.bplSize, dragon_bp.depth,
-      ((long int) dragon_bp.bplSize) * dragon_bp.depth);
-  Log("&(dragon_bp->planes[0]) =  $%p\n", dragon_bp.planes[0]);
-  Log("dragon_height =  $%x = %d\n", dragon_height, dragon_height);
-  Log("dragon_width  =  $%x = %d\n", dragon_width, dragon_width);
-
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-  Log("&dragon_bp = %p\n", &dragon_bp);
 
-
-
-#if 1
   {
     void *tmp;
     tmp = dragon_chip->pixels;
     memcpy(dragon_chip, &dragon, sizeof(dragon));
     dragon_chip->pixels = tmp;
     memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
-    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
   }
-#endif
 
   // Warning: c2p works in place. dragon_chip is destroyed.
   ChunkyToPlanar(dragon_chip, &dragon_bp);
-  Log("c2p done");
-  // We have to use blitter to crop the pixmap in Render(),
-  // so dragon needs to stay in chipmem.
   
-#if 1
+  // We have to use blitter to crop the pixmap in Render(),
+  // so dragon needs to stay in chipmem.  
   {
     void *tmp;
     tmp = dragon_chip->pixels;
     memcpy(dragon_chip, &dragon, sizeof(dragon));
     dragon_chip->pixels = tmp;
     memcpy(dragon_chip->pixels, dragon.pixels, dragon_width * dragon_height / 2);
-    Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
   }
-#endif
 
-
-
-#if 1
   //Copy dragon bitmap to background
   memcpy(screen->planes[0], dragon_bp.planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
-#endif
 
-#if 1
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode();
-#endif
-
-  Log("dragon_chip->pixels = %p\n", dragon_chip->pixels);
 
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP | MEMF_CLEAR);
 
@@ -218,8 +166,6 @@ static void Kill(void) {
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE);
 
   DeleteCopList(cp);
-  //DeletePixmap(textureHi);
-  //DeletePixmap(textureLo);
   MemFree(UVMapRender);
   MemFree(sprdat);
 
@@ -228,7 +174,6 @@ static void Kill(void) {
 }
 
 
-#if 1
 #define C2P_MASK0 0x00FF
 #define C2P_MASK1 0x0F0F
 #define C2P_MASK2 0x3333
@@ -258,17 +203,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   u_short blith    = 0;
   u_short blitarea = 0;
   u_short i = 0;
-
-  Log("ChunkyToPlanar: input  = %p  output = %p\n", input, output);
-  Log("ChunkyToPlanar: chunky = %p  planes = %p\n", chunky, planes);
-  Log("ChunkyToPlanar: inputh = %d\n", input->height);
-  Log("ChunkyToPlanar: inputw = %d\n", input->width);
-
-  Log("ChunkyToPlanar: 1 bitplane size = 0x%x\n", planesz );
-  Log("ChunkyToPlanar: planar size = 0x%x\n", planesz * 4);
-
-  Log("ChunkyToPlanar: blit height   = 0x%x\n", blith );
-
 
   // This is implemented as in prototypes/c2p/c2p_1x1_4bp_blitter_backforth.py
   // rem: modulos and pointers are in bytes
@@ -314,7 +248,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     }
     blitarea += BLTAREA(2, blith, 4);
   }
-
 
 
   blitarea = 0;
@@ -390,8 +323,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       /* ((a << 2) & ~0x3333) | (b & 0x3333) */
       custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(2);
       custom->bltcon1 = BLITREVERSE;
-      //custom->bltadat = 0xFFFF;
-      //custom->bltbdat = 0x0000;
 
       custom->bltapt = chunky - 6 + BLTAREA(2, blith, 4) + blitarea;
       custom->bltbpt = chunky - 2 + BLTAREA(2, blith, 4) + blitarea;
@@ -409,7 +340,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   while(blitarea < planarsz){
     blith = BLITHEIGHT(1, planarsz - blitarea, 6);
 
-#if 1
     //Copy to bitplane 0, "4"
     {
       WaitBlitter();
@@ -430,9 +360,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
     WaitBlitter();
-#endif
 
-#if 1
     //Copy to bitplane 1, "3"
     {
       WaitBlitter();
@@ -441,12 +369,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(1);
       //custom->bltcon0 = DEST | A_TO_D;
       custom->bltcon1 = BLITREVERSE;
-      custom->bltafwm = -1;
-      custom->bltalwm = -1;
-      custom->bltamod = 6;
-      custom->bltbmod = 6;
-      custom->bltdmod = 0;
-      custom->bltcdat = C2P_MASK3;
 
       custom->bltapt = planes + BLTAREA(1, blith, 6) - 8 + blitarea;
       custom->bltbpt = planes + BLTAREA(1, blith, 6) - 6 + blitarea;
@@ -456,9 +378,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     }
     WaitBlitter();
 
-#endif
-
-#if 1
     //Copy to bitplane 2, "2"
     {
       WaitBlitter();
@@ -466,12 +385,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       /* ((a >> 1) & 0x5555) | (b & ~0x5555) */
       custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS1 | ASHIFT(1);
       custom->bltcon1 = 0;
-      custom->bltafwm = -1;
-      custom->bltalwm = -1;
-      custom->bltamod = 6;
-      custom->bltbmod = 6;
-      custom->bltdmod = 0;
-      custom->bltcdat = C2P_MASK3;
 
       custom->bltapt = planes + 6 + blitarea;
       custom->bltbpt = planes + 4 + blitarea;
@@ -479,9 +392,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
     WaitBlitter();
-#endif
 
-#if 1
     //Copy to bitplane 3, "1"
     {
       WaitBlitter();
@@ -489,13 +400,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       /* ((a << 1) & ~0x5555) | (b & 0x5555) */
       custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(1);
       custom->bltcon1 = BLITREVERSE;
-      custom->bltafwm = -1;
-      custom->bltalwm = -1;
-      custom->bltamod = 6;
-      custom->bltbmod = 6;
-      custom->bltdmod = 0;
-      custom->bltcdat = C2P_MASK3;
-
+      
       custom->bltapt = planes + BLTAREA(1, blith, 6) - 4 + blitarea;
       custom->bltbpt = planes + BLTAREA(1, blith, 6) - 2 + blitarea;
       custom->bltdpt = chunky - 2 + (i+1)*BLTAREA(1, blith, 0);
@@ -503,29 +408,26 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     }
     WaitBlitter();
 
-#endif
     blitarea += BLTAREA(1, blith, 6);
     i++;
 
   }
 
-  //Because there is an even number of steps here, c2p finishes with planar data
-  //in chunky. These last 4 blits move it to planar, where it can be copied to
-  //screen.
-
-  //This is where it's getting complicated. We need to copy an arbitrary number of bytes
-  //from chunky to planes.
-  //The blith algorhitm is simple - modulo is zero
-  //To copy the arbitrary number of bytes we should find the optimal blitter settings
-  //But for now W = 32 seems to work for most cases...
+  /* Because there is an even number of steps here, c2p finishes with planar
+   * data in chunky. These last 4 blits move it to planar, where it can be
+   * copied to screen.
+   * This is where it's getting complicated. We need to copy an arbitrary number
+   * of bytes from chunky to planes.
+   * The blith algorhitm is simple - modulo is zero
+   * To copy the arbitrary number of bytes we should use optimal blitter
+   * settings, but for now W = 32 seems to work for most cases...
+   */
   blith = BLITHEIGHT(32, planesz, 0);
 
-
-#if 1
   // Copy bpl0 "1"
   {
     WaitBlitter();
-    custom->bltcon0 = (SRCA| DEST) | A_TO_D;
+    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
     custom->bltcon1 = 0;
     custom->bltamod = 0;
     custom->bltdmod = 0;
@@ -533,51 +435,32 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     custom->bltdpt = planes;
     custom->bltsize = BLTSIZE_VAL(32, blith);
   }
-#endif
-#if 1
+
   // Copy bpl1 "2"
   {
     WaitBlitter();
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
-    custom->bltcon1 = 0;
-    custom->bltamod = 0;
-    custom->bltdmod = 0;
     custom->bltapt = chunky + planesz;
     custom->bltdpt = planes + planesz;
     custom->bltsize = BLTSIZE_VAL(32, blith);
   }
-#endif
-#if 1
+
   // Copy bpl2 "3"
   {
     WaitBlitter();
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
-    custom->bltcon1 = 0;
-    custom->bltamod = 0;
-    custom->bltdmod = 0;
-    //custom->bltadat = 0xF00;
     custom->bltapt = chunky + 2*planesz;
     custom->bltdpt = planes + 2*planesz;
     custom->bltsize = BLTSIZE_VAL(32, blith);
   }
-#endif
-#if 1
+
   // Copy bpl3 "4"
   {
     WaitBlitter();
-    custom->bltcon0 = (SRCA | DEST) | A_TO_D;
-    custom->bltcon1 = 0;
-    custom->bltamod = 0;
-    custom->bltdmod = 0;
     custom->bltapt = chunky + 3*planesz;
     custom->bltdpt = planes + 3*planesz;
     custom->bltsize = BLTSIZE_VAL(32, blith);
   }
-#endif
-  return;
-
 }
-#endif
+
 
 static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
   short x = X((S_WIDTH - WIDTH) / 2) + xo;
@@ -598,15 +481,15 @@ static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
 
 #define POS4BPP(pixels, iw, x0, y0) ((pixels) + (y0)*(iw)/2 + (x0)/2)
 static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
-			      short width, short height, u_char* thi, u_char *tlo){
+			      short width, short height, u_char* thi,
+			      u_char *tlo){
 
-  // The blitter operated on words, therefore we have 4 different shift cases
-  // depending how the edge of cropped pixmap is aligned to word boundaries.
-  // That is, if x0 % 4 equals...
-  // 0: no shift,        1: left shift by 4
-  // 2: left shift by 8, 3: left shift by 12
-  // TODO: implement <<8 and <<12 blocks
-
+  /* The blitter operates on words, therefore we have 4 different shift cases
+   * depending how the edge of cropped pixmap is aligned to word boundaries.
+   * That is, if x0 % 4 equals...
+   * 0: no shift,        1: left shift by 4
+   * 2: left shift by 8, 3: left shift by 12
+   */
 
   short shiftamt = (x0 & 0x3) * 4;
   short lwm = 0x000f;
@@ -622,11 +505,9 @@ static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
     custom->bltamod = (input->width - width) / 2;
     custom->bltdmod = 0;
     custom->bltcdat = 0xf0f0;
-    custom->bltadat = 0;
 
     custom->bltapt = POS4BPP(chunky, input->width, x0+width, y0+width -1) - 2;
     custom->bltdpt = tlo + (width*height/2) - 2; //ok
-    //BLTSIZE_VAL is in words. 4px per word
     custom->bltsize = BLTSIZE_VAL(width/4, height);
   }
   {
@@ -634,31 +515,21 @@ static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
     /* (A << 4) & 0xF0F0  */
     custom->bltcon0 = (SRCA | DEST) | ANBC | ABC | ASHIFT(shiftamt);
     custom->bltcon1 = BLITREVERSE;
-    custom->bltafwm = -1;
-    custom->bltalwm = lwm;
-    custom->bltamod = (input->width - width) / 2;
-    custom->bltdmod = 0;
     custom->bltcdat = 0x0f0f;
-    custom->bltadat = 0;
-
+  
     custom->bltapt = POS4BPP(chunky, input->width, x0+width, y0+width -1) - 2;
     custom->bltdpt = thi + (width*height/2) - 2; //ok
-    //BLTSIZE_VAL is in words. 4px per word
     custom->bltsize = BLTSIZE_VAL(width/4, height);
   }
   WaitBlitter();
-
-  Log("CPB done\n");
 }
 
 
-
-#if 1
-#define BLITTERSZ(h, w) ((h << 6) | w)
+// #define BLITTERSZ(h, w) ((h << 6) | w)
 static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   /* Copy out planar format into sprites
-     This function takes care of interlacing SPRxDATA and SPRxDATB registers
-     inside a SprDataT structure
+   *  This function takes care of interlacing SPRxDATA and SPRxDATB registers
+   * inside a SprDataT structure
   */
   short i = 0;
 
@@ -729,7 +600,6 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   WaitBlitter();
 
 }
-#endif
 
 PROFILE(UVMapRender);
 PROFILE(ChunkyToPlanar);
@@ -746,6 +616,7 @@ static void Render(void) {
     ProfilerStart(CropPixmapBlitter);
     CropPixmapBlitter(dragon_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
     ProfilerStop(CropPixmapBlitter);
+    
     ProfilerStart(UVMapRender);
     UVMapRender(segment_p->pixels, texture_lo, texture_hi);
     ProfilerStop(UVMapRender);
