@@ -27,39 +27,36 @@ def c2p(bitplane_output=True):
 
     planes = Array.Zero(N, 16)
     Blit(lambda a, b: ((a >> 8) & m0) | (b & ~m0),
-         N // 4, 2, Channel(chunky, 2, 2), Channel(chunky, 0, 2), Channel(planes, 0, 2))
-    #Array.Print("Swap 8x4: planar after 1st pass:", *planes)
+         N // 4, 2, Channel(chunky, 2, 2), Channel(chunky, 0, 2),
+         Channel(planes, 0, 2))
+    Array.Print("Swap 8x4: planar after 1st pass:", *planes)
 
-    
     Blit(lambda a, b: ((a << 8) & ~m0) | (b & m0),
-         N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2), Channel(planes, 2, 2))
+         N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2),
+         Channel(planes, 2, 2))
     Array.Print("Swap 8x4: planar:", *planes)
 
-    #C = Array.Zero(N, 16)
-
-
     Blit(lambda a, b: ((a >> 4) & m1) | (b & ~m1),
-         N // 2, 1, Channel(planes, 1, 1), Channel(planes, 0, 1), Channel(chunky, 0, 1))
+         N // 2, 1, Channel(planes, 1, 1), Channel(planes, 0, 1),
+         Channel(chunky, 0, 1))
 
+    Array.Print("Swap 4x2 chunky after 1st pass:", *chunky)
 
-    
-    Array.Print("Swap 4x2 chunky after 1st pass:", *chunky);
-    
     Blit(lambda a, b: ((a << 4) & ~m1) | (b & m1),
-         N // 2, 1, Channel(planes, 0, 1), Channel(planes, 1, 1), Channel(chunky, 1, 1))
+         N // 2, 1, Channel(planes, 0, 1), Channel(planes, 1, 1),
+         Channel(chunky, 1, 1))
     Array.Print("Swap 4x2: chunky:", *chunky)
 
-    
-    #D = Array.Zero(N, 16)
-    
     Blit(lambda a, b: ((a >> 2) & m2) | (b & ~m2),
-         N // 4, 2, Channel(chunky, 2, 2), Channel(chunky, 0, 2), Channel(planes, 0, 2))
+         N // 4, 2, Channel(chunky, 2, 2), Channel(chunky, 0, 2),
+         Channel(planes, 0, 2))
 
     Array.Print("Swap 2x2: planar after 1st pass:", *planes)
 
     Blit(lambda a, b: ((a << 2) & ~m2) | (b & m2),
-         N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2), Channel(planes, 2, 2))
-    
+         N // 4, 2, Channel(chunky, 0, 2), Channel(chunky, 2, 2),
+         Channel(planes, 2, 2))
+
     Array.Print("Swap 2x2: planar:", *planes)
 
     if bitplane_output:

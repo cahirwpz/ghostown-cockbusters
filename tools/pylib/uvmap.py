@@ -58,33 +58,31 @@ def Ball(x, y):
 
 
 def Copy(x, y):
-    #r = dist(x, y, 0.0, 0.0)
-    #if r > 1:
-    #    return None
-    return (x,y)
-    
-def Lens(x, y):
-    # T4bpp representation makes the address->pixel mapping non 1:1
-    # and there are twice as many pixels in a row than in a col. y/2
-    # is there to make up for it
-    r = dist(x, y, 0, 0)
-    if r > 1:
-        return None
-    #if x < 0: #or y < 0:
-    #    return (0,0)
-    r2 = r*r
-    # mnożnik r - zoom
-    # mnożnik r2 - zniekształcenie
-    r = 0.2*r + 0.1*r2
+    return (y, x)
 
-    # TODO: zrobic funkcje phi albo angle z tych ifow
-    try:
-        phi = atan2(x, y)
-        u = r * cos(phi)
-        v = r * sin(phi)
-        return (u+0.5, v+0.5)
-    except ValueError:
-        pass
+
+class Lens(object):
+
+    # linear - zoom factor
+    # square - distortion factor
+    def __init__(self, linear, square):
+        self.linear = linear
+        self.square = square
+
+    def __call__(self, x, y):
+        r = dist(x, y, 0, 0)
+        if r > 1:
+            return None
+        r2 = r*r
+        r = r*self.linear + r2*self.square
+
+        try:
+            phi = atan2(x, y)
+            u = r * cos(phi)
+            v = r * sin(phi)
+            return (u+0.5, v+0.5)
+        except ValueError:
+            pass
 
 
 class UVMap(object):
@@ -163,3 +161,36 @@ class UVMap(object):
         im = Image.new('L', (self.width, self.height))
         im.putdata([int(frpart(v) * scale) % size for v in self.vmap])
         im.save(name + '-v.png', 'PNG')
+
+
+class NonUniformUVMap(UVMap):
+
+    def __init__(self, width, height, utexsize=128, vtexsize=128):
+        self.umap = array('f', [0.0 for i in range(width * height)])
+        self.vmap = array('f', [0.0 for i in range(width * height)])
+        self.mask = array('B', [0 for i in range(width * height)])
+        self.width = width
+        self.height = height
+        self.utexsize = utexsize
+        self.vtexsize = vtexsize
+
+    def save(self, name, fn=None, uscale=256, vscale=256):
+        data = array('H')
+        for i in range(self.width * self.height):
+            if self.mask[i]:
+                u = int(frpart(self.umap[i]) * uscale) % self.utexsize
+                v = int(frpart(self.vmap[i]) * vscale) % self.vtexsize
+                data.append(u * self.vtexsize + v)
+            else:
+                data.append(0xffff)
+        if fn:
+            data = fn(data)
+        w, h = self.width, self.height
+        print(f'#define {name}_width {w}')
+        print(f'#define {name}_height {h}')
+        print()
+        print(f'static u_short {name}[{name}_width * {name}_height] = {{')
+        for i in range(0, w * h, self.width):
+            row = ['0x%04x' % val for val in data[i:i + self.width]]
+            print('  %s,' % ', '.join(row))
+        print('};')
