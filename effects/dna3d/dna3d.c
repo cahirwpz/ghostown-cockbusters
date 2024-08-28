@@ -94,7 +94,7 @@ static CopListT *MakeCopperList(void) {
   CopMove32(cp, bplpt[4], screen[1]->planes[2]);
 
   {
-    u_short *pf1_data = bobs_cols2_pixels;
+    u_short *pf1_data = bobs_cols_pixels;
     u_short *pf2_data = necrocoq_00_cols_pixels;
     short i;
 
@@ -541,16 +541,26 @@ PROFILE(TransformObject);
 PROFILE(DrawObject);
 
 static void Render(void) {
+  static bool show_cock = true;
+  static bool new_bobs = false;
+  static short mod = 0;
   static bool aux = true;
   BitmapClearI(screen[active]);
 
   if (frameCount < dna3d_start + (dna3d_end / 4)) {
     SetBackgroundColor(0x000);
-  } else if (aux) {
-    ChangeBackgroundColor(frameCount >> 1);
-    aux = false;
+  } else if (show_cock) {
+    ChangeBackgroundColor(19);
+    show_cock = false;
   } else if (frameCount > dna3d_start + (dna3d_end / 2)){
-    ChangeBackgroundColor(frameCount >> 1);
+    if (aux) {
+      aux = false;
+      mod = 20 - ((frameCount >> 1) % envelope_length);
+    }
+    ChangeBackgroundColor((frameCount >> 1) + mod);
+  }
+  if (frameCount > dna3d_start + (3 * (dna3d_end / 4))) {
+    new_bobs = true;
   }
   (void)SetBackgroundColor;
   (void)ChangeBackgroundColor;
@@ -569,7 +579,11 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawFlares(object, bobs2.planes[0], screen[active]->planes[0], custom);
+    if (new_bobs) {
+      DrawFlares(object, bobs2.planes[0], screen[active]->planes[0], custom);
+    } else {
+      DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    }
     DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);
