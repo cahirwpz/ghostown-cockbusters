@@ -18,7 +18,6 @@ static __code PixmapT *segment_p;
 static __code BitmapT *segment_bp;
 static __code u_char *texture_hi;
 static __code u_char *texture_lo;
-static __code BitmapT *screen;
 static __code SprDataT *sprdat;
 static __code SpriteT sprite[8];
 static __code CopListT *cp;
@@ -64,29 +63,22 @@ static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(80);
   CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
-  CopSetupBitplanes(cp, screen, S_DEPTH);
+  CopSetupBitplanes(cp, &logo_bp, S_DEPTH);
   for (i = 0; i < 8; i++)
     CopInsSetSprite(&sprptr[i], &sprite[i]);
   return CopListFinish(cp);
 }
 
 static void Init(void) {
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode();
+
   // segment_bp and segment_p are bitmap and pixmap for the magnified segment
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
-  screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
 
-  texture_hi = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
-  texture_lo = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
-
-  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-
-  //Copy logo bitmap to background
-  memcpy(screen->planes[0], logo_bp.planes[0],
-         S_WIDTH * S_HEIGHT * S_DEPTH / 8);
-
-  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  MakeUVMapRenderCode();
+  texture_hi = MemAlloc(WIDTH * HEIGHT, MEMF_CHIP);
+  texture_lo = MemAlloc(WIDTH * HEIGHT, MEMF_CHIP);
 
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP | MEMF_CLEAR);
 
@@ -107,11 +99,12 @@ static void Init(void) {
   cp = MakeCopperList();
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER | DMAF_BLITHOG);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER | DMAF_SPRITE);
+  CopperStop();
+  BlitterStop();
 
   DeleteCopList(cp);
   MemFree(UVMapRender);
@@ -119,7 +112,6 @@ static void Kill(void) {
 
   MemFree(texture_hi);
   MemFree(texture_lo);
-  DeleteBitmap(screen);
   DeletePixmap(segment_p);
   DeleteBitmap(segment_bp);
 }
