@@ -17,10 +17,6 @@
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
-static BitmapT *logo_bp;
-
-static PixmapT *logo_chip;
-
 static u_char *texture_hi;
 static u_char *texture_lo;
 
@@ -87,34 +83,11 @@ static void Init(void) {
   texture_hi = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
   texture_lo = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
 
-  logo_chip = NewPixmap(logo_width, logo_height, PM_CMAP4, MEMF_CHIP);
-  logo_bp = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_STATIC);
-
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   //TODO: Memcpy-s to blitter ops where possible
-  {
-    void *tmp;
-    tmp = logo_chip->pixels;
-    memcpy(logo_chip, &logo, sizeof(logo));
-    logo_chip->pixels = tmp;
-    memcpy(logo_chip->pixels, logo.pixels, logo_width * logo_height / 2);
-  }
-
-  // c2p works in place. logo_chip is destroyed.
-  ChunkyToPlanar(logo_chip, logo_bp);
-  
-  // We have to use blitter to crop the pixmap in Render(),
-  // so logo needs to stay in chipmem.  
-  {
-    void *tmp;
-    tmp = logo_chip->pixels;
-    memcpy(logo_chip, &logo, sizeof(logo));
-    logo_chip->pixels = tmp;
-    memcpy(logo_chip->pixels, logo.pixels, logo_width * logo_height / 2);
-  }
 
   //Copy logo bitmap to background
-  memcpy(screen->planes[0], logo_bp->planes[0],
+  memcpy(screen->planes[0], logo_bp.planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
 
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
@@ -137,7 +110,7 @@ static void Init(void) {
   LoadColors(logo_pal_colors, 16);
 
   cp = MakeCopperList();
-
+  CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
@@ -149,7 +122,6 @@ static void Kill(void) {
   MemFree(UVMapRender);
   MemFree(sprdat);
 
-  DeletePixmap(logo_chip);
   MemFree(texture_hi);
   MemFree(texture_lo);
   DeleteBitmap(screen);
@@ -590,9 +562,10 @@ static void Render(void) {
 
   {
     ProfilerStart(CropPixmapBlitter);
-    CropPixmapBlitter(logo_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
+    CropPixmapBlitter(&logo, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2,
+		      WIDTH, HEIGHT, texture_hi, texture_lo);
     ProfilerStop(CropPixmapBlitter);
-    
+
     ProfilerStart(UVMapRender);
     UVMapRender(segment_p->pixels, texture_lo, texture_hi);
     ProfilerStop(UVMapRender);
@@ -606,7 +579,6 @@ static void Render(void) {
     ProfilerStop(PlanarToSprite);
 
     PositionSprite(sprite, xo, yo);
-    CopListActivate(cp);
   }
 
   TaskWaitVBlank();
