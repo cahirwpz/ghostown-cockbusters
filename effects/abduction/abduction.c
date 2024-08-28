@@ -140,7 +140,6 @@ static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short qu
 
   custom->bltbdat = tab2[idx];
   custom->bltapt = &quote[w/2];
-  // custom->bltapt = &_dymek_bpl[5];
   custom->bltdpt = planes[4] + 40 + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
@@ -157,10 +156,56 @@ static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short qu
 
   custom->bltbdat = tab1[idx];
   custom->bltapt = quote;
-  // custom->bltapt = _dymek_bpl;
   custom->bltdpt = planes[4] + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+}
+
+static void BlitterFadeOut(void** planes, short idx, short y, short x, short w) {
+  static short tab1[16] = {
+    0x1000, 0x1010, 0x1011, 0x1111,
+    0x1131, 0x3131, 0x3171, 0x3371,
+    0x3771, 0x3773, 0x7773, 0x7E73,
+    0x7F77, 0xFF77, 0xFF7F, 0xFFFF,
+  };
+  static short tab2[16] = {
+    0x0010, 0x0014, 0x1041, 0x1051,
+    0x1451, 0x5451, 0xD451, 0xD455,
+    0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
+    0xDDFD, 0xFDFD, 0xFDFF, 0xFFFF,
+  };
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = ~tab2[idx];
+  custom->bltadat = 0xFFFF;
+  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
+
+  custom->bltcon0 = (DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = ~tab1[idx];
+  custom->bltadat = 0xFFFF;
+  custom->bltdpt = planes[4] + (y * 40) + x;
+
+  custom->bltcon0 = (DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 }
@@ -397,25 +442,51 @@ static void Kill(void) {
 
 PROFILE(Abduction);
 
+#define TALK_IN   (abduction_start + (abduction_end/5))
+#define SING_IN   (abduction_start + 2*(abduction_end/5))
+#define NAKED_IN  (abduction_start + 3*(abduction_end/5))
+#define NAKED_OUT (abduction_start + 4*(abduction_end/5))
+
 static void Render(void) {
   static short idx = 0;
   (void)idx;
   ProfilerStart(Abduction);
   {
-    if (frameCount > 1900 && frameCount % 1 == 0) {
-      // BlitterFadeIn(screen[active]->planes);
+
+    if (frameCount >= TALK_IN) {
       if (idx <= 15) {
-        BlitterFadeIn(screen[0]->planes, idx, 32, 2, _talk_bpl, talk.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx, 32, 2, _talk_bpl, talk.bytesPerRow);
-
-        BlitterFadeIn(screen[0]->planes, idx, 144, 0, _naked_bpl, naked.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx, 144, 0, _naked_bpl, naked.bytesPerRow);
-
-        BlitterFadeIn(screen[0]->planes, idx, 96, 26, _sing_bpl, sing.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx, 96, 26, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        ++idx;
       }
-      ++idx;
     }
+    if (frameCount >= SING_IN) {
+      if (idx <= 15+16) {
+        BlitterFadeIn(screen[0]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-16, 160, 6, talk.bytesPerRow);
+        ++idx;
+      }
+    }
+    if (frameCount >= NAKED_IN) {
+      if (idx <= 15+32) {
+        BlitterFadeIn(screen[0]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-32, 128, 24, sing.bytesPerRow);
+        ++idx;
+      }
+    }
+    if (frameCount >= NAKED_OUT) {
+      if (idx <= 15+48) {
+        BlitterFadeOut(screen[0]->planes, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-48, 64, 2, naked.bytesPerRow);
+        ++idx;
+      }
+    }
+
+    // Music speeds up, cock speeds up
     if (frameCount >= abduction_start + (abduction_end / 2)) {
       cock_speed = 1;
     }
