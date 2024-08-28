@@ -68,7 +68,6 @@ static void MakeUVMapRenderCode(void) {
   *code++ = 0x4e75; /* rts */
 }
 
-
 static CopListT *MakeCopperList(int active) {
   CopListT *cp = NewCopList(80);
   CopInsPairT *sprptr = CopSetupSprites(cp);
@@ -79,7 +78,6 @@ static CopListT *MakeCopperList(int active) {
     CopInsSetSprite(&sprptr[i], &sprite[i]);
   return CopListFinish(cp);
 }
-
 
 static void Init(void) {
   //segment_bp and segment_p are bitmap and pixmap for the magnified segment
@@ -109,7 +107,7 @@ static void Init(void) {
   dragon_bp.planes[3] = dragon_bp.planes[2] + dragon_bp.bplSize;
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-
+  //TODO: Memcpy-s to blitter ops where possible
   {
     void *tmp;
     tmp = dragon_chip->pixels;
@@ -142,9 +140,8 @@ static void Init(void) {
 
   {
     SprDataT *dat = sprdat;
-    short j; //i, j;
+    short j;
 
-    //for (i = 0; i < 2; i++)
     for (j = 0; j < 8; j++) {
       MakeSprite(&dat, 64, j & 1, &sprite[j]);
       EndSprite(&dat);
@@ -156,7 +153,6 @@ static void Init(void) {
   LoadColors(logo_pal_colors, 16);
 
   cp = MakeCopperList(0);
-  //CopListActivate(cp);
 
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
@@ -169,6 +165,10 @@ static void Kill(void) {
   MemFree(UVMapRender);
   MemFree(sprdat);
 
+  DeletePixmap(dragon_chip);
+  MemFree(texture_hi);
+  MemFree(texture_lo);
+  DeleteBitmap(screen);
   DeletePixmap(segment_p);
   DeleteBitmap(segment_bp);
 }
@@ -359,7 +359,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltdpt = chunky + 3*planesz + i*BLTAREA(1, blith, 0);
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
-    WaitBlitter();
 
     //Copy to bitplane 1, "3"
     {
@@ -376,7 +375,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
-    WaitBlitter();
 
     //Copy to bitplane 2, "2"
     {
@@ -391,7 +389,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltdpt = chunky + planesz + i*BLTAREA(1, blith, 0);
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
-    WaitBlitter();
 
     //Copy to bitplane 3, "1"
     {
@@ -406,7 +403,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltdpt = chunky - 2 + (i+1)*BLTAREA(1, blith, 0);
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
-    WaitBlitter();
 
     blitarea += BLTAREA(1, blith, 6);
     i++;
@@ -521,7 +517,6 @@ static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
     custom->bltdpt = thi + (width*height/2) - 2; //ok
     custom->bltsize = BLTSIZE_VAL(width/4, height);
   }
-  WaitBlitter();
 }
 
 
@@ -563,7 +558,6 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
       custom->bltdpt = sprdat + 2;
       custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
-    WaitBlitter();
 
     sprdat = sprites[i*2 + 1].sprdat->data;
 
@@ -597,7 +591,6 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
       custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
   }
-  WaitBlitter();
 
 }
 
