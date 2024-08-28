@@ -13,7 +13,9 @@
 
 #include "data/dna3d.c"
 #include "data/bobs.c"
+#include "data/bobs2.c"
 #include "data/bobs_gradient.c"
+#include "data/bobs_gradient2.c"
 #include "data/dna.c"
 #include "data/necrocoq-00-data.c"
 #include "data/necrocoq-00-pal.c"
@@ -92,7 +94,7 @@ static CopListT *MakeCopperList(void) {
   CopMove32(cp, bplpt[4], screen[1]->planes[2]);
 
   {
-    u_short *pf1_data = bobs_cols_pixels;
+    u_short *pf1_data = bobs_cols2_pixels;
     u_short *pf2_data = necrocoq_00_cols_pixels;
     short i;
 
@@ -548,7 +550,6 @@ static void Render(void) {
     ChangeBackgroundColor(frameCount >> 1);
     aux = false;
   } else if (frameCount > dna3d_start + (dna3d_end / 2)){
-    Log("qpa\n");
     ChangeBackgroundColor(frameCount >> 1);
   }
   (void)SetBackgroundColor;
@@ -568,7 +569,7 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    DrawFlares(object, bobs2.planes[0], screen[active]->planes[0], custom);
     DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);

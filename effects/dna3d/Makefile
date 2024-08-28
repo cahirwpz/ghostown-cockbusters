@@ -1,12 +1,14 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/bobs.c data/bobs_gradient.c data/dna.* \
+CLEAN-FILES := data/bobs.c data/bobs2.c data/bobs_gradient.c data/bobs_gradient2.c data/dna.* \
 	data/necrocoq-??-* data/necrocoq-??.c
 
 LIBS := lib3d
 
-PNG2C.bobs := --bitmap bobs,48x512x3,+interleaved --palette bobs,8
-PNG2C.bobs_gradient := --pixmap bobs_cols,3x256x12
+PNG2C.bobs  := --bitmap bobs,48x512x3,+interleaved --palette bobs,8
+PNG2C.bobs2 := --bitmap bobs2,48x512x3,+interleaved
+PNG2C.bobs_gradient  := --pixmap bobs_cols,3x256x12
+PNG2C.bobs_gradient2 := --pixmap bobs_cols2,3x256x12
 OBJ2C.dna := --scale 35 -mesh-name dna_helix
 PNG2C.necrocoq-00-data := --bitmap necrocoq,256x256x2,+interleaved
 PNG2C.necrocoq-00-pal := --pixmap necrocoq_00_cols,4x256x12,+onlydata
