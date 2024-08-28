@@ -54,7 +54,7 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_DNA3D, "dna3d.exe"),
   EXEFILE(EXE_STENCIL3D, "stencil3d.exe"),
   EXEFILE(EXE_COCK_FOLK, "cock-folk.exe"),
-  EXEFILE(EXE_TEXOBJ, /* "texobj.exe" */ "empty.exe"),
+  EXEFILE(EXE_TEXOBJ, "texobj.exe"),
   EXEFILE(EXE_FLOWER3D, "flower3d.exe"),
   EXEFILE(EXE_LOGO, "logo.exe"),
   EXEFILE(EXE_ROTATOR, "rotator.exe"),
