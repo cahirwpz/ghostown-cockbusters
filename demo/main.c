@@ -162,8 +162,6 @@ static void BgTaskLoop(__unused void *ptr) {
         LoadExe(EXE_PROTRACKER);
         LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
-        LoadExe(EXE_COCK_FOLK);
-        LoadExe(EXE_ABDUCTION);
 
         Log("[BgTask] Done initial loading!\n");
         BgTaskState = BG_IDLE;

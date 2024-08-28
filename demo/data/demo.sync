@@ -17,8 +17,8 @@
 @track EffectNumber
 $0000 11 !step  # logo ghostown (*)
 $0200 5         # flower3d (*)
-$0600 3         # anim-cock folk (*)
-$0a00 9         # abduction (*)
+$0600 3         # anim-cock folk
+$0a00 9         # abduction
 $0c00 1         # dna3d
 $1000 6         # logo
 $1200 12        # anim-cock techno
@@ -31,8 +31,10 @@ $243f -1        # the end
 @end
 
 @track EffectLoader
-$0200 -11 !event
-$0201   1
+$0001   3 !event
+$0200 -11
+$0201   9
+$0202   1
 $0600  -5
 $0601   6
 $0a00  -3
