@@ -127,22 +127,6 @@ static void BlitterFadeIn(void** planes, short idx) {
     0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
     0xDDFD, 0xFDFD, 0xFDFF, 0xFFFF,
   };
-  // static short tab1[8] = {
-  //   0x1010, 0x1111, 0x3113, 0x3333,
-  //   0x7337, 0x7777, 0xF77F, 0xFFFF,
-  // };
-  // static short tab2[8] = {
-  //   0x0110, 0x2222, 0x2552, 0x5555,
-  //   0xD5D5, 0xDDDD, 0xDFFD, 0xFFFF,
-  // };
-  // static short idx = 0;
-  (void)tab1;
-  (void)tab2;
-
-  // if (idx > 15) {
-  //   return;
-  // }
-  // Log("qpa\n");
 
   custom->bltamod = 10;
   custom->bltbmod = 0;
@@ -175,8 +159,6 @@ static void BlitterFadeIn(void** planes, short idx) {
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
   custom->bltsize = (32 << 6) | 5;
   WaitBlitter();
-  // ++idx;
-  // Log("qpa\n");
 }
 
 static void DrawBackground(BitmapT *dst) {
@@ -345,7 +327,7 @@ static void FadeOut(void) {
 static CopListT *MakeCopperList(void) {
   short i = 0;
 
-  cp = NewCopList(2048);
+  cp = NewCopList(1100);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
   sprptr = CopSetupSprites(cp);
 
@@ -413,10 +395,9 @@ PROFILE(Abduction);
 
 static void Render(void) {
   static short idx = 0;
-  (void)pal;
+  (void)idx;
   ProfilerStart(Abduction);
   {
-    // BitmapCopyArea(screen[active], 0, 0, &dymek, &((Area2D){0, 0, 80, 64}));
     if (frameCount > 1900 && frameCount % 1 == 0) {
       // BlitterFadeIn(screen[active]->planes);
       if (idx <= 15) {
