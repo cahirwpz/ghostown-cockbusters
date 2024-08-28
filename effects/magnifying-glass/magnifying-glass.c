@@ -14,24 +14,19 @@
 #define WIDTH 64
 #define HEIGHT 64
 
-static PixmapT *segment_p;
-static BitmapT *segment_bp;
-
-static BitmapT *logo_bp;
-
-static PixmapT *logo_chip;
-
-static u_char *texture_hi;
-static u_char *texture_lo;
-
-static BitmapT *screen;
-static SprDataT *sprdat;
-static SpriteT sprite[8];
+static __code PixmapT *segment_p;
+static __code BitmapT *segment_bp;
+static __code BitmapT *logo_bp;
+static __code PixmapT *logo_chip;
+static __code u_char *texture_hi;
+static __code u_char *texture_lo;
+static __code BitmapT *screen;
+static __code SprDataT *sprdat;
+static __code SpriteT sprite[8];
+static __code CopListT *cp;
 
 #include "data/logo-gtn.c"
 #include "data/ball.c"
-
-static CopListT *cp;
 
 #define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
 void (*UVMapRender)(u_char *chunky asm("a0"),
@@ -40,9 +35,9 @@ void (*UVMapRender)(u_char *chunky asm("a0"),
 
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output);
 
-static void
-CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
-		  short width, short height, u_char* thi, u_char *tlo);
+static void CropPixmapBlitter(
+  const PixmapT *input, u_short x0, u_short y0,
+  short width, short height, u_char* thi, u_char *tlo);
 
 static void MakeUVMapRenderCode(void) {
   u_short *code = (void *)UVMapRender;
@@ -78,8 +73,7 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  //segment_bp and segment_p are bitmap and pixmap for the magnified segment
-  //ELF->ST: BM_CPUONLY was BM_DISPLAYABLE
+  // segment_bp and segment_p are bitmap and pixmap for the magnified segment
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
   screen = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_CLEAR);
@@ -102,9 +96,9 @@ static void Init(void) {
 
   // c2p works in place. logo_chip is destroyed.
   ChunkyToPlanar(logo_chip, logo_bp);
-  
+ 
   // We have to use blitter to crop the pixmap in Render(),
-  // so logo needs to stay in chipmem.  
+  // so logo needs to stay in chipmem.
   {
     void *tmp;
     tmp = logo_chip->pixels;
@@ -113,7 +107,7 @@ static void Init(void) {
     memcpy(logo_chip->pixels, logo.pixels, logo_width * logo_height / 2);
   }
 
-  //Copy logo bitmap to background
+  // Copy logo bitmap to background
   memcpy(screen->planes[0], logo_bp->planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
 
@@ -138,7 +132,6 @@ static void Init(void) {
 
   cp = MakeCopperList();
 
-
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
@@ -156,7 +149,6 @@ static void Kill(void) {
   DeletePixmap(segment_p);
   DeleteBitmap(segment_bp);
 }
-
 
 #define C2P_MASK0 0x00FF
 #define C2P_MASK1 0x0F0F
@@ -194,7 +186,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   //TODO: Specialcase last non-1024h blit
   //TODO: Parametrize the blit sizes for screen size other than full screen
 
-  while(blitarea < planarsz){
+  while (blitarea < planarsz) {
     // Swap 8x4, pass 1
     {
       blith = BLITHEIGHT(2, planarsz - blitarea, 4);
@@ -233,9 +225,8 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     blitarea += BLTAREA(2, blith, 4);
   }
 
-
   blitarea = 0;
-  while(blitarea < planarsz){
+  while (blitarea < planarsz) {
      blith = BLITHEIGHT(1, planarsz - blitarea, 2);
 
     // Swap 4x2, pass 1
@@ -275,9 +266,8 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
     blitarea += BLTAREA(1, blith, 2);
   }
 
-
   blitarea = 0;
-  while(blitarea < planarsz){
+  while (blitarea < planarsz) {
     blith = BLITHEIGHT(2, planarsz - blitarea, 4);
 
     // Swap 2x2, pass 1
@@ -321,7 +311,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   // Numbers in quotes refer to bitplane numbers on test card.
 
   blitarea = 0;
-  while(blitarea < planarsz){
+  while (blitarea < planarsz){
     blith = BLITHEIGHT(1, planarsz - blitarea, 6);
 
     //Copy to bitplane 0, "4"
@@ -360,7 +350,7 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
 
-    //Copy to bitplane 2, "2"
+    // Copy to bitplane 2, "2"
     {
       WaitBlitter();
 
@@ -374,14 +364,14 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
       custom->bltsize = BLTSIZE_VAL(1, blith);
     }
 
-    //Copy to bitplane 3, "1"
+    // Copy to bitplane 3, "1"
     {
       WaitBlitter();
 
       /* ((a << 1) & ~0x5555) | (b & 0x5555) */
       custom->bltcon0 = (SRCA | SRCB | DEST) | C2P_LF_PASS2 | ASHIFT(1);
       custom->bltcon1 = BLITREVERSE;
-      
+
       custom->bltapt = planes + BLTAREA(1, blith, 6) - 4 + blitarea;
       custom->bltbpt = planes + BLTAREA(1, blith, 6) - 2 + blitarea;
       custom->bltdpt = chunky - 2 + (i+1)*BLTAREA(1, blith, 0);
@@ -390,7 +380,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 
     blitarea += BLTAREA(1, blith, 6);
     i++;
-
   }
 
   /* Because there is an even number of steps here, c2p finishes with planar
@@ -441,7 +430,6 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
   }
 }
 
-
 static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
   short x = X((S_WIDTH - WIDTH) / 2) + xo;
   short y = Y((S_HEIGHT - HEIGHT) / 2) + yo;
@@ -458,11 +446,10 @@ static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
   }
 }
 
-
 #define POS4BPP(pixels, iw, x0, y0) ((pixels) + (y0)*(iw)/2 + (x0)/2)
 static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
-			      short width, short height, u_char* thi,
-			      u_char *tlo){
+			      short width, short height, u_char* thi,	u_char *tlo)
+{
 
   /* The blitter operates on words, therefore we have 4 different shift cases
    * depending how the edge of cropped pixmap is aligned to word boundaries.
@@ -496,24 +483,23 @@ static void CropPixmapBlitter(const PixmapT *input, u_short x0, u_short y0,
     custom->bltcon0 = (SRCA | DEST) | ANBC | ABC | ASHIFT(shiftamt);
     custom->bltcon1 = BLITREVERSE;
     custom->bltcdat = 0x0f0f;
-  
+
     custom->bltapt = POS4BPP(chunky, input->width, x0+width, y0+width -1) - 2;
     custom->bltdpt = thi + (width*height/2) - 2; //ok
     custom->bltsize = BLTSIZE_VAL(width/4, height);
   }
 }
 
-
-// #define BLITTERSZ(h, w) ((h << 6) | w)
 static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
-  /* Copy out planar format into sprites
-   *  This function takes care of interlacing SPRxDATA and SPRxDATB registers
+  /*
+   * Copy out planar format into sprites
+   * This function takes care of interlacing SPRxDATA and SPRxDATB registers
    * inside a SprDataT structure
-  */
-  short i = 0;
+   */
+  short i;
 
-  for(i = 0; i < 4; i++){
-    //Sprite 0, plane 0
+  for (i = 0; i < 4; i++) {
+    // Sprite 0, plane 0
     void *sprdat =  sprites[i*2].sprdat->data;
     {
       WaitBlitter();
@@ -545,7 +531,7 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
 
     sprdat = sprites[i*2 + 1].sprdat->data;
 
-    //Sprite 1, plane 2
+    // Sprite 1, plane 2
     {
       WaitBlitter();
 
@@ -560,7 +546,7 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
       custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
 
-    //Sprite 1, plane 3
+    // Sprite 1, plane 3
     {
       WaitBlitter();
 
@@ -575,24 +561,26 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
       custom->bltsize = BLTSIZE_VAL(1, HEIGHT);
     }
   }
-
 }
 
 PROFILE(UVMapRender);
 PROFILE(ChunkyToPlanar);
 PROFILE(CropPixmapBlitter);
 PROFILE(PlanarToSprite);
+
 static void Render(void) {
-  short xo = 0x00;
-  short yo = 0x00;
-  xo = normfx(SIN(frameCount * 8) * 0x50);
-  yo = normfx(COS(frameCount * 7) * 0x20) + 0x10;
+  short xo = normfx(SIN(frameCount * 8) * 0x50);
+  short yo = normfx(COS(frameCount * 7) * 0x20) + 0x10;
 
   {
     ProfilerStart(CropPixmapBlitter);
-    CropPixmapBlitter(logo_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
+    CropPixmapBlitter(logo_chip,
+                      xo + S_WIDTH / 2 - WIDTH / 2 + 1,
+                      yo + S_HEIGHT / 2 - HEIGHT / 2,
+                      WIDTH, HEIGHT,
+                      texture_hi,texture_lo);
     ProfilerStop(CropPixmapBlitter);
-    
+
     ProfilerStart(UVMapRender);
     UVMapRender(segment_p->pixels, texture_lo, texture_hi);
     ProfilerStop(UVMapRender);
@@ -612,4 +600,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Ball, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(MagnifyingGlass, NULL, NULL, Init, Kill, Render, NULL);
