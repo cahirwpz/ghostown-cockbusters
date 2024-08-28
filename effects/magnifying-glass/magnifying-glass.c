@@ -17,10 +17,9 @@
 static PixmapT *segment_p;
 static BitmapT *segment_bp;
 
-static BitmapT dragon_bp;
-static __data_chip char dragon_bitplanes[S_WIDTH * S_HEIGHT * S_DEPTH / 8];
+static BitmapT *logo_bp;
 
-static PixmapT *dragon_chip;
+static PixmapT *logo_chip;
 
 static u_char *texture_hi;
 static u_char *texture_lo;
@@ -68,11 +67,10 @@ static void MakeUVMapRenderCode(void) {
   *code++ = 0x4e75; /* rts */
 }
 
-static CopListT *MakeCopperList(int active) {
+static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(80);
   CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
-  (int*) active = 0;
   CopSetupBitplanes(cp, screen, S_DEPTH);
   for (i = 0; i < 8; i++)
     CopInsSetSprite(&sprptr[i], &sprite[i]);
@@ -89,48 +87,34 @@ static void Init(void) {
   texture_hi = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
   texture_lo = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
 
-
-  dragon_chip = NewPixmap(logo_width, logo_height, PM_CMAP4, MEMF_CHIP);
-
-  // c2p requires target bitplanes to be contiguous in memory, therefore we
-  // allocate the BitmapT manually
-
-  dragon_bp.width  = logo_width;
-  dragon_bp.height = logo_height;
-  dragon_bp.bytesPerRow = ((logo_width + 15) & ~15) / 8;
-  dragon_bp.bplSize = dragon_bp.bytesPerRow * dragon_bp.height;
-  dragon_bp.depth = 4;
-  dragon_bp.flags = BM_STATIC;
-  dragon_bp.planes[0] = dragon_bitplanes;
-  dragon_bp.planes[1] = dragon_bp.planes[0] + dragon_bp.bplSize;
-  dragon_bp.planes[2] = dragon_bp.planes[1] + dragon_bp.bplSize;
-  dragon_bp.planes[3] = dragon_bp.planes[2] + dragon_bp.bplSize;
+  logo_chip = NewPixmap(logo_width, logo_height, PM_CMAP4, MEMF_CHIP);
+  logo_bp = NewBitmap(S_WIDTH, S_HEIGHT, S_DEPTH, BM_STATIC);
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   //TODO: Memcpy-s to blitter ops where possible
   {
     void *tmp;
-    tmp = dragon_chip->pixels;
-    memcpy(dragon_chip, &logo, sizeof(logo));
-    dragon_chip->pixels = tmp;
-    memcpy(dragon_chip->pixels, logo.pixels, logo_width * logo_height / 2);
+    tmp = logo_chip->pixels;
+    memcpy(logo_chip, &logo, sizeof(logo));
+    logo_chip->pixels = tmp;
+    memcpy(logo_chip->pixels, logo.pixels, logo_width * logo_height / 2);
   }
 
-  // Warning: c2p works in place. dragon_chip is destroyed.
-  ChunkyToPlanar(dragon_chip, &dragon_bp);
+  // c2p works in place. logo_chip is destroyed.
+  ChunkyToPlanar(logo_chip, logo_bp);
   
   // We have to use blitter to crop the pixmap in Render(),
-  // so dragon needs to stay in chipmem.  
+  // so logo needs to stay in chipmem.  
   {
     void *tmp;
-    tmp = dragon_chip->pixels;
-    memcpy(dragon_chip, &logo, sizeof(logo));
-    dragon_chip->pixels = tmp;
-    memcpy(dragon_chip->pixels, logo.pixels, logo_width * logo_height / 2);
+    tmp = logo_chip->pixels;
+    memcpy(logo_chip, &logo, sizeof(logo));
+    logo_chip->pixels = tmp;
+    memcpy(logo_chip->pixels, logo.pixels, logo_width * logo_height / 2);
   }
 
-  //Copy dragon bitmap to background
-  memcpy(screen->planes[0], dragon_bp.planes[0],
+  //Copy logo bitmap to background
+  memcpy(screen->planes[0], logo_bp->planes[0],
          S_WIDTH * S_HEIGHT * S_DEPTH / 8);
 
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
@@ -152,7 +136,7 @@ static void Init(void) {
   LoadColors(logo_pal_colors, 0);
   LoadColors(logo_pal_colors, 16);
 
-  cp = MakeCopperList(0);
+  cp = MakeCopperList();
 
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
@@ -165,7 +149,7 @@ static void Kill(void) {
   MemFree(UVMapRender);
   MemFree(sprdat);
 
-  DeletePixmap(dragon_chip);
+  DeletePixmap(logo_chip);
   MemFree(texture_hi);
   MemFree(texture_lo);
   DeleteBitmap(screen);
@@ -606,7 +590,7 @@ static void Render(void) {
 
   {
     ProfilerStart(CropPixmapBlitter);
-    CropPixmapBlitter(dragon_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
+    CropPixmapBlitter(logo_chip, xo+S_WIDTH/2-WIDTH/2 +1, yo+S_HEIGHT/2-HEIGHT/2, WIDTH, HEIGHT, texture_hi, texture_lo);
     ProfilerStop(CropPixmapBlitter);
     
     ProfilerStart(UVMapRender);
