@@ -10,7 +10,9 @@
 
 #include "data/abduction.c"
 
-#include "data/dymek.c"
+#include "data/naked.c"
+#include "data/talk.c"
+#include "data/sing.c"
 #include "data/bkg.c"
 #include "data/ring.c"
 #include "data/cock.c"
@@ -114,7 +116,7 @@ static const u_short pal[pal_count] = {
 };
 
 
-static void BlitterFadeIn(void** planes, short idx) {
+static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short quote[], short w) {
   static short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
@@ -128,36 +130,38 @@ static void BlitterFadeIn(void** planes, short idx) {
     0xDDFD, 0xFDFD, 0xFDFF, 0xFFFF,
   };
 
-  custom->bltamod = 10;
+  custom->bltamod = w;
   custom->bltbmod = 0;
   custom->bltcmod = 10;
-  custom->bltdmod = 30 + 40;
+  custom->bltdmod = (40 - w) + 40;
   custom->bltafwm = -1;
   custom->bltalwm = -1;
   custom->bltcon1 = 0;
 
   custom->bltbdat = tab2[idx];
-  custom->bltapt = &_dymek_bpl[5];
-  custom->bltdpt = planes[4] + 40*64 + 40;
+  custom->bltapt = &quote[w/2];
+  // custom->bltapt = &_dymek_bpl[5];
+  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
-  custom->bltsize = (32 << 6) | 5;
+  custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 
-  custom->bltamod = 10;
+  custom->bltamod = w;
   custom->bltbmod = 0;
   custom->bltcmod = 10;
-  custom->bltdmod = 30 + 40;
+  custom->bltdmod = (40 - w) + 40;
   custom->bltafwm = -1;
   custom->bltalwm = -1;
   custom->bltcon1 = 0;
 
   custom->bltbdat = tab1[idx];
-  custom->bltapt = _dymek_bpl;
-  custom->bltdpt = planes[4] + 40*64;
+  custom->bltapt = quote;
+  // custom->bltapt = _dymek_bpl;
+  custom->bltdpt = planes[4] + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
-  custom->bltsize = (32 << 6) | 5;
+  custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 }
 
@@ -401,12 +405,18 @@ static void Render(void) {
     if (frameCount > 1900 && frameCount % 1 == 0) {
       // BlitterFadeIn(screen[active]->planes);
       if (idx <= 15) {
-        BlitterFadeIn(screen[0]->planes, idx);
-        BlitterFadeIn(screen[1]->planes, idx);
+        BlitterFadeIn(screen[0]->planes, idx, 32, 2, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx, 32, 2, _talk_bpl, talk.bytesPerRow);
+
+        BlitterFadeIn(screen[0]->planes, idx, 144, 0, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx, 144, 0, _naked_bpl, naked.bytesPerRow);
+
+        BlitterFadeIn(screen[0]->planes, idx, 96, 26, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx, 96, 26, _sing_bpl, sing.bytesPerRow);
       }
       ++idx;
     }
-    if (frameCount >= 2000) {
+    if (frameCount >= abduction_start + (abduction_end / 2)) {
       cock_speed = 1;
     }
 
