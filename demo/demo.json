@@ -27,7 +27,7 @@
     "textscroll/data/text-scroll.o"
   ],
   "Abduction": ["abduction/abduction.o"],
-  "LogoGTN": ["logo_gtn/logo_gtn.o"],
+  "MagnifyingGlass": ["magnifying-glass/magnifying-glass.o"],
   "CockTechno": ["cock-techno/cock-techno.o"],
   "CockFreedom": ["cock-freedom/cock-freedom.o"]
 }

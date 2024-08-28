@@ -62,7 +62,7 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
   EXEFILE(EXE_COCK_TECHNO, "cock-techno.exe"),
   EXEFILE(EXE_COCK_FREEDOM, "cock-freedom.exe"),
-  EXEFILE(EXE_LOGO_GTN, "logo_gtn.exe"),
+  EXEFILE(EXE_LOGO_GTN, "magnifying-glass.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
 
