@@ -12,12 +12,14 @@
 #define HEIGHT 180
 #define YOFF ((256 - HEIGHT) / 2)
 #define DEPTH 4
+#define NSPRITE 3
 
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
+static __code short *sprites;
 
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
@@ -50,6 +52,9 @@ static void Init(void) {
   cp = MakeCopperList();
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
+
+  //width 8 sprites, NSPRITE nicknames
+  sprites = MemAlloc(SprDataSize(32,2) * 8* NSPRITE, MEMF_CHIP | MEMF_CLEAR);
 }
 
 static void Kill(void) {
@@ -57,6 +62,7 @@ static void Kill(void) {
   CopperStop();
   DeleteCopList(cp);
   DeleteBitmap(screen);
+  MemFree(sprites);
 }
 
 static inline void DrawEdge(short *coords, void *dst,
