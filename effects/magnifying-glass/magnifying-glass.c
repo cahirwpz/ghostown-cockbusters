@@ -111,7 +111,7 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE);
+  DisableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER | DMAF_SPRITE);
 
   DeleteCopList(cp);
   MemFree(UVMapRender);
