@@ -234,6 +234,8 @@ static void Render(void) {
   short actcl = 0;
   Log("fc = %d\n", frameCount); 
 
+
+  //XXX: use !event
   switch(TrackValueGet(&spriteno, frameCount)){
   case 0:
     active_pal = ks1_pal_colors;
