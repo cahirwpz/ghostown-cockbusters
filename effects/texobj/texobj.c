@@ -194,7 +194,7 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2, int color) {
         v = s02.dvdy - s12.dvdy;
       }
 
-      /* TODO needs debugging */
+      /* TODO Probably ok to skip, no resulting visual effect. */
       if (x == 0)
         return;
 
