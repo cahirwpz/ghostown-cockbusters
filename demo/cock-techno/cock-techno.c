@@ -29,7 +29,7 @@ static __code SprDataT *sprdat;
 #include "data/cock-pal.c"
 #include "data/ksywka1.c"
 #include "data/ksywka2.c"
-#include "data/cocktechno.c"
+#include "data/cock-techno.c"
 
 static __code SpriteT *active_sprite;
 static __code short *active_pal;
@@ -40,7 +40,8 @@ static CopInsPairT *sprmoves[2];
 
 
 static CopListT *MakeCopperList(short act) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1) );
+  CopListT *cp = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
+
   CopInsPairT *sprptr = CopSetupSprites(cp);
   sprmoves[act] = sprptr;
   bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
@@ -58,6 +59,7 @@ static CopListT *MakeCopperList(short act) {
 
     for (i = 0; i < HEIGHT / 10; i++) {
       u_short c;
+      u_short k, n;
 
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
 
@@ -75,7 +77,7 @@ static CopListT *MakeCopperList(short act) {
   
 
 static void Init(void) {
-  TimeWarp(cocktechno_start);
+  TimeWarp(cock_techno_start);
   TrackInit(&spritepos);
   TrackInit(&spriteno);
 
@@ -240,7 +242,6 @@ PROFILE(AnimRender);
 
 static void Render(void) {
   short actcl = 0;
-  Log("fc = %d\n", frameCount); 
 
 
   //XXX: use !event
