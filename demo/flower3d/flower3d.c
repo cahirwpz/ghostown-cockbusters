@@ -45,18 +45,11 @@ static u_short *bg_pixels[] = {
   bg_3_cols_pixels
 };
 
-static const BitmapT *bg_bpl[4] = {
-  NULL,
-  &bg_1,
-  &bg_2,
-  &bg_3
-};
-
 static short active_bg = 1;
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
-    NewCopList(100 + bg_1_height * (bg_1_cols_width + 3));
+    NewCopList(100 + bg_3_height * (bg_3_cols_width + 3));
 
   /* bitplane modulos for both playfields */
   CopMove16(cp, bpl1mod, 0);
@@ -65,9 +58,9 @@ static CopListT *MakeCopperList(void) {
   CopWait(cp, Y(-2), 0);
 
   bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
-  CopMove32(cp, bplpt[1], bg_bpl[active_bg]->planes[0]);
+  CopMove32(cp, bplpt[1], bg_3.planes[0]);
   CopMove32(cp, bplpt[2], screen[1]->planes[1]);
-  CopMove32(cp, bplpt[3], bg_bpl[active_bg]->planes[1]);
+  CopMove32(cp, bplpt[3], bg_3.planes[1]);
   CopMove32(cp, bplpt[4], screen[1]->planes[2]);
 
   {
@@ -75,7 +68,7 @@ static CopListT *MakeCopperList(void) {
     short i;
 
     colptr = CopWait(cp, Y(-1), 0);
-    for (i = 0; i < bg_1_height; i++) {
+    for (i = 0; i < bg_3_height; i++) {
       CopWait(cp, Y(i), 0); 
       CopMove16(cp, color[0], *data++); 
       CopMove16(cp, color[9], *data++); 
@@ -111,7 +104,7 @@ static void Init(void) {
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
-  SetupMode(MODE_DUALPF, DEPTH + bg_1_depth);
+  SetupMode(MODE_DUALPF, DEPTH + bg_3_depth);
   LoadColors(pal_gray_colors, 4);
   LoadColors(pal_gray_colors, 0);
   
@@ -532,14 +525,14 @@ static void VBlank(void) {
       LoadColors(pattern_2_colors, 0);
     } 
 
-    CopInsSet32(&bplptr[1], bg_bpl[active_bg]->planes[0]);
-    CopInsSet32(&bplptr[3], bg_bpl[active_bg]->planes[1]);
+    // CopInsSet32(&bplptr[1], bg_bpl[active_bg]->planes[0]);
+    // CopInsSet32(&bplptr[3], bg_bpl[active_bg]->planes[1]);
 
     {
       u_short *data = bg_pixels[active_bg];
       short i;
 
-      for (i = 0; i < bg_1_height; i++) {
+      for (i = 0; i < bg_3_height; i++) {
         CopInsSet16(&colptr[(i*5) + 2], *data++);
         CopInsSet16(&colptr[(i*5) + 3], *data++);
         CopInsSet16(&colptr[(i*5) + 4], *data++);

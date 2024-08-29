@@ -6,11 +6,9 @@ CLEAN-FILES := data/lotus.c data/pattern-?-?.c data/lotus-anim.c \
 
 LIBS := lib3d
 
-PNG2C.bg-1-data := --bitmap bg_1,256x256x2
-PNG2C.bg-1-pal := --pixmap bg_1_cols,4x256x12,+onlydata
-PNG2C.bg-2-data := --bitmap bg_2,256x256x2
-PNG2C.bg-2-pal := --pixmap bg_2_cols,4x256x12,+onlydata
 PNG2C.bg-3-data := --bitmap bg_3,256x256x2
+PNG2C.bg-1-pal := --pixmap bg_1_cols,4x256x12,+onlydata
+PNG2C.bg-2-pal := --pixmap bg_2_cols,4x256x12,+onlydata
 PNG2C.bg-3-pal := --pixmap bg_3_cols,4x256x12,+onlydata
 PNG2C.pal-yellow := --palette pattern_2,4
 PNG2C.pal-gray := --palette pal_gray,4
