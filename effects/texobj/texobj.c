@@ -41,12 +41,11 @@ static const short Pixel[16] = {
   0x8080, 0x8484, 0x8888, 0x8c8c, 0xc0c0, 0xc4c4, 0xc8c8, 0xcccc,
 };
 
-static const short texture_light[17] = {
+static const short texture_light[16] = {
   4, 4, 4, 4,
   3, 3, 3,
   2, 2, 2,
   1, 1, 1,
-  0, 0, 0, 0,
 };
 
 static void ScrambleBackground(void) {
@@ -293,8 +292,12 @@ static void DrawObject(Object3D *object) {
       if (FACE(f)->flags >= 0) {
         register short *index asm("a3") = (short *)(FACE(f)->indices);
         short n = FACE(f)->count - 1;
-        int color = texture_light[(short)FACE(f)->flags];
         CornerT *corner = corners;
+        int color;
+
+        if (FACE(f)->flags >= (int)nitems(texture_light)) {
+          FACE(f)->flags = nitems(texture_light) - 1;
+        }
 
         do {
           short i;
@@ -308,6 +311,7 @@ static void DrawObject(Object3D *object) {
           corner++;
         } while (--n != -1);
 
+        color = texture_light[(short)FACE(f)->flags];
         DrawTriangle(&corners[0], &corners[1], &corners[2], color);
       }
     }
