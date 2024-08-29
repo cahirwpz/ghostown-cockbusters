@@ -26,10 +26,11 @@ static __code char *line_start;
 extern uint8_t Text[];
 
 #include "data/text-scroll-font.c"
+#include "data/background.c"
 
 static CopListT *MakeCopperList(CopInsPairT **linebpl) {
   CopListT *cp = NewCopList(100 + 3 * HEIGHT);
-  CopSetupBitplanes(cp, scroll, DEPTH);
+  CopSetupBitplanes(cp, scroll, DEPTH + background_depth);
   {
     void *ptr = scroll->planes[0];
     short y;
@@ -50,11 +51,18 @@ static CopListT *MakeCopperList(CopInsPairT **linebpl) {
 
 static void Init(void) {
   scroll = NewBitmap(WIDTH, HEIGHT + 16, 1, BM_CLEAR);
+  scroll->planes[1] = _background_bpl;
 
   line_start = Text;
 
-  SetupPlayfield(MODE_HIRES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
+  SetupDisplayWindow(MODE_HIRES, X(0), Y(0), WIDTH, HEIGHT);
+  SetupBitplaneFetch(MODE_HIRES, X(0), WIDTH);
+  SetupMode(MODE_DUALPF|MODE_HIRES, DEPTH + background_depth);
   LoadColors(font_colors, 0);
+  LoadColors(background_colors, 8);
+
+  /* reverse playfield priorities */
+  custom->bplcon2 = 0;
 
   linebpl = MemAlloc(sizeof(CopInsPairT *) * 2 * HEIGHT, MEMF_PUBLIC);
   cp[0] = MakeCopperList((*linebpl)[0]);

@@ -4,6 +4,7 @@ CLEAN-FILES := data/text-scroll-font.c
 OBJECTS := data/text-scroll.o
 
 PNG2C.text-scroll-font := --bitmap font,768x8x1,+cpuonly --palette font,8,+store_unused
+PNG2C.background := --bitmap background,640x256x1,+onlydata --palette background,2
 
 include $(TOPDIR)/build/effect.mk
 
