@@ -7,6 +7,7 @@
 #include <pixmap.h>
 #include <types.h>
 #include <sprite.h>
+#include <sync.h>
 #include <palette.h>
 #include <system/memory.h>
 
@@ -19,7 +20,7 @@
 //static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
-static __code CopListT *cp;
+static CopListT *cp[2];
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
@@ -28,28 +29,27 @@ static __code SprDataT *sprdat;
 #include "data/cock-pal.c"
 #include "data/ksywka1.c"
 
+static __code SpriteT *active_sprite;
+static __code SpriteT *spp[8] = {ks1, ks2};
+
+//#include "data/cock-techno.c"
 /* Reading polygon data */
 static short current_frame = 0;
 
-static CopListT *MakeCopperList(void) {
+static CopListT *MakeCopperList(int clactive) {
   CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1) );
   CopInsPairT *sprptr = CopSetupSprites(cp);
-
+  (void) clactive; 
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
     short i, j;
-
-    for(i = 0; i < 8; i++){
-      CopInsSetSprite(&sprptr[i], &ks1[i]);
-    }
-    CopWait(cp, Y(120), 0x0);
-    sprptr = CopSetupSprites(cp);
-    for(i = 0; i < 8; i++){
-      CopInsSetSprite(&sprptr[i], &ks2[i]);
-    }
     
-    if(0) for (i = 0; i < HEIGHT / 10; i++) {
+    for(i = 0; i < 8; i++){
+      CopInsSetSprite(&sprptr[i], &active_sprite[i]);     
+    }
+ 
+    if(1) for (i = 0; i < HEIGHT / 10; i++) {
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
       for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
     }
@@ -60,6 +60,8 @@ static CopListT *MakeCopperList(void) {
   
 
 static void Init(void) {
+  //TimeWarp(cock_techno_start).
+  //TrackInit(&spritepos);
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
@@ -80,15 +82,16 @@ static void Init(void) {
   //memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
 
   LoadColors(ks1_pal_colors, 16);
-  LoadColors(ks1_pal_colors, 20);
+  LoadColors(ks2_pal_colors, 20);
   LoadColors(ks2_pal_colors, 24);
   LoadColors(ks2_pal_colors, 28);
   
   (void) ks2_pal_colors; // klappe halten
   (void) ks2;
-
-  cp = MakeCopperList();
-  CopListActivate(cp);
+  active_sprite = ks2;
+  cp[0] = MakeCopperList(0);
+  //cp[1] = MakeCopperList(1);
+  CopListActivate(cp[0]);
 
   //memset(screen, 0xa000, 0x55);
   
@@ -99,7 +102,9 @@ static void Init(void) {
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp);
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
+
   DeleteBitmap(screen);
   MemFree(sprdat);
   DisableDMA(DMAF_SPRITE);
@@ -232,6 +237,15 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
+  (void) spp;
+  active_sprite = ((frameCount >> 4) & 0x01) ? ks1 : ks2;
+  Log("active_sprite = %p\n", active_sprite);
+  // overwrite ~~active~~ copperlist positions to move sprites
+  CopInsSet32((CopInsPairT*) &cp[0]->entry[0], active_sprite[0].sprdat);
+  CopInsSet32((CopInsPairT*) &cp[0]->entry[2], active_sprite[1].sprdat);
+  CopInsSet32((CopInsPairT*) &cp[0]->entry[4], active_sprite[2].sprdat);
+  CopInsSet32((CopInsPairT*) &cp[0]->entry[6], active_sprite[3].sprdat);
+  
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
     maybeSkipFrame = 0;
@@ -245,8 +259,13 @@ static void Render(void) {
   SpriteUpdatePos(&ks1[1], X(0x70), Y(40));
   SpriteUpdatePos(&ks1[2], X(0x80), Y(40));
   SpriteUpdatePos(&ks1[3], X(0x90), Y(40));
+  SpriteUpdatePos(&ks2[0], X(0x60), Y(150));
+  SpriteUpdatePos(&ks2[1], X(0x70), Y(150));
+  SpriteUpdatePos(&ks2[2], X(0x80), Y(150));
+  SpriteUpdatePos(&ks2[3], X(0x90), Y(150));
   
- 
+
+  
   if(1) {   
   ProfilerStart(AnimRender);
   {
@@ -256,14 +275,8 @@ static void Render(void) {
   }
   ProfilerStop(AnimRender);
 
-  SpriteUpdatePos(&ks2[0], X(0x60), Y(130));
-  SpriteUpdatePos(&ks2[1], X(0x70), Y(131));
-  SpriteUpdatePos(&ks2[2], X(0x80), Y(132));
-  SpriteUpdatePos(&ks2[3], X(0x90), Y(133));
-
-
   // chicken afterglow
-  {
+  if(1) {
     short n = DEPTH;
 
     while (--n >= 0) {
@@ -273,8 +286,8 @@ static void Render(void) {
     }
   }
   }
-  
   TaskWaitVBlank();
+ 
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }
