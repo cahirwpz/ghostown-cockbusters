@@ -1,0 +1,17 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start   $0000
+
+
+@track gradientno
+$0000    0
+$0020    1
+$0100    2
+$0120    3
+$0200    4
+$0220    5
+$0300    6
+$0320    7
+$0400    8
+$0420    9
+$0500    10
+@end

@@ -22,6 +22,8 @@ static __code short maybeSkipFrame = 0;
 #include "data/cock_scene_4.c"
 #include "data/cock-pal.c"
 
+
+
 /* Reading polygon data */
 static short current_frame = 0;
 
@@ -33,8 +35,17 @@ static CopListT *MakeCopperList(void) {
     short i, j;
 
     for (i = 0; i < HEIGHT / 10; i++) {
+      u_short c;
+      u_short k, n;
+
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
-      for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
+
+      CopSetColor(cp, 0, 0);
+      for (j = 1, n = 1; j < 16; n += n) {
+        c = *pixels++;
+        for (k = 0; k < n; k++, j++)
+          CopSetColor(cp, j, c);
+      }
     }
   }
   return CopListFinish(cp);
