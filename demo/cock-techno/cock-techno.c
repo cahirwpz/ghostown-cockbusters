@@ -6,6 +6,8 @@
 #include <line.h>
 #include <pixmap.h>
 #include <types.h>
+#include <sprite.h>
+#include <palette.h>
 #include <system/memory.h>
 
 #define WIDTH 320
@@ -14,30 +16,38 @@
 #define DEPTH 4
 #define NSPRITE 3
 
+static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
-static __code short *sprites;
+static __code SprDataT *sprdat;
 
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
+#include "data/ksywka1.c"
 
 /* Reading polygon data */
 static short current_frame = 0;
 
 static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1));
+  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1)  + 80);
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
     short i, j;
+    CopInsPairT *sprptr = CopSetupSprites(cp);
 
     for (i = 0; i < HEIGHT / 10; i++) {
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
       for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
     }
+    
+    for(i = 0; i < 8; i++){
+          CopInsSetSprite(&sprptr[i], &sprite[i]);
+    }
+    
   }
   return CopListFinish(cp);
 }
@@ -48,13 +58,32 @@ static void Init(void) {
   BitmapClear(screen);
   WaitBlitter();
 
-  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
+  //SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
+  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   cp = MakeCopperList();
-  CopListActivate(cp);
+  
   EnableDMA(DMAF_RASTER);
 
   //width 8 sprites, NSPRITE nicknames
-  sprites = MemAlloc(SprDataSize(32,2) * 8* NSPRITE, MEMF_CHIP | MEMF_CLEAR);
+  sprdat = MemAlloc(SprDataSize(32,2) * 8 * NSPRITE, MEMF_CHIP | MEMF_CLEAR);
+  Log("sprdat = %p\n", &sprdat);
+  //memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
+  memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
+  {
+    int i;
+    SprDataT *dat = sprdat;
+    for(i = 0; i < NSPRITE * 8; i++){
+      MakeSprite(&dat, 32, false, &sprite[i]);
+      EndSprite(&dat);
+    }
+  }
+  LoadColors(ks1_pal_colors, 0);
+  CopListActivate(cp);
+
+  memset(screen, 0xa000, 0x55);
+  
+  EnableDMA(DMAF_SPRITE | DMAF_RASTER);
+
 }
 
 static void Kill(void) {
@@ -62,7 +91,9 @@ static void Kill(void) {
   CopperStop();
   DeleteCopList(cp);
   DeleteBitmap(screen);
-  MemFree(sprites);
+  MemFree(sprdat);
+  DisableDMA(DMAF_SPRITE);
+
 }
 
 static inline void DrawEdge(short *coords, void *dst,
@@ -200,6 +231,10 @@ static void Render(void) {
     }
   }
 
+  SpriteUpdatePos(&sprite[0], X(60), Y(60));
+
+
+  if(0){  
   ProfilerStart(AnimRender);
   {
     BlitterClear(screen, active);
@@ -217,7 +252,8 @@ static void Render(void) {
       CopInsSet32(&bplptr[n], screen->planes[i]);
     }
   }
-
+  }
+  
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
