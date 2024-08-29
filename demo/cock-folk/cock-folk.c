@@ -39,7 +39,7 @@ static __code short activecl = 0;
 #include "data/cock-folk.c"
 
 static const PixmapT *palettes[] = {
-  &gradient2, &gradient3, &gradient4,
+  &gradient1, &gradient2, &gradient3, &gradient4,
   &gradient5, &gradient6, &gradient7,
   &gradient8, &gradient9, &gradient10,
   &gradient11
@@ -50,12 +50,12 @@ static const PixmapT *palettes[] = {
 /* Reading polygon data */
 static __code short current_frame = 0;
 
-static CopListT *MakeCopperList(CopListT *cp, int npal, int acl) {
+static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
   Log("Make Copper List START\n");
   bplptr[acl] = CopSetupBitplanes(cp, screen, DEPTH);
   {
     
-    short *pixels = palettes[npal]->pixels;
+    short *pixels = palettes[gno]->pixels;
     short i, j, k, n;
     for (i = 0; i < HEIGHT / 10; i++) {
       u_short c;
@@ -86,9 +86,9 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp[0] = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
+  cp[0] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
   MakeCopperList(cp[0], 0, 0);
-  cp[1] = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
+  cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
   MakeCopperList(cp[1], 0, 1);
   Log("cp[0] = %p, cp[1] = %p\n", cp[0], cp[1]);
   
@@ -274,9 +274,9 @@ static void Render(void) {
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
+      Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
       cp[activecl]->curr = cp[activecl]->entry;
       MakeCopperList(cp[activecl], gno, activecl);
-      
       Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
     }
   }

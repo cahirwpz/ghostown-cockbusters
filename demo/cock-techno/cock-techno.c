@@ -24,12 +24,31 @@ static CopListT *cp[2];
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
+static __code short activecl = 0;
 
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
+#include "data/cock-pal2.c"
+#include "data/cock-pal3.c"
+#include "data/cock-pal4.c"
+#include "data/cock-pal5.c"
+#include "data/cock-pal6.c"
+#include "data/cock-pal7.c"
+#include "data/cock-pal8.c"
+#include "data/cock-pal9.c"
+#include "data/cock-pal10.c"
+#include "data/cock-pal11.c"
 #include "data/ksywka1.c"
 #include "data/ksywka2.c"
 #include "data/cock-techno.c"
+
+static const PixmapT *palettes[] = {
+  &gradient11, &gradient10, &gradient9,
+  &gradient8, &gradient7, &gradient6,
+  &gradient5, &gradient4, &gradient3,
+  &gradient2, &gradient1
+};
+
 
 static __code SpriteT *active_sprite;
 static __code short *active_pal;
@@ -37,16 +56,17 @@ static __code short *active_pal;
 static short current_frame = 0;
 static CopInsT *colors[2];
 static CopInsPairT *sprmoves[2];
+static __code short oldgradientno = 0;
 
 
-static CopListT *MakeCopperList(short act) {
-  CopListT *cp = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
+static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
 
   CopInsPairT *sprptr = CopSetupSprites(cp);
   sprmoves[act] = sprptr;
   bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
   {
-    short *pixels = gradient.pixels;
+    short *pixels = palettes[gno]->pixels;
+
     short i, j;
     
     for(i = 0; i < 8; i++){
@@ -80,6 +100,8 @@ static void Init(void) {
   TimeWarp(cock_techno_start);
   TrackInit(&spritepos);
   TrackInit(&spriteno);
+  TrackInit(&gradientno);
+
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
@@ -93,8 +115,10 @@ static void Init(void) {
 
   active_sprite = ks1;
   active_pal = ks2_pal_colors;
-  cp[0] = MakeCopperList(0);
-  cp[1] = MakeCopperList(1);
+  cp[0] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp[0], 0, 0);
+  cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp[1], 0, 1);
 
   CopListActivate(cp[0]);
 
@@ -267,7 +291,8 @@ static void Render(void) {
   }
 
   // overwrite active copperlist positions to move sprites
-
+  // would be nice to have this in the same place as MakeCopperList but its
+  // not 1:1
   {
     short i = 0;
     for(i = 0; i < 16; i++){
@@ -300,8 +325,25 @@ static void Render(void) {
   }
   }
   TaskWaitVBlank();
+  {
+    u_short gno = TrackValueGet(&gradientno, frameCount);
+    if(oldgradientno != gno) {
+      oldgradientno = gno;
+      activecl ^= 1;
+      // this is not a leak as fas as I can tell
+      // since the length is not changed. We just need
+      // to regenerate the list starting w/ the first instruction
+      Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
+
+      cp[activecl]->curr = cp[activecl]->entry;
+      MakeCopperList(cp[activecl], gno, activecl);
+      
+      Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
+    }
+  }
   custom->cop1lc = (u_int)cp[actcl]->entry;
 
+  
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }
