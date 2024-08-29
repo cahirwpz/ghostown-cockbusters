@@ -203,13 +203,26 @@ static void DrawTriangle(CornerT *p0, CornerT *p1, CornerT *p2, int color) {
       dv = div16(v << 8, x);
     }
 
-    // ((s02.x < s01.x) || (s02.x == s01.x && s02.dxdy > s01.dxdy))
-    if (s01.dxdy < s02.dxdy) {
-      DrawTriPart(chunky, tex, &s01, &s02, du, dv, p0->yi, p1->yi);
-      DrawTriPart(chunky, tex, &s12, &s02, du, dv, p1->yi, p2->yi);
+    if (p1->y - p0->y < 16) {
+      if (p0->x < p1->x) {
+        DrawTriPart(chunky, tex, &s02, &s12, du, dv, p1->yi, p2->yi);
+      } else {
+        DrawTriPart(chunky, tex, &s12, &s02, du, dv, p1->yi, p2->yi);
+      }
+    } else if (p2->y - p1->y < 16) {
+      if (p1->x < p2->x) {
+        DrawTriPart(chunky, tex, &s01, &s02, du, dv, p0->yi, p1->yi);
+      } else {
+        DrawTriPart(chunky, tex, &s02, &s01, du, dv, p0->yi, p1->yi);
+      }
     } else {
-      DrawTriPart(chunky, tex, &s02, &s01, du, dv, p0->yi, p1->yi);
-      DrawTriPart(chunky, tex, &s02, &s12, du, dv, p1->yi, p2->yi);
+      if (s01.dxdy < s02.dxdy) {
+        DrawTriPart(chunky, tex, &s01, &s02, du, dv, p0->yi, p1->yi);
+        DrawTriPart(chunky, tex, &s12, &s02, du, dv, p1->yi, p2->yi);
+      } else {
+        DrawTriPart(chunky, tex, &s02, &s01, du, dv, p0->yi, p1->yi);
+        DrawTriPart(chunky, tex, &s02, &s12, du, dv, p1->yi, p2->yi);
+      }
     }
   }
 }
