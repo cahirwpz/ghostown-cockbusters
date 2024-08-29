@@ -62,7 +62,7 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),
   EXEFILE(EXE_COCK_TECHNO, "cock-techno.exe"),
   EXEFILE(EXE_COCK_FREEDOM, "cock-freedom.exe"),
-  EXEFILE(EXE_LOGO_GTN, "logo_gtn.exe"),
+  EXEFILE(EXE_LOGO_GTN, "magnifying-glass.exe"),
   EXEFILE(EXE_PROTRACKER, "playpt.exe"),
 };
 
@@ -162,8 +162,6 @@ static void BgTaskLoop(__unused void *ptr) {
         LoadExe(EXE_PROTRACKER);
         LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
-        LoadExe(EXE_COCK_FOLK);
-        LoadExe(EXE_ABDUCTION);
 
         Log("[BgTask] Done initial loading!\n");
         BgTaskState = BG_IDLE;
@@ -220,6 +218,7 @@ static void RunLoader(void) {
     lastFrameCount = frameCount;
   }
 
+  VBlankHandler = NULL;
   EffectKill(Loader);
   UnLoadExe(EXE_LOADER);
 }

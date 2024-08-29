@@ -11,8 +11,11 @@
 
 #define screen_bplSize (WIDTH * HEIGHT / 8)
 
+#include "data/dna3d.c"
 #include "data/bobs.c"
+#include "data/bobs2.c"
 #include "data/bobs_gradient.c"
+#include "data/bobs_gradient2.c"
 #include "data/dna.c"
 #include "data/necrocoq-00-data.c"
 #include "data/necrocoq-00-pal.c"
@@ -27,11 +30,34 @@
 #include "data/necrocoq-09.c"
 #include "data/necrocoq-10.c"
 
+#include "data/necrocoq2-00.c"
+#include "data/necrocoq2-01.c"
+#include "data/necrocoq2-02.c"
+#include "data/necrocoq2-03.c"
+#include "data/necrocoq2-04.c"
+#include "data/necrocoq2-05.c"
+#include "data/necrocoq2-06.c"
+#include "data/necrocoq2-07.c"
+#include "data/necrocoq2-08.c"
+#include "data/necrocoq2-09.c"
+#include "data/necrocoq2-10.c"
+
+#include "data/fadein00.c"
+#include "data/fadein01.c"
+#include "data/fadein02.c"
+#include "data/fadein03.c"
+#include "data/fadein04.c"
+#include "data/fadein05.c"
+#include "data/fadein06.c"
+#include "data/fadein07.c"
+#include "data/fadein08.c"
+
 static __code Object3D *object;
 static __code CopListT *cp;
 static __code BitmapT *screen[2];
 static __code CopInsPairT *bplptr;
 static CopInsT *linecol[necrocoq_height];
+static CopInsT *bobscol[necrocoq_height];
 static __code int active = 0;
 
 static u_short *necrochicken_cols[11] = {
@@ -48,6 +74,33 @@ static u_short *necrochicken_cols[11] = {
   necrocoq_10_cols_pixels,
 };
 
+static u_short *necrochicken2_cols[11] = {
+  necrocoq2_00_cols_pixels,
+  necrocoq2_01_cols_pixels,
+  necrocoq2_02_cols_pixels,
+  necrocoq2_03_cols_pixels,
+  necrocoq2_04_cols_pixels,
+  necrocoq2_05_cols_pixels,
+  necrocoq2_06_cols_pixels,
+  necrocoq2_07_cols_pixels,
+  necrocoq2_08_cols_pixels,
+  necrocoq2_09_cols_pixels,
+  necrocoq2_10_cols_pixels,
+};
+
+static u_short *fadein_cols[9] = {
+  fadein08_cols_pixels,
+  fadein07_cols_pixels,
+  fadein06_cols_pixels,
+  fadein05_cols_pixels,
+  fadein04_cols_pixels,
+  fadein03_cols_pixels,
+  fadein02_cols_pixels,
+  fadein01_cols_pixels,
+  fadein00_cols_pixels,
+};
+
+
 #define envelope_length 40
 
 static short envelope[envelope_length] = {
@@ -63,6 +116,25 @@ static short envelope[envelope_length] = {
   9, 9,
   10, 10,
   9, 9,
+  8, 8,
+  7, 7,
+  6, 6,
+  5, 5,
+  4, 4,
+  3, 3,
+  2, 2,
+  1, 1,
+};
+
+static short envelope2[envelope_length-8] = {
+  0, 0,
+  1, 1,
+  2, 2,
+  3, 3,
+  4, 4,
+  5, 5,
+  6, 6,
+  7, 7,
   8, 8,
   7, 7,
   6, 6,
@@ -101,7 +173,7 @@ static CopListT *MakeCopperList(void) {
       /* Start exchanging palette colors at the end of previous line. */
       CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
       fgcol = *pf1_data++;
-      CopMove16(cp, color[1], fgcol);
+      bobscol[i] = CopMove16(cp, color[1], fgcol);
       fgcol = *pf1_data++;
       CopMove16(cp, color[2], fgcol);
       CopMove16(cp, color[3], fgcol);
@@ -122,6 +194,8 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 static void Init(void) {
+  TimeWarp(dna3d_start);
+
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
 
@@ -502,11 +576,38 @@ static void BitmapClearI(BitmapT *bm) {
   custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
 }
 
-static void ChangeBackgroundColor(short n) {
+static void SetBackgroundColor(short color) {
+  CopInsT **lineptr = linecol;
+  short i;
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *lineptr++;
+
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+    CopInsSet16(ins++, color);
+  }
+}
+
+static void ChangeBackgroundColor(short n, short cols) {
   short p = envelope[n % envelope_length];
   u_short *data = necrochicken_cols[p];
   CopInsT **lineptr = linecol;
   short i;
+  (void)necrochicken_cols;
+  (void)necrochicken2_cols;
+
+  if (cols == 0) {
+    p = envelope2[n % (envelope_length - 8)];
+    data = fadein_cols[p];
+  } else if (cols == 1) {
+    data = necrochicken_cols[p];
+  } else if (cols == 2) {
+    data = necrochicken2_cols[p];
+  } else if (n % 4 >= 2) {
+    data = necrochicken2_cols[p];
+  }
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
@@ -518,13 +619,73 @@ static void ChangeBackgroundColor(short n) {
   }
 }
 
+static void ChangeBobsColor(short cols) {
+  CopInsT **bobsptr = bobscol;
+  u_short *data = bobs_cols_pixels;
+  short i;
+
+  if (cols == 2) {
+    data = bobs_cols2_pixels;
+  } else if (cols == 3 && (frameCount >> 1) % 4 >= 2) {
+    data = bobs_cols2_pixels;
+  }
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *bobsptr++;
+
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data++);
+  }
+}
+
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
 static void Render(void) {
+  static bool show_cock = true;
+  static bool new_bobs = false;
+  static short mod = 0;
+  static bool aux = true;
+  static bool idx = 20;
   BitmapClearI(screen[active]);
 
-  ChangeBackgroundColor(frameCount >> 1);
+  if (frameCount < dna3d_start + (dna3d_end / 6)) {
+    SetBackgroundColor(0x000);
+  } else if (show_cock) {
+    ChangeBackgroundColor(idx, 0);
+    ++idx;
+    if (idx > 31) {
+      show_cock = false;
+    }
+  }
+  
+  if (frameCount >  dna3d_start + (2 * (dna3d_end / 6)) &&
+      frameCount <= dna3d_start + (3 * (dna3d_end / 5))){
+    if (aux) {
+      aux = false;
+      mod = ((frameCount >> 1) % envelope_length);
+    }
+    ChangeBackgroundColor((frameCount >> 1) - mod, 1);
+  }
+
+  if (frameCount >  dna3d_start + (3 * (dna3d_end / 5)) &&
+      frameCount <= dna3d_start + (4 * (dna3d_end / 6))) {
+    new_bobs = true;
+    ChangeBackgroundColor((frameCount >> 1) - mod, 3);
+    ChangeBobsColor(3);
+  }
+
+  if (frameCount > dna3d_start + (4 * (dna3d_end / 6))) {
+    new_bobs = true;
+    ChangeBackgroundColor((frameCount >> 1) - mod, 2);
+    ChangeBobsColor(2);
+    (void)ChangeBobsColor;
+  }
 
   ProfilerStart(TransformObject);
   {
@@ -540,7 +701,11 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    if (new_bobs) {
+      DrawFlares(object, bobs2.planes[0], screen[active]->planes[0], custom);
+    } else {
+      DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    }
     DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);

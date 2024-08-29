@@ -1,10 +1,14 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/cock.c data/ring.c data/bkg.c data/mid_beam.c data/side_beam_l.c data/side_beam_r.c \
-	data/ufo0.c data/ufo1.c data/ufo2.c data/ufo3.c data/ufo4.c data/ufo5.c
+	data/ufo0.c data/ufo1.c data/ufo2.c data/ufo3.c data/ufo4.c data/ufo5.c \
+	data/talk.c data/sing.c data/naked.c
 
-PNG2C.bkg  := --bitmap bkg,320x256x1
-PNG2C.ring := --bitmap ring,56x16x3 --palette ring,2
+PNG2C.naked := --bitmap naked,112x32x1
+PNG2C.sing  := --bitmap sing,112x32x1
+PNG2C.talk  := --bitmap talk,80x32x1
+PNG2C.bkg   := --bitmap bkg,320x256x1
+PNG2C.ring  := --bitmap ring,56x16x3 --palette ring,2
 PNG2C.ufo0  := --bitmap ufo0,104x39x4 --palette abduction,2
 PNG2C.ufo1  := --bitmap ufo1,104x39x4
 PNG2C.ufo2  := --bitmap ufo2,104x39x4

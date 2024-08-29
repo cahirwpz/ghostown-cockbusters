@@ -8,6 +8,11 @@
 #include <2d.h>
 #include <color.h>
 
+#include "data/abduction.c"
+
+#include "data/naked.c"
+#include "data/talk.c"
+#include "data/sing.c"
 #include "data/bkg.c"
 #include "data/ring.c"
 #include "data/cock.c"
@@ -24,7 +29,7 @@
 
 #define WIDTH 320
 #define HEIGHT 256
-#define DEPTH 4
+#define DEPTH 5
 
 #define RING_W 56
 #define RING_H 16
@@ -52,11 +57,11 @@ static CopListT *cp;
 static short active = 0;
 
 static phaseE phase = FADEIN;
-static short counter = 0;
 
 static short ufo_idx = 0;
 static short ufo_pos = 25;
 static short cock_pos = 255-24;
+static short cock_speed = 2;
 static short beam_pos[2] = {X(137), X(167)};
 
 static short active_pal = 0;
@@ -82,34 +87,128 @@ static const u_short pal[pal_count] = {
   [10] = 0x034,
 
   // Unused
-  [11] = 0xF0F,
-  [12] = 0xF0F,
-  [13] = 0xF0F,
-  [14] = 0xF0F,
-  [15] = 0xF0F,
+  [11] = 0x034,
+  [12] = 0x034,
+  [13] = 0x034,
+  [14] = 0x034,
+  [15] = 0x034,
+
+  [16] = 0xFFF,
+  [17] = 0xFFF,
+  [18] = 0xFFF,
+  [19] = 0xFFF,
 
   // Coq
-  [16] = 0x000,
-  [17] = 0x035,
-  [18] = 0x2AD,
-  [19] = 0x00F,
-  // Beam
   [20] = 0x000,
-  [21] = 0xCEF,
-  [22] = 0xCEF,
-  [23] = 0xCEF,
-
+  [21] = 0x035,
+  [22] = 0x2AD,
+  [23] = 0x00F,
+  // Beam
   [24] = 0x000,
-  [25] = 0x2AD,
-  [26] = 0x079,
-  [27] = 0x046,
+  [25] = 0xCEF,
+  [26] = 0xCEF,
+  [27] = 0xCEF,
 
   [28] = 0x000,
-  [29] = 0x000,
-  [30] = 0x000,
-  [31] = 0x000,
+  [29] = 0x2AD,
+  [30] = 0x079,
+  [31] = 0x046,
 };
 
+
+static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short quote[], short w) {
+  static short tab1[16] = {
+    0x1000, 0x1010, 0x1011, 0x1111,
+    0x1131, 0x3131, 0x3171, 0x3371,
+    0x3771, 0x3773, 0x7773, 0x7E73,
+    0x7F77, 0xFF77, 0xFF7F, 0xFFFF,
+  };
+  static short tab2[16] = {
+    0x0010, 0x0014, 0x1041, 0x1051,
+    0x1451, 0x5451, 0xD451, 0xD455,
+    0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
+    0xDDFD, 0xFDFD, 0xFDFF, 0xFFFF,
+  };
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = tab2[idx];
+  custom->bltapt = &quote[w/2];
+  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
+
+  custom->bltcon0 = (SRCA | DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = tab1[idx];
+  custom->bltapt = quote;
+  custom->bltdpt = planes[4] + (y * 40) + x;
+
+  custom->bltcon0 = (SRCA | DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+}
+
+static void BlitterFadeOut(void** planes, short idx, short y, short x, short w) {
+  static short tab1[16] = {
+    0x1000, 0x1010, 0x1011, 0x1111,
+    0x1131, 0x3131, 0x3171, 0x3371,
+    0x3771, 0x3773, 0x7773, 0x7E73,
+    0x7F77, 0xFF77, 0xFF7F, 0xFFFF,
+  };
+  static short tab2[16] = {
+    0x0010, 0x0014, 0x1041, 0x1051,
+    0x1451, 0x5451, 0xD451, 0xD455,
+    0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
+    0xDDFD, 0xFDFD, 0xFDFF, 0xFFFF,
+  };
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = ~tab2[idx];
+  custom->bltadat = 0xFFFF;
+  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
+
+  custom->bltcon0 = (DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+
+  custom->bltamod = w;
+  custom->bltbmod = 0;
+  custom->bltcmod = 10;
+  custom->bltdmod = (40 - w) + 40;
+  custom->bltafwm = -1;
+  custom->bltalwm = -1;
+  custom->bltcon1 = 0;
+
+  custom->bltbdat = ~tab1[idx];
+  custom->bltadat = 0xFFFF;
+  custom->bltdpt = planes[4] + (y * 40) + x;
+
+  custom->bltcon0 = (DEST) | A_AND_B;
+  custom->bltsize = (16 << 6) | (w / 2);
+  WaitBlitter();
+}
 
 static void DrawBackground(BitmapT *dst) {
   BitmapCopyArea(dst, 0, 0, &bkg, &((Area2D){0, 0, WIDTH, HEIGHT}));
@@ -158,7 +257,7 @@ static void SwitchBeamPal(void) {
   short i = 0;
 
   for (i = 0; i < 7; ++i) {
-    SetColor(21 + i, beam_pal[active_pal][i]);
+    SetColor(25 + i, beam_pal[active_pal][i]);
   }
 
   active_pal = (active_pal + 1) % 4;
@@ -173,7 +272,7 @@ static void Abduct(void) {
     DrawRing(screen[active], i - mod);
   }
 
-  if (counter % 1 == 0) {
+  if (frameCount % 1 == 0) {
     if (mod < RING_H*2 - 1) {
       ++mod;
     }
@@ -182,7 +281,7 @@ static void Abduct(void) {
     }
   }
 
-  if (counter % 2 == 0) {
+  if (frameCount % cock_speed == 0) {
     if (cock_pos > 32) {
       --cock_pos;
       SpriteUpdatePos(&cock,  X(152), Y(cock_pos));
@@ -191,7 +290,7 @@ static void Abduct(void) {
     }
   }
 
-  if (counter % 8 == 0) {
+  if (frameCount % 8 == 0) {
     SwitchBeamPal();
   }
 }
@@ -208,7 +307,7 @@ static void RetractBeam(void) {
   CopInsT *ins = ring_pal + 2;
   Area2D ring_area = {133, h, RING_W, RING_H};
 
-  if (counter % 2 == 0) {
+  if (frameCount % 2 == 0) {
     for (i = 2; i < 8; ++i) {
       CopInsSet16(ins++, ColorTransition(ring_colors[i], 0x034, s));
       // CopInsSet16(ins++, beam_gradient[s]);
@@ -263,7 +362,7 @@ static void FadeOut(void) {
   };
   CopperStop();
 
-  if (counter % 2 == 0) {
+  if (frameCount % 2 == 0) {
     SetColor(0, fadeout_gradient[i]);
     ++i;
   }
@@ -277,7 +376,7 @@ static void FadeOut(void) {
 static CopListT *MakeCopperList(void) {
   short i = 0;
 
-  cp = NewCopList(2048);
+  cp = NewCopList(1100);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
   sprptr = CopSetupSprites(cp);
 
@@ -298,6 +397,8 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
+  TimeWarp(abduction_start);
+
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
@@ -305,20 +406,21 @@ static void Init(void) {
 
   EnableDMA(DMAF_BLITTER);
 
+  (void)DrawBackground;
   DrawBackground(screen[0]);
   DrawBackground(screen[1]);
   DrawUfo(screen[0]);
   DrawUfo(screen[1]);
 
   cp = MakeCopperList();
-  // CopListActivate(cp);
+  CopListActivate(cp);
 
   custom->bplcon2 = BPLCON2_PF2PRI;
 
-  CopInsSetSprite(&sprptr[0], &cock);
-  CopInsSetSprite(&sprptr[2], &mid_beam);
-  CopInsSetSprite(&sprptr[4], &side_beam_l);
-  CopInsSetSprite(&sprptr[5], &side_beam_r);
+  CopInsSetSprite(&sprptr[2], &cock);
+  CopInsSetSprite(&sprptr[4], &mid_beam);
+  CopInsSetSprite(&sprptr[6], &side_beam_l);
+  CopInsSetSprite(&sprptr[7], &side_beam_r);
 
   SpriteUpdatePos(&cock,        X(152), Y(cock_pos));
   SpriteUpdatePos(&mid_beam,    X(152), Y(56));
@@ -340,20 +442,62 @@ static void Kill(void) {
 
 PROFILE(Abduction);
 
+#define TALK_IN   (abduction_start + (abduction_end/5))
+#define SING_IN   (abduction_start + 2*(abduction_end/5))
+#define NAKED_IN  (abduction_start + 3*(abduction_end/5))
+#define NAKED_OUT (abduction_start + 4*(abduction_end/5))
+
 static void Render(void) {
-  (void)pal;
+  static short idx = 0;
+  (void)idx;
   ProfilerStart(Abduction);
   {
-    ++counter;
 
-    if ((phase == ABDUCT || phase == RETRACT_BEAM) && counter % 4 == 0) {
+    if (frameCount >= TALK_IN) {
+      if (idx <= 15) {
+        BlitterFadeIn(screen[0]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        ++idx;
+      }
+    }
+    if (frameCount >= SING_IN) {
+      if (idx <= 15+16) {
+        BlitterFadeIn(screen[0]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-16, 160, 6, talk.bytesPerRow);
+        ++idx;
+      }
+    }
+    if (frameCount >= NAKED_IN) {
+      if (idx <= 15+32) {
+        BlitterFadeIn(screen[0]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-32, 128, 24, sing.bytesPerRow);
+        ++idx;
+      }
+    }
+    if (frameCount >= NAKED_OUT) {
+      if (idx <= 15+48) {
+        BlitterFadeOut(screen[0]->planes, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, idx-48, 64, 2, naked.bytesPerRow);
+        ++idx;
+      }
+    }
+
+    // Music speeds up, cock speeds up
+    if (frameCount >= abduction_start + (abduction_end / 2)) {
+      cock_speed = 1;
+    }
+
+    if ((phase == ABDUCT || phase == RETRACT_BEAM) && frameCount % 4 == 0) {
       DrawUfo(screen[0]);
       DrawUfo(screen[1]);
     }
 
     switch (phase) {
       case FADEIN:
-        CopListActivate(cp);
         phase = ABDUCT;
         break;
 

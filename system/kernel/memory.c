@@ -150,7 +150,7 @@ static inline u_int BlockSize(u_int size) {
   return roundup(size + USEDBLK_SZ, ALIGNMENT);
 }
 
-#if 1
+#if 0
 /* First fit */
 static WordT *ArenaFindFit(ArenaT *ar, u_int reqsz) {
   NodeT *n;

@@ -191,8 +191,8 @@ static void ChunkyToPlanarStart(void) {
 }
 
 static void ChunkyToPlanarWait(void) {
-  while (c2p_phase < C2P_LAST)
-    WaitBlitter();
+  while (BlitterBusy() || c2p_phase < C2P_LAST)
+    continue;
 }
 
 static CopListT *MakeCopperList(short active) {
@@ -223,8 +223,8 @@ static void UnLoad(void) {
 static void Init(void) {
   Load();
 
-  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
+  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
   BitmapClear(screen[0]);
@@ -236,11 +236,13 @@ static void Init(void) {
 
   cp[0] = MakeCopperList(0);
   cp[1] = MakeCopperList(1);
+  CopListActivate(cp[1]);
 
   SetIntVector(INTB_BLIT, (IntHandlerT)ChunkyToPlanar, (void *)custom);
   ClearIRQ(INTF_BLIT);
   EnableINT(INTF_BLIT);
 
+  active = 0;
   ChunkyToPlanarStart();
   ChunkyToPlanarWait();
 
@@ -320,6 +322,7 @@ static void Render(void) {
   ProfilerStop(Rotator);
 
   ChunkyToPlanarWait();
+  TaskWaitVBlank();
   ChunkyToPlanarStart();
 }
 
