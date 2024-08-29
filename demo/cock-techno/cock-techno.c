@@ -55,10 +55,18 @@ static CopListT *MakeCopperList(short act) {
     for(i = 1; i < 16; i++){
       CopSetColor(cp, i+16, 0xdead);    
     }
-    
-    if(1) for (i = 0; i < HEIGHT / 10; i++) {
+
+    for (i = 0; i < HEIGHT / 10; i++) {
+      u_short c;
+
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
-      for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
+
+      CopSetColor(cp, 0, 0);
+      for (j = 1, n = 1; j < 16; n += n) {
+        c = *pixels++;
+        for (k = 0; k < n; k++, j++)
+          CopSetColor(cp, j, c);
+      }
     }
    
   }
