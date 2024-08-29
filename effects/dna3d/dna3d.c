@@ -57,6 +57,7 @@ static __code CopListT *cp;
 static __code BitmapT *screen[2];
 static __code CopInsPairT *bplptr;
 static CopInsT *linecol[necrocoq_height];
+static CopInsT *bobscol[necrocoq_height];
 static __code int active = 0;
 
 static u_short *necrochicken_cols[11] = {
@@ -99,16 +100,6 @@ static u_short *fadein_cols[9] = {
   fadein00_cols_pixels,
 };
 
-static __data u_short bobs2_colors[8] = {
-  0xF0F,
-  0xF0F,
-  0xF0F,
-  0xF0F,
-  0xF0F,
-  0xF0F,
-  0xF0F,
-  0xF0F,
-};
 
 #define envelope_length 40
 
@@ -182,7 +173,7 @@ static CopListT *MakeCopperList(void) {
       /* Start exchanging palette colors at the end of previous line. */
       CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
       fgcol = *pf1_data++;
-      CopMove16(cp, color[1], fgcol);
+      bobscol[i] = CopMove16(cp, color[1], fgcol);
       fgcol = *pf1_data++;
       CopMove16(cp, color[2], fgcol);
       CopMove16(cp, color[3], fgcol);
@@ -220,7 +211,6 @@ static void Init(void) {
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_DUALPF, DEPTH + necrocoq_depth);
   LoadColors(bobs_colors, 0);
-  (void)bobs2_colors;
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
@@ -629,6 +619,30 @@ static void ChangeBackgroundColor(short n, short cols) {
   }
 }
 
+static void ChangeBobsColor(short cols) {
+  CopInsT **bobsptr = bobscol;
+  u_short *data = bobs_cols_pixels;
+  short i;
+
+  if (cols == 2) {
+    data = bobs_cols2_pixels;
+  } else if (cols == 3 && (frameCount >> 1) % 4 >= 2) {
+    data = bobs_cols2_pixels;
+  }
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *bobsptr++;
+
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data++);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data);
+    CopInsSet16(ins++, *data++);
+  }
+}
+
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
@@ -640,7 +654,7 @@ static void Render(void) {
   static bool idx = 20;
   BitmapClearI(screen[active]);
 
-  if (frameCount < dna3d_start + (dna3d_end / 4)) {
+  if (frameCount < dna3d_start + (dna3d_end / 6)) {
     SetBackgroundColor(0x000);
   } else if (show_cock) {
     ChangeBackgroundColor(idx, 0);
@@ -650,8 +664,8 @@ static void Render(void) {
     }
   }
   
-  if (frameCount > dna3d_start + (dna3d_end / 2) &&
-      frameCount <= dna3d_start + (3 * (dna3d_end / 4))){
+  if (frameCount >  dna3d_start + (2 * (dna3d_end / 6)) &&
+      frameCount <= dna3d_start + (3 * (dna3d_end / 5))){
     if (aux) {
       aux = false;
       mod = ((frameCount >> 1) % envelope_length);
@@ -659,15 +673,18 @@ static void Render(void) {
     ChangeBackgroundColor((frameCount >> 1) - mod, 1);
   }
 
-  if (frameCount > dna3d_start + (3 * (dna3d_end / 4)) &&
-      frameCount <= dna3d_start + (4 * (dna3d_end / 5))) {
+  if (frameCount >  dna3d_start + (3 * (dna3d_end / 5)) &&
+      frameCount <= dna3d_start + (4 * (dna3d_end / 6))) {
     new_bobs = true;
     ChangeBackgroundColor((frameCount >> 1) - mod, 3);
+    ChangeBobsColor(3);
   }
 
-  if (frameCount > dna3d_start + (4 * (dna3d_end / 5))) {
+  if (frameCount > dna3d_start + (4 * (dna3d_end / 6))) {
     new_bobs = true;
     ChangeBackgroundColor((frameCount >> 1) - mod, 2);
+    ChangeBobsColor(2);
+    (void)ChangeBobsColor;
   }
 
   ProfilerStart(TransformObject);
