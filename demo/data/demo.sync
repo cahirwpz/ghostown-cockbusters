@@ -23,8 +23,8 @@ $0c00 1         # dna3d
 $1000 6         # logo
 $1200 12        # anim-cock techno
 $1400 2         # stencil3d
-$1600 7         # rotator (!)
-$1800 4         # textured object (!)
+$1600 7         # rotator
+$1800 4         # textured object
 $1c00 10        # anim-cock techno
 $2000 8         # text scroll
 $243f -1        # the end
@@ -45,8 +45,8 @@ $1000  -1
 $1001   7
 $1200  -6
 $1201   4
-$1202  10
 $1600  -2
+$1601  10
 $1800  -7
 $1c00  -4
 $1c01   8
