@@ -49,7 +49,7 @@ static void MakeUVMapRenderCode(void) {
     } else {
       *code++ = 0x7000;  /* 7000      | moveq  #0,d0 */
     }
-     if ((uv = *data++) >= 0) {
+    if ((uv = *data++) >= 0) {
       *code++ = 0x802a;  /* 802a yyyy | or.b   yyyy(a2),d0 */
       *code++ = uv;
     }

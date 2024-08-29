@@ -218,6 +218,7 @@ static void RunLoader(void) {
     lastFrameCount = frameCount;
   }
 
+  VBlankHandler = NULL;
   EffectKill(Loader);
   UnLoadExe(EXE_LOADER);
 }
