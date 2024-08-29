@@ -16,7 +16,7 @@
 #define DEPTH 4
 #define NSPRITE 3
 
-static __code SpriteT sprite[8 * NSPRITE];
+//static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
@@ -39,18 +39,25 @@ static CopListT *MakeCopperList(void) {
   {
     short *pixels = gradient.pixels;
     short i, j;
+
     for(i = 0; i < 8; i++){
-      CopInsSetSprite(&sprptr[i], &sprite[i]);
+      CopInsSetSprite(&sprptr[i], &ks1[i]);
     }
-    if(1){    
-    for (i = 0; i < HEIGHT / 10; i++) {
+    CopWait(cp, Y(120), 0x0);
+    sprptr = CopSetupSprites(cp);
+    for(i = 0; i < 8; i++){
+      CopInsSetSprite(&sprptr[i], &ks2[i]);
+    }
+    
+    if(0) for (i = 0; i < HEIGHT / 10; i++) {
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
       for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
     }
-    }
+   
   }
   return CopListFinish(cp);
 }
+  
 
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
@@ -63,22 +70,22 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER);
 
   //width 8 sprites, NSPRITE nicknames
-  sprdat = MemAlloc(SprDataSize(32,2) * 8 * NSPRITE, MEMF_CHIP | MEMF_CLEAR);
   Log("sprdat = %p\n", &sprdat);
-  Log("sprite = %p\n", sprite);
+  Log("ks1 = %p\n", ks1);
 
-  memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
-  *((short*) &sprdat[1]) = 0x1111;
+  //memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
+  //*((short*) &sprdat[1]) = 0x1111;
+  
+  
   //memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
-  if(1){
-    int i;
-    SprDataT *dat = sprdat;
-    for(i = 0; i < NSPRITE * 8; i++){
-      MakeSprite(&dat, 32, false, &sprite[i]);
-      EndSprite(&dat);
-    }
-  }
+
   LoadColors(ks1_pal_colors, 16);
+  LoadColors(ks1_pal_colors, 20);
+  LoadColors(ks2_pal_colors, 24);
+  LoadColors(ks2_pal_colors, 28);
+  
+  (void) ks2_pal_colors; // klappe halten
+  (void) ks2;
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -234,9 +241,12 @@ static void Render(void) {
     }
   }
 
-  SpriteUpdatePos(&sprite[0], X(60), Y(120));
-
-
+  SpriteUpdatePos(&ks1[0], X(0x60), Y(40));
+  SpriteUpdatePos(&ks1[1], X(0x70), Y(40));
+  SpriteUpdatePos(&ks1[2], X(0x80), Y(40));
+  SpriteUpdatePos(&ks1[3], X(0x90), Y(40));
+  
+ 
   if(1) {   
   ProfilerStart(AnimRender);
   {
@@ -246,6 +256,13 @@ static void Render(void) {
   }
   ProfilerStop(AnimRender);
 
+  SpriteUpdatePos(&ks2[0], X(0x60), Y(130));
+  SpriteUpdatePos(&ks2[1], X(0x70), Y(131));
+  SpriteUpdatePos(&ks2[2], X(0x80), Y(132));
+  SpriteUpdatePos(&ks2[3], X(0x90), Y(133));
+
+
+  // chicken afterglow
   {
     short n = DEPTH;
 
