@@ -295,6 +295,7 @@ static void DrawObject(Object3D *object) {
         CornerT *corner = corners;
         int color;
 
+        /* TODO Workaround for wrong values from UpdateFaceVisibility! */
         if (FACE(f)->flags >= (int)nitems(texture_light)) {
           FACE(f)->flags = nitems(texture_light) - 1;
         }
@@ -614,9 +615,13 @@ static void Render(void) {
     object->rotate.x = *frame++;
     object->rotate.y = *frame++;
     object->rotate.z = *frame++;
+    /* XXX if scale is too low the effect may crash */
     object->scale.x = *frame++;
     object->scale.y = *frame++;
     object->scale.z = *frame++;
+    Assert(object->scale.x >= 45);
+    Assert(object->scale.y >= 45);
+    Assert(object->scale.z >= 45);
   }
 
   ProfilerStart(UpdateGeometry);
