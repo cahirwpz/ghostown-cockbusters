@@ -19,8 +19,8 @@
 
 //static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
-static __code CopInsPairT *bplptr;
-static CopListT *cp;
+static __code CopInsPairT *bplptr[2];
+static CopListT *cp[2];
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
@@ -29,22 +29,21 @@ static __code SprDataT *sprdat;
 #include "data/cock-pal.c"
 #include "data/ksywka1.c"
 #include "data/ksywka2.c"
-
+#include "data/cocktechno.c"
 
 static __code SpriteT *active_sprite;
 static __code short *active_pal;
-//#include "data/cock-techno.c"
 /* Reading polygon data */
 static short current_frame = 0;
-static CopInsT *colors;
-static CopInsPairT *sprmoves;
+static CopInsT *colors[2];
+static CopInsPairT *sprmoves[2];
 
 
-static CopListT *MakeCopperList(void) {
+static CopListT *MakeCopperList(short act) {
   CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1) );
   CopInsPairT *sprptr = CopSetupSprites(cp);
-  sprmoves = sprptr;
-  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+  sprmoves[act] = sprptr;
+  bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
     short i, j;
@@ -52,8 +51,8 @@ static CopListT *MakeCopperList(void) {
     for(i = 0; i < 8; i++){
       CopInsSetSprite(&sprptr[i], &active_sprite[i]);    
     }
-    colors = CopSetColor(cp, 16, 0xdead);
-    for(i = 1; i < 8; i++){
+    colors[act] = CopSetColor(cp, 16, 0xdead);
+    for(i = 1; i < 16; i++){
       CopSetColor(cp, i+16, 0xdead);    
     }
     
@@ -68,8 +67,10 @@ static CopListT *MakeCopperList(void) {
   
 
 static void Init(void) {
-  //TimeWarp(cock_techno_start).
-  //TrackInit(&spritepos);
+  TimeWarp(cocktechno_start);
+  TrackInit(&spritepos);
+  TrackInit(&spriteno);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
@@ -79,27 +80,13 @@ static void Init(void) {
   
   EnableDMA(DMAF_RASTER);
 
-  //width 8 sprites, NSPRITE nicknames
-  Log("sprdat = %p\n", &sprdat);
-  Log("ks1 = %p\n", ks1);
 
-  //memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
-  //*((short*) &sprdat[1]) = 0x1111;
-  
-  
-  //memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
-
-  LoadColors(ks1_pal_colors, 16);
-  LoadColors(ks2_pal_colors, 20);
-  LoadColors(ks2_pal_colors, 24);
-  LoadColors(ks2_pal_colors, 28);
-  
-  (void) ks2_pal_colors; // klappe halten
-  (void) ks2;
   active_sprite = ks1;
   active_pal = ks2_pal_colors;
-  cp = MakeCopperList();
-  CopListActivate(cp);
+  cp[0] = MakeCopperList(0);
+  cp[1] = MakeCopperList(1);
+
+  CopListActivate(cp[0]);
 
   //memset(screen, 0xa000, 0x55);
   
@@ -110,7 +97,7 @@ static void Init(void) {
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp);
+  DeleteCopList(cp[0]);
 
   DeleteBitmap(screen);
   MemFree(sprdat);
@@ -244,27 +231,20 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-  active_sprite = ((frameCount >> 6) & 0x01) ? ks1 : ks2;
-  active_pal = ((frameCount >> 6) & 0x01) ? ks1_pal_colors : ks2_pal_colors;
-  Log("active_sprite = %p\n", active_sprite);
-  // overwrite ~~active~~ copperlist positions to move sprites
-  CopInsSet32(&sprmoves[0], active_sprite[0].sprdat);
-  CopInsSet32(&sprmoves[1], active_sprite[1].sprdat);
-  CopInsSet32((CopInsPairT*) &cp->entry[4], active_sprite[2].sprdat);
-  CopInsSet32((CopInsPairT*) &cp->entry[6], active_sprite[3].sprdat);
+  short actcl = 0;
+  Log("fc = %d\n", frameCount); 
 
-  CopInsSet16( &colors[0], active_pal[0]);
-  CopInsSet16( &colors[1], active_pal[1]);
-  CopInsSet16( &colors[2], active_pal[2]);
-  CopInsSet16( &colors[3], active_pal[3]);
-
-  //CopInsSet16( &cp->entry[9], active_pal[1]);
-  //CopInsSet16( &cp->entry[10], active_pal[2]);
-  //CopInsSet16( &cp->entry[11], active_pal[3]);
-  
-  //CopInsSet32((CopInsPairT*) &cp->entry[2], active_sprite[1].sprdat);
-  //CopInsSet32((CopInsPairT*) &cp->entry[4], active_sprite[2].sprdat);
-  //CopInsSet32((CopInsPairT*) &cp->entry[6], active_sprite[3].sprdat);
+  switch(TrackValueGet(&spriteno, frameCount)){
+  case 0:
+    active_pal = ks1_pal_colors;
+    active_sprite = ks1;
+    break;
+  case 1:
+    active_pal = ks2_pal_colors;
+    active_sprite = ks2;
+    break;
+  }
+      
   
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
@@ -275,16 +255,18 @@ static void Render(void) {
     }
   }
 
-  SpriteUpdatePos(&ks1[0], X(0x60), Y(40));
-  SpriteUpdatePos(&ks1[1], X(0x70), Y(40) - (frameCount & 0x1F));
-  SpriteUpdatePos(&ks1[2], X(0x80), Y(40));
-  SpriteUpdatePos(&ks1[3], X(0x90), Y(40));
-  SpriteUpdatePos(&ks2[0], X(0x60), Y(150));
-  SpriteUpdatePos(&ks2[1], X(0x70), Y(150));
-  SpriteUpdatePos(&ks2[2], X(0x80), Y(150));
-  SpriteUpdatePos(&ks2[3], X(0x90), Y(150));
-  
+  // overwrite active copperlist positions to move sprites
 
+  {
+    short i = 0;
+    for(i = 0; i < 16; i++){
+      CopInsSet16( &colors[actcl][i], active_pal[i&3]);
+    }
+    for(i = 0; i < 8; i++){
+      CopInsSet32(&sprmoves[actcl][i], active_sprite[i].sprdat);
+      SpriteUpdatePos(&active_sprite[i], X(0x40 + i*0x10), Y(TrackValueGet(&spritepos, frameCount)));
+    }
+  }
   
   if(1) {   
   ProfilerStart(AnimRender);
@@ -302,12 +284,13 @@ static void Render(void) {
     while (--n >= 0) {
       short i = mod16(active + n + 1 - DEPTH, DEPTH + 1);
       if (i < 0) i += DEPTH + 1;
-      CopInsSet32(&bplptr[n], screen->planes[i]);
+      CopInsSet32(&bplptr[actcl][n], screen->planes[i]);
     }
   }
   }
   TaskWaitVBlank();
- 
+  custom->cop1lc = (u_int)cp[actcl]->entry;
+
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }

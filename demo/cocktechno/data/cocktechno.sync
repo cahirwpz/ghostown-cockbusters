@@ -1,0 +1,23 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start   $0000
+
+
+@track spritepos
+$0000    0
+$0100    100
+$0200    0
+$0300    80
+$0400    100
+$0800    100
+$1000    0
+$1100    100
+$1200    0
+$1300    80
+$1400    100
+$1800    100
+@end
+
+@track spriteno !value
+$0000    0
+$0100    1
+@end
