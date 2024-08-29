@@ -32,22 +32,22 @@ static __code SprDataT *sprdat;
 static short current_frame = 0;
 
 static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1)  + 80);
+  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1) );
+  CopInsPairT *sprptr = CopSetupSprites(cp);
+
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
     short i, j;
-    CopInsPairT *sprptr = CopSetupSprites(cp);
-
+    for(i = 0; i < 8; i++){
+      CopInsSetSprite(&sprptr[i], &sprite[i]);
+    }
+    if(1){    
     for (i = 0; i < HEIGHT / 10; i++) {
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
       for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
     }
-    
-    for(i = 0; i < 8; i++){
-          CopInsSetSprite(&sprptr[i], &sprite[i]);
     }
-    
   }
   return CopListFinish(cp);
 }
@@ -58,18 +58,19 @@ static void Init(void) {
   BitmapClear(screen);
   WaitBlitter();
 
-  //SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  cp = MakeCopperList();
+  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
   
   EnableDMA(DMAF_RASTER);
 
   //width 8 sprites, NSPRITE nicknames
   sprdat = MemAlloc(SprDataSize(32,2) * 8 * NSPRITE, MEMF_CHIP | MEMF_CLEAR);
   Log("sprdat = %p\n", &sprdat);
-  //memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
-  memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
-  {
+  Log("sprite = %p\n", sprite);
+
+  memset(sprdat, 0x55, SprDataSize(32,2) * 8 * NSPRITE);
+  *((short*) &sprdat[1]) = 0x1111;
+  //memcpy(sprdat, ks1_pixels, SprDataSize(32,2));
+  if(1){
     int i;
     SprDataT *dat = sprdat;
     for(i = 0; i < NSPRITE * 8; i++){
@@ -77,10 +78,12 @@ static void Init(void) {
       EndSprite(&dat);
     }
   }
-  LoadColors(ks1_pal_colors, 0);
+  LoadColors(ks1_pal_colors, 16);
+
+  cp = MakeCopperList();
   CopListActivate(cp);
 
-  memset(screen, 0xa000, 0x55);
+  //memset(screen, 0xa000, 0x55);
   
   EnableDMA(DMAF_SPRITE | DMAF_RASTER);
 
@@ -231,10 +234,10 @@ static void Render(void) {
     }
   }
 
-  SpriteUpdatePos(&sprite[0], X(60), Y(60));
+  SpriteUpdatePos(&sprite[0], X(60), Y(120));
 
 
-  if(0){  
+  if(1) {   
   ProfilerStart(AnimRender);
   {
     BlitterClear(screen, active);
