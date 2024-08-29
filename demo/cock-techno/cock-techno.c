@@ -20,7 +20,7 @@
 //static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
-static CopListT *cp[2];
+static CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
@@ -28,27 +28,35 @@ static __code SprDataT *sprdat;
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
 #include "data/ksywka1.c"
+#include "data/ksywka2.c"
+
 
 static __code SpriteT *active_sprite;
-static __code SpriteT *spp[8] = {ks1, ks2};
-
+static __code short *active_pal;
 //#include "data/cock-techno.c"
 /* Reading polygon data */
 static short current_frame = 0;
+static CopInsT *colors;
+static CopInsPairT *sprmoves;
 
-static CopListT *MakeCopperList(int clactive) {
+
+static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1) );
   CopInsPairT *sprptr = CopSetupSprites(cp);
-  (void) clactive; 
+  sprmoves = sprptr;
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
     short i, j;
     
     for(i = 0; i < 8; i++){
-      CopInsSetSprite(&sprptr[i], &active_sprite[i]);     
+      CopInsSetSprite(&sprptr[i], &active_sprite[i]);    
     }
- 
+    colors = CopSetColor(cp, 16, 0xdead);
+    for(i = 1; i < 8; i++){
+      CopSetColor(cp, i+16, 0xdead);    
+    }
+    
     if(1) for (i = 0; i < HEIGHT / 10; i++) {
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
       for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
@@ -88,10 +96,10 @@ static void Init(void) {
   
   (void) ks2_pal_colors; // klappe halten
   (void) ks2;
-  active_sprite = ks2;
-  cp[0] = MakeCopperList(0);
-  //cp[1] = MakeCopperList(1);
-  CopListActivate(cp[0]);
+  active_sprite = ks1;
+  active_pal = ks2_pal_colors;
+  cp = MakeCopperList();
+  CopListActivate(cp);
 
   //memset(screen, 0xa000, 0x55);
   
@@ -102,8 +110,7 @@ static void Init(void) {
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp[0]);
-  DeleteCopList(cp[1]);
+  DeleteCopList(cp);
 
   DeleteBitmap(screen);
   MemFree(sprdat);
@@ -237,14 +244,27 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-  (void) spp;
-  active_sprite = ((frameCount >> 4) & 0x01) ? ks1 : ks2;
+  active_sprite = ((frameCount >> 6) & 0x01) ? ks1 : ks2;
+  active_pal = ((frameCount >> 6) & 0x01) ? ks1_pal_colors : ks2_pal_colors;
   Log("active_sprite = %p\n", active_sprite);
   // overwrite ~~active~~ copperlist positions to move sprites
-  CopInsSet32((CopInsPairT*) &cp[0]->entry[0], active_sprite[0].sprdat);
-  CopInsSet32((CopInsPairT*) &cp[0]->entry[2], active_sprite[1].sprdat);
-  CopInsSet32((CopInsPairT*) &cp[0]->entry[4], active_sprite[2].sprdat);
-  CopInsSet32((CopInsPairT*) &cp[0]->entry[6], active_sprite[3].sprdat);
+  CopInsSet32(&sprmoves[0], active_sprite[0].sprdat);
+  CopInsSet32(&sprmoves[1], active_sprite[1].sprdat);
+  CopInsSet32((CopInsPairT*) &cp->entry[4], active_sprite[2].sprdat);
+  CopInsSet32((CopInsPairT*) &cp->entry[6], active_sprite[3].sprdat);
+
+  CopInsSet16( &colors[0], active_pal[0]);
+  CopInsSet16( &colors[1], active_pal[1]);
+  CopInsSet16( &colors[2], active_pal[2]);
+  CopInsSet16( &colors[3], active_pal[3]);
+
+  //CopInsSet16( &cp->entry[9], active_pal[1]);
+  //CopInsSet16( &cp->entry[10], active_pal[2]);
+  //CopInsSet16( &cp->entry[11], active_pal[3]);
+  
+  //CopInsSet32((CopInsPairT*) &cp->entry[2], active_sprite[1].sprdat);
+  //CopInsSet32((CopInsPairT*) &cp->entry[4], active_sprite[2].sprdat);
+  //CopInsSet32((CopInsPairT*) &cp->entry[6], active_sprite[3].sprdat);
   
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
@@ -256,7 +276,7 @@ static void Render(void) {
   }
 
   SpriteUpdatePos(&ks1[0], X(0x60), Y(40));
-  SpriteUpdatePos(&ks1[1], X(0x70), Y(40));
+  SpriteUpdatePos(&ks1[1], X(0x70), Y(40) - (frameCount & 0x1F));
   SpriteUpdatePos(&ks1[2], X(0x80), Y(40));
   SpriteUpdatePos(&ks1[3], X(0x90), Y(40));
   SpriteUpdatePos(&ks2[0], X(0x60), Y(150));
