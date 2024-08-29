@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/bobs.c data/bobs2.c data/bobs_gradient.c data/bobs_gradient2.c data/dna.* \
-	data/necrocoq-??.c data/necrocoq2-??.c
+	data/necrocoq-??.c data/necrocoq2-??.c data/necrocoq-00-data.c data/necrocoq-00-pal.c data/fadein*.c
 
 LIBS := lib3d
 
@@ -10,6 +10,7 @@ PNG2C.bobs2 := --bitmap bobs2,48x512x3,+interleaved
 PNG2C.bobs_gradient  := --pixmap bobs_cols,3x256x12
 PNG2C.bobs_gradient2 := --pixmap bobs_cols2,3x256x12
 OBJ2C.dna := --scale 35 -mesh-name dna_helix
+
 PNG2C.necrocoq-00-data := --bitmap necrocoq,256x256x2,+interleaved
 PNG2C.necrocoq-00-pal := --pixmap necrocoq_00_cols,4x256x12,+onlydata
 PNG2C.necrocoq-01 := --pixmap necrocoq_01_cols,4x256x12,+onlydata
@@ -34,6 +35,16 @@ PNG2C.necrocoq2-07 := --pixmap necrocoq2_07_cols,4x256x12,+onlydata
 PNG2C.necrocoq2-08 := --pixmap necrocoq2_08_cols,4x256x12,+onlydata
 PNG2C.necrocoq2-09 := --pixmap necrocoq2_09_cols,4x256x12,+onlydata
 PNG2C.necrocoq2-10 := --pixmap necrocoq2_10_cols,4x256x12,+onlydata
+
+PNG2C.fadein00 := --pixmap fadein00_cols,4x256x12,+onlydata
+PNG2C.fadein01 := --pixmap fadein01_cols,4x256x12,+onlydata
+PNG2C.fadein02 := --pixmap fadein02_cols,4x256x12,+onlydata
+PNG2C.fadein03 := --pixmap fadein03_cols,4x256x12,+onlydata
+PNG2C.fadein04 := --pixmap fadein04_cols,4x256x12,+onlydata
+PNG2C.fadein05 := --pixmap fadein05_cols,4x256x12,+onlydata
+PNG2C.fadein06 := --pixmap fadein06_cols,4x256x12,+onlydata
+PNG2C.fadein07 := --pixmap fadein07_cols,4x256x12,+onlydata
+PNG2C.fadein08 := --pixmap fadein08_cols,4x256x12,+onlydata
 
 include $(TOPDIR)/build/effect.mk
 
