@@ -30,6 +30,18 @@
 #include "data/necrocoq-09.c"
 #include "data/necrocoq-10.c"
 
+#include "data/necrocoq2-00.c"
+#include "data/necrocoq2-01.c"
+#include "data/necrocoq2-02.c"
+#include "data/necrocoq2-03.c"
+#include "data/necrocoq2-04.c"
+#include "data/necrocoq2-05.c"
+#include "data/necrocoq2-06.c"
+#include "data/necrocoq2-07.c"
+#include "data/necrocoq2-08.c"
+#include "data/necrocoq2-09.c"
+#include "data/necrocoq2-10.c"
+
 static __code Object3D *object;
 static __code CopListT *cp;
 static __code BitmapT *screen[2];
@@ -49,6 +61,31 @@ static u_short *necrochicken_cols[11] = {
   necrocoq_08_cols_pixels,
   necrocoq_09_cols_pixels,
   necrocoq_10_cols_pixels,
+};
+
+static u_short *necrochicken2_cols[11] = {
+  necrocoq2_00_cols_pixels,
+  necrocoq2_01_cols_pixels,
+  necrocoq2_02_cols_pixels,
+  necrocoq2_03_cols_pixels,
+  necrocoq2_04_cols_pixels,
+  necrocoq2_05_cols_pixels,
+  necrocoq2_06_cols_pixels,
+  necrocoq2_07_cols_pixels,
+  necrocoq2_08_cols_pixels,
+  necrocoq2_09_cols_pixels,
+  necrocoq2_10_cols_pixels,
+};
+
+static __data u_short bobs2_colors[8] = {
+  0xF0F,
+  0xF0F,
+  0xF0F,
+  0xF0F,
+  0xF0F,
+  0xF0F,
+  0xF0F,
+  0xF0F,
 };
 
 #define envelope_length 40
@@ -142,6 +179,7 @@ static void Init(void) {
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_DUALPF, DEPTH + necrocoq_depth);
   LoadColors(bobs_colors, 0);
+  (void)bobs2_colors;
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
@@ -521,11 +559,21 @@ static void SetBackgroundColor(short color) {
   }
 }
 
-static void ChangeBackgroundColor(short n) {
+static void ChangeBackgroundColor(short n, short cols) {
   short p = envelope[n % envelope_length];
   u_short *data = necrochicken_cols[p];
   CopInsT **lineptr = linecol;
   short i;
+  (void)necrochicken_cols;
+  (void)necrochicken2_cols;
+
+  if (cols == 1) {
+    data = necrochicken_cols[p];
+  } else if (cols == 2) {
+    data = necrochicken2_cols[p];
+  } else if (n % 4 >= 2) {
+    data = necrochicken2_cols[p];
+  }
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
@@ -545,25 +593,38 @@ static void Render(void) {
   static bool new_bobs = false;
   static short mod = 0;
   static bool aux = true;
+  static bool idx = 20;
   BitmapClearI(screen[active]);
 
   if (frameCount < dna3d_start + (dna3d_end / 4)) {
     SetBackgroundColor(0x000);
   } else if (show_cock) {
-    ChangeBackgroundColor(19);
-    show_cock = false;
-  } else if (frameCount > dna3d_start + (dna3d_end / 2)){
+    ChangeBackgroundColor(idx, 1);
+    ++idx;
+    if (idx > 39) {
+      show_cock = false;
+    }
+  }
+  
+  if (frameCount > dna3d_start + (dna3d_end / 2) &&
+      frameCount <= dna3d_start + (3 * (dna3d_end / 4))){
     if (aux) {
       aux = false;
-      mod = 20 - ((frameCount >> 1) % envelope_length);
+      mod = ((frameCount >> 1) % envelope_length);
     }
-    ChangeBackgroundColor((frameCount >> 1) + mod);
+    ChangeBackgroundColor((frameCount >> 1) - mod, 1);
   }
-  if (frameCount > dna3d_start + (3 * (dna3d_end / 4))) {
+
+  if (frameCount > dna3d_start + (3 * (dna3d_end / 4)) &&
+      frameCount <= dna3d_start + (4 * (dna3d_end / 5))) {
     new_bobs = true;
+    ChangeBackgroundColor((frameCount >> 1) - mod, 0);
   }
-  (void)SetBackgroundColor;
-  (void)ChangeBackgroundColor;
+
+  if (frameCount > dna3d_start + (4 * (dna3d_end / 5))) {
+    new_bobs = true;
+    ChangeBackgroundColor((frameCount >> 1) - mod, 2);
+  }
 
   ProfilerStart(TransformObject);
   {
