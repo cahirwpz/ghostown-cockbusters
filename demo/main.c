@@ -153,9 +153,15 @@ static void BgTaskLoop(__unused void *ptr) {
   Log("[BgTask] Started!\n");
 
   for (;;) {
+    void *tmp;
+
     switch (BgTaskState) {
       case BG_INIT:
+        /* XXX: awful hack to allocate long-lasting data
+         * at the end of CHIP memory */
+        tmp = MemAlloc(81952 + 40992 + 55968 - 8, MEMF_CHIP);
         LoadExe(EXE_PROTRACKER);
+        MemFree(tmp);
         LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
 
