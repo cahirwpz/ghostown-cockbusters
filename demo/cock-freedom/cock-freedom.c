@@ -9,7 +9,6 @@
 #include <sync.h>
 #include <system/memory.h>
 
-
 #define WIDTH 320
 #define HEIGHT 180
 #define YOFF ((256 - HEIGHT) / 2)
@@ -45,9 +44,8 @@ static const PixmapT *palettes[] = {
   &gradient10,  &gradient11
 };
 
-
 /* Reading polygon data */
-static short current_frame = 0;
+static __code short current_frame = 0;
 
 static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
   bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
@@ -256,19 +254,19 @@ static void Render(void) {
 
   {
     u_short gno = TrackValueGet(&freedom_gradientno, frameCount);
-    if(oldgradientno != gno) {
+    if (oldgradientno != gno) {
       oldgradientno = gno;
       activecl ^= 1;
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
-      cp[activecl]->curr = cp[activecl]->entry;
+      CopListReset(cp[activecl]);
       MakeCopperList(cp[activecl], gno, activecl);
     }
   }
 
+  CopListRun(cp[activecl]);
   TaskWaitVBlank();
-  custom->cop1lc = (u_int)cp[activecl]->entry;
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }

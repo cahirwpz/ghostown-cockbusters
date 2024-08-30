@@ -76,21 +76,20 @@ static __code short oldspriteno   = 0;
 
 
 static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
-
   CopInsPairT *sprptr = CopSetupSprites(cp);
   sprmoves[act] = sprptr;
   bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
+
   {
     short *pixels = palettes[gno]->pixels;
-
     short i, j;
-    
-    for(i = 0; i < 8; i++){
-      CopInsSetSprite(&sprptr[i], &active_sprite[i]);    
+
+    for(i = 0; i < 8; i++) {
+      CopInsSetSprite(&sprptr[i], &active_sprite[i]);
     }
     colors[act] = CopSetColor(cp, 16, 0xdead);
-    for(i = 1; i < 16; i++){
-      CopSetColor(cp, i+16, 0xdead);    
+    for(i = 1; i < 16; i++) {
+      CopSetColor(cp, i+16, 0xdead);
     }
 
     for (i = 0; i < HEIGHT / 10; i++) {
@@ -106,11 +105,10 @@ static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
           CopSetColor(cp, j, c);
       }
     }
-   
   }
+
   return CopListFinish(cp);
 }
-  
 
 static void Init(void) {
   TimeWarp(cock_techno_start);
@@ -118,16 +116,12 @@ static void Init(void) {
   TrackInit(&spriteno);
   TrackInit(&techno_gradientno);
 
-
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  
-  EnableDMA(DMAF_RASTER);
-
 
   active_sprite = cahir;
   active_pal = cahir_colors;
@@ -137,9 +131,8 @@ static void Init(void) {
   MakeCopperList(cp[1], 0, 1);
 
   CopListActivate(cp[0]);
-  
-  EnableDMA(DMAF_SPRITE | DMAF_RASTER);
 
+  EnableDMA(DMAF_SPRITE | DMAF_RASTER);
 }
 
 static void Kill(void) {
@@ -281,8 +274,6 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-  //short actcl = 0;
-
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
     maybeSkipFrame = 0;
@@ -292,7 +283,6 @@ static void Render(void) {
     }
   }
 
-  
   ProfilerStart(AnimRender);
   {
     BlitterClear(screen, active);
@@ -311,51 +301,46 @@ static void Render(void) {
       CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
     }
   }
-  
-  
-
-  //short actcl = 0;
 
   // overwrite active copperlist positions to move sprites
   // would be nice to have this in the same place as MakeCopperList but its
   // not 1:1
   {
     short i = 0;
-    for(i = 0; i < 16; i++){
+    for (i = 0; i < 16; i++) {
       CopInsSet16( &colors[activecl][i], active_pal[i&3]);
     }
-    for(i = 0; i < 8; i++){
+    for (i = 0; i < 8; i++) {
       CopInsSet32(&sprmoves[activecl][i], active_sprite[i].sprdat);
       SpriteUpdatePos(&active_sprite[i], X(0x10 + i*0x10), Y(TrackValueGet(&spritepos, frameCount)));
     }
   }
-  
 
   // Swap copperlist and change palette
   {
     u_short gno = TrackValueGet(&techno_gradientno, frameCount);
-    if(oldgradientno != gno) {
+
+    if (oldgradientno != gno) {
       oldgradientno = gno;
       activecl ^= 1;
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
-      cp[activecl]->curr = cp[activecl]->entry;
+      CopListReset(cp[activecl]);
       MakeCopperList(cp[activecl], gno, activecl);
-      
     }
   }
 
   // Change active sprite
   {
     u_short sno = TrackValueGet(&spriteno, frameCount);
-    if(oldspriteno != sno){
+    if (oldspriteno != sno) {
       oldspriteno = sno;
       active_sprite = halloffame[sno];
     }
   }
+  CopListRun(cp[activecl]);
   TaskWaitVBlank();
-  custom->cop1lc = (u_int)cp[activecl]->entry;
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }

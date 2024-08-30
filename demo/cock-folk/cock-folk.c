@@ -45,17 +45,16 @@ static const PixmapT *palettes[] = {
   &gradient11
 };
 
-
-
 /* Reading polygon data */
 static __code short current_frame = 0;
 
 static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
   bplptr[acl] = CopSetupBitplanes(cp, screen, DEPTH);
+
   {
-    
     short *pixels = palettes[gno]->pixels;
     short i, j, k, n;
+
     for (i = 0; i < HEIGHT / 10; i++) {
       u_short c;
 
@@ -76,7 +75,7 @@ static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
 static void Init(void) {
   TimeWarp(cock_folk_start);
   TrackInit(&gradientno);
-  
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
 
   EnableDMA(DMAF_BLITTER);
@@ -261,18 +260,15 @@ static void Render(void) {
   }
   {
     u_short gno = TrackValueGet(&gradientno, frameCount);
-    if(oldgradientno != gno) {
+    if (oldgradientno != gno) {
       oldgradientno = gno;
       activecl ^= 1;
-      // this is not a leak as fas as I can tell
-      // since the length is not changed. We just need
-      // to regenerate the list starting w/ the first instruction
-      cp[activecl]->curr = cp[activecl]->entry;
+      CopListReset(cp[activecl]);
       MakeCopperList(cp[activecl], gno, activecl);
     }
+
+    CopListRun(cp[activecl]);
     TaskWaitVBlank();
-  
-    custom->cop1lc = (u_int) cp[activecl]->entry;
     active = mod16(active + 1, DEPTH + 1);
     maybeSkipFrame = 1;
   }
