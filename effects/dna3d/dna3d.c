@@ -754,23 +754,16 @@ static void VBlank(void) {
 
   // Please, let's make something other than 0 
   // a default track value >_<
-  if (animFrame != 0) {
-    animationFrame = animFrame - 1;
-  }
+  animationFrame = animFrame;
   if (line != 0) {
     hPos = line;
   }
   
-  if (animationFrame != -1) {
-    for (i = 0; i < 15; i++) {
-      ins = linecol[hPos+i];
-      CopInsSet16(&ins[4], tears[animationFrame][i]);
-    }
-    for (i = 15; i < 31; i++) {
-      ins = linecol[hPos+i];
-      CopInsSet16(&ins[4], tears[animationFrame][31-i]);
-    }
-  } 
-}
+  for (i = 0; i < 31; i++) {
+    ins = linecol[hPos+i];
+    CopInsSet16(&ins[4], tears[animationFrame][i]);
+  }
+} 
+
 
 EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, VBlank);
