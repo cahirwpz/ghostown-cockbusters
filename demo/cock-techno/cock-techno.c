@@ -38,15 +38,30 @@ static __code short activecl = 0;
 #include "data/cock-pal9.c"
 #include "data/cock-pal10.c"
 #include "data/cock-pal11.c"
-#include "data/ksywka1.c"
-#include "data/ksywka2.c"
+
 #include "data/cock-techno.c"
+
+#include "data/cahir.c"
+#include "data/codi.c"
+#include "data/jazzcat.c"
+#include "data/polprog.c"
+#include "data/slayer.c"
+#include "data/slizgi.c"
+#include "data/spook.c"
+#include "data/yumi.c"
+#include "data/zuko.c"
+
 
 static const PixmapT *palettes[] = {
   &gradient11, &gradient10, &gradient9,
-  &gradient8, &gradient7, &gradient6,
-  &gradient5, &gradient4, &gradient3,
-  &gradient2, &gradient1
+  &gradient8,  &gradient7,  &gradient6,
+  &gradient5,  &gradient4,  &gradient3,
+  &gradient2,  &gradient1
+};
+
+static SpriteT *halloffame[] = {
+  cahir, slayer, jazzcat, slizgi, codi,
+  spook, zuko,   yumi,    polprog
 };
 
 
@@ -57,6 +72,7 @@ static short current_frame = 0;
 static CopInsT *colors[2];
 static CopInsPairT *sprmoves[2];
 static __code short oldgradientno = 0;
+static __code short oldspriteno   = 0;
 
 
 static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
@@ -113,8 +129,8 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER);
 
 
-  active_sprite = ks1;
-  active_pal = ks2_pal_colors;
+  active_sprite = cahir;
+  active_pal = cahir_colors;
   cp[0] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
   MakeCopperList(cp[0], 0, 0);
   cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
@@ -265,22 +281,8 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-  short actcl = 0;
+  //short actcl = 0;
 
-
-  //XXX: use !event
-  switch(TrackValueGet(&spriteno, frameCount)){
-  case 0:
-    active_pal = ks1_pal_colors;
-    active_sprite = ks1;
-    break;
-  case 1:
-    active_pal = ks2_pal_colors;
-    active_sprite = ks2;
-    break;
-  }
-      
-  
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
     maybeSkipFrame = 0;
@@ -290,19 +292,6 @@ static void Render(void) {
     }
   }
 
-  // overwrite active copperlist positions to move sprites
-  // would be nice to have this in the same place as MakeCopperList but its
-  // not 1:1
-  {
-    short i = 0;
-    for(i = 0; i < 16; i++){
-      CopInsSet16( &colors[actcl][i], active_pal[i&3]);
-    }
-    for(i = 0; i < 8; i++){
-      CopInsSet32(&sprmoves[actcl][i], active_sprite[i].sprdat);
-      SpriteUpdatePos(&active_sprite[i], X(0x40 + i*0x10), Y(TrackValueGet(&spritepos, frameCount)));
-    }
-  }
   
   if(1) {   
   ProfilerStart(AnimRender);
@@ -320,11 +309,37 @@ static void Render(void) {
     while (--n >= 0) {
       short i = mod16(active + n + 1 - DEPTH, DEPTH + 1);
       if (i < 0) i += DEPTH + 1;
-      CopInsSet32(&bplptr[actcl][n], screen->planes[i]);
+      CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
     }
   }
   }
   TaskWaitVBlank();
+  
+  
+  
+  active = mod16(active + 1, DEPTH + 1);
+  maybeSkipFrame = 1;
+}
+
+static void VBlankHandler(void){
+  //short actcl = 0;
+
+  // overwrite active copperlist positions to move sprites
+  // would be nice to have this in the same place as MakeCopperList but its
+  // not 1:1
+  {
+    short i = 0;
+    for(i = 0; i < 16; i++){
+      CopInsSet16( &colors[activecl][i], active_pal[i&3]);
+    }
+    for(i = 0; i < 8; i++){
+      CopInsSet32(&sprmoves[activecl][i], active_sprite[i].sprdat);
+      SpriteUpdatePos(&active_sprite[i], X(0x10 + i*0x10), Y(TrackValueGet(&spritepos, frameCount)));
+    }
+  }
+  
+
+  // Swap copperlist and change palette
   {
     u_short gno = TrackValueGet(&gradientno, frameCount);
     if(oldgradientno != gno) {
@@ -341,11 +356,18 @@ static void Render(void) {
       Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
     }
   }
-  custom->cop1lc = (u_int)cp[actcl]->entry;
+  custom->cop1lc = (u_int)cp[activecl]->entry;
 
-  
-  active = mod16(active + 1, DEPTH + 1);
-  maybeSkipFrame = 1;
+  // Change active sprite
+  {
+    u_short sno = TrackValueGet(&spriteno, frameCount);
+    if(oldspriteno != sno){
+      oldspriteno = sno;
+      active_sprite = halloffame[sno];
+    }
+  }
+
 }
 
-EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, NULL);
+
+EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, VBlankHandler);
