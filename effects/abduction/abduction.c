@@ -163,7 +163,7 @@ static void BlitterFadeIn(void** planes, short bpi, short idx, short y, short x,
   WaitBlitter();
 }
 
-static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x, short w) {
+static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x, u_short quote[], short w) {
   static short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
@@ -186,10 +186,10 @@ static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x
   custom->bltcon1 = 0;
 
   custom->bltbdat = ~tab2[idx];
-  custom->bltadat = 0xFFFF;
+  custom->bltapt = &quote[w/2];
   custom->bltdpt = planes[bpi] + 40 + (y * 40) + x;
 
-  custom->bltcon0 = (DEST) | A_AND_B;
+  custom->bltcon0 = (SRCA | DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 
@@ -202,10 +202,10 @@ static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x
   custom->bltcon1 = 0;
 
   custom->bltbdat = ~tab1[idx];
-  custom->bltadat = 0xFFFF;
+  custom->bltapt = quote;
   custom->bltdpt = planes[bpi] + (y * 40) + x;
 
-  custom->bltcon0 = (DEST) | A_AND_B;
+  custom->bltcon0 = (SRCA | DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 }
@@ -433,13 +433,14 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  ITER(i, 0, 31, SetColor(i, 0x000));
   CopperStop();
   BlitterStop();
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
+  ITER(i, 0, 31, SetColor(i, 0x000));
+  ResetSprites();
 }
 
 PROFILE(Abduction);
@@ -471,10 +472,10 @@ static void Render(void) {
         BlitterFadeIn(screen[0]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
         BlitterFadeIn(screen[1]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
       
-        BlitterFadeOut(screen[0]->planes, 2, idx-16, 160, 6, talk.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 2, idx-16, 160, 6, talk.bytesPerRow);
-        BlitterFadeOut(screen[0]->planes, 3, idx-16, 160, 6, talk.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 3, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 2, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
         ++idx;
       }
     }
@@ -485,19 +486,19 @@ static void Render(void) {
         BlitterFadeIn(screen[0]->planes,  3, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
         BlitterFadeIn(screen[1]->planes,  3, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
 
-        BlitterFadeOut(screen[0]->planes, 2, idx-32, 128, 24, sing.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 2, idx-32, 128, 24, sing.bytesPerRow);
-        BlitterFadeOut(screen[0]->planes, 3, idx-32, 128, 24, sing.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 3, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 2, idx-32, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-32, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-32, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-32, 128, 24, _sing_bpl, sing.bytesPerRow);
         ++idx;
       }
     }
     if (frameCount >= NAKED_OUT) {
       if (idx <= 15+48) {
-        BlitterFadeOut(screen[0]->planes, 2, idx-48, 64, 2, naked.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 2, idx-48, 64, 2, naked.bytesPerRow);
-        BlitterFadeOut(screen[0]->planes, 3, idx-48, 64, 2, naked.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, 3, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 2, idx-48, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-48, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-48, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-48, 64, 2, _naked_bpl, naked.bytesPerRow);
         ++idx;
       }
     }
