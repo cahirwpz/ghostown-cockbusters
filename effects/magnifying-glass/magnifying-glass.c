@@ -24,6 +24,8 @@ static __code CopListT *cp;
 
 #include "data/logo-gtn.c"
 #include "data/ball.c"
+#include "data/ball-anim.c"
+#include "data/magnifying-glass.c"
 
 #define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
 static __code void (*UVMapRender)(u_char *chunky asm("a0"),
@@ -397,8 +399,8 @@ static void ChunkyToPlanar(PixmapT *input, BitmapT *output) {
 }
 
 static void PositionSprite(SpriteT sprite[8], short xo, short yo) {
-  short x = X((S_WIDTH - WIDTH) / 2) + xo;
-  short y = Y((S_HEIGHT - HEIGHT) / 2) + yo;
+  short x = X(xo);
+  short y = Y(yo);
   short n = 4;
 
   while (--n >= 0) {
@@ -535,16 +537,17 @@ PROFILE(CropPixmapBlitter);
 PROFILE(PlanarToSprite);
 
 static void Render(void) {
-  short xo = normfx(SIN(frameCount * 8) * 0x50);
-  short yo = normfx(COS(frameCount * 7) * 0x20) + 0x10;
+  short xo, yo;
+
+  {
+    short *frame = ball_anim[(frameCount - magnifying_glass_start) % ball_anim_frames];
+    xo = S_WIDTH - *frame++ - WIDTH;
+    yo = *frame++;
+  }
 
   {
     ProfilerStart(CropPixmapBlitter);
-    CropPixmapBlitter(&logo,
-                      xo + S_WIDTH / 2 - WIDTH / 2 + 1,
-                      yo + S_HEIGHT / 2 - HEIGHT / 2,
-                      WIDTH, HEIGHT,
-                      texture_hi,texture_lo);
+    CropPixmapBlitter(&logo, xo, yo, WIDTH, HEIGHT, texture_hi, texture_lo);
     ProfilerStop(CropPixmapBlitter);
 
     ProfilerStart(UVMapRender);
