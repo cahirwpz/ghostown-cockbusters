@@ -51,7 +51,6 @@ static const PixmapT *palettes[] = {
 static __code short current_frame = 0;
 
 static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
-  Log("Make Copper List START\n");
   bplptr[acl] = CopSetupBitplanes(cp, screen, DEPTH);
   {
     
@@ -70,7 +69,6 @@ static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
       }
     }
   }
-    Log("Make Copper List END\n");
 
   return CopListFinish(cp);
 }
@@ -90,8 +88,6 @@ static void Init(void) {
   MakeCopperList(cp[0], 0, 0);
   cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
   MakeCopperList(cp[1], 0, 1);
-  Log("cp[0] = %p, cp[1] = %p\n", cp[0], cp[1]);
-  
   CopListActivate(cp[0]);
   EnableDMA(DMAF_RASTER);
 }
@@ -281,10 +277,8 @@ static void VBlankHandler(void){
     // this is not a leak as fas as I can tell
     // since the length is not changed. We just need
     // to regenerate the list starting w/ the first instruction
-    Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
     cp[activecl]->curr = cp[activecl]->entry;
     MakeCopperList(cp[activecl], gno, activecl);
-    Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
   }
   
 

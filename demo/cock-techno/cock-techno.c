@@ -348,12 +348,9 @@ static void VBlankHandler(void){
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
-      Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
-
       cp[activecl]->curr = cp[activecl]->entry;
       MakeCopperList(cp[activecl], gno, activecl);
       
-      Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
     }
   }
   custom->cop1lc = (u_int)cp[activecl]->entry;
