@@ -29,7 +29,7 @@
 
 #define WIDTH 320
 #define HEIGHT 256
-#define DEPTH 5
+#define DEPTH 4
 
 #define RING_W 56
 #define RING_H 16
@@ -87,16 +87,16 @@ static const u_short pal[pal_count] = {
   [10] = 0x034,
 
   // Unused
-  [11] = 0x034,
-  [12] = 0x034,
-  [13] = 0x034,
-  [14] = 0x034,
-  [15] = 0x034,
+  [11] = 0xDDF,
+  [12] = 0xDDF,
+  [13] = 0xDDF,
+  [14] = 0xDDF,
+  [15] = 0xDDF,
 
-  [16] = 0xFFF,
-  [17] = 0xFFF,
-  [18] = 0xFFF,
-  [19] = 0xFFF,
+  [16] = 0xF0F,
+  [17] = 0xF0F,
+  [18] = 0xF0F,
+  [19] = 0xF0F,
 
   // Coq
   [20] = 0x000,
@@ -116,7 +116,7 @@ static const u_short pal[pal_count] = {
 };
 
 
-static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short quote[], short w) {
+static void BlitterFadeIn(void** planes, short bpi, short idx, short y, short x, u_short quote[], short w) {
   static short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
@@ -140,7 +140,7 @@ static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short qu
 
   custom->bltbdat = tab2[idx];
   custom->bltapt = &quote[w/2];
-  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
+  custom->bltdpt = planes[bpi] + 40 + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
@@ -156,14 +156,14 @@ static void BlitterFadeIn(void** planes, short idx, short y, short x, u_short qu
 
   custom->bltbdat = tab1[idx];
   custom->bltapt = quote;
-  custom->bltdpt = planes[4] + (y * 40) + x;
+  custom->bltdpt = planes[bpi] + (y * 40) + x;
 
   custom->bltcon0 = (SRCA | DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
   WaitBlitter();
 }
 
-static void BlitterFadeOut(void** planes, short idx, short y, short x, short w) {
+static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x, short w) {
   static short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
@@ -187,7 +187,7 @@ static void BlitterFadeOut(void** planes, short idx, short y, short x, short w) 
 
   custom->bltbdat = ~tab2[idx];
   custom->bltadat = 0xFFFF;
-  custom->bltdpt = planes[4] + 40 + (y * 40) + x;
+  custom->bltdpt = planes[bpi] + 40 + (y * 40) + x;
 
   custom->bltcon0 = (DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
@@ -203,7 +203,7 @@ static void BlitterFadeOut(void** planes, short idx, short y, short x, short w) 
 
   custom->bltbdat = ~tab1[idx];
   custom->bltadat = 0xFFFF;
-  custom->bltdpt = planes[4] + (y * 40) + x;
+  custom->bltdpt = planes[bpi] + (y * 40) + x;
 
   custom->bltcon0 = (DEST) | A_AND_B;
   custom->bltsize = (16 << 6) | (w / 2);
@@ -455,33 +455,47 @@ static void Render(void) {
 
     if (frameCount >= TALK_IN) {
       if (idx <= 15) {
-        BlitterFadeIn(screen[0]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes, 2, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, 2, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes, 3, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes, 3, idx, 160, 6, _talk_bpl, talk.bytesPerRow);
         ++idx;
       }
     }
     if (frameCount >= SING_IN) {
       if (idx <= 15+16) {
-        BlitterFadeIn(screen[0]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
-        BlitterFadeOut(screen[0]->planes, idx-16, 160, 6, talk.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes,  2, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes,  2, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
+      
+        BlitterFadeOut(screen[0]->planes, 2, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-16, 160, 6, talk.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-16, 160, 6, talk.bytesPerRow);
         ++idx;
       }
     }
     if (frameCount >= NAKED_IN) {
       if (idx <= 15+32) {
-        BlitterFadeIn(screen[0]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
-        BlitterFadeIn(screen[1]->planes, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
-        BlitterFadeOut(screen[0]->planes, idx-32, 128, 24, sing.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes,  2, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes,  2, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[0]->planes,  3, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+        BlitterFadeIn(screen[1]->planes,  3, idx-32, 64, 2, _naked_bpl, naked.bytesPerRow);
+
+        BlitterFadeOut(screen[0]->planes, 2, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-32, 128, 24, sing.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-32, 128, 24, sing.bytesPerRow);
         ++idx;
       }
     }
     if (frameCount >= NAKED_OUT) {
       if (idx <= 15+48) {
-        BlitterFadeOut(screen[0]->planes, idx-48, 64, 2, naked.bytesPerRow);
-        BlitterFadeOut(screen[1]->planes, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 2, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 2, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[0]->planes, 3, idx-48, 64, 2, naked.bytesPerRow);
+        BlitterFadeOut(screen[1]->planes, 3, idx-48, 64, 2, naked.bytesPerRow);
         ++idx;
       }
     }
