@@ -22,13 +22,11 @@ static __code short maybeSkipFrame = 0;
 #include "data/cock_scene_4.c"
 #include "data/cock-pal.c"
 
-
-
 /* Reading polygon data */
 static short current_frame = 0;
 
 static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1));
+  CopListT *cp = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
     short *pixels = gradient.pixels;
