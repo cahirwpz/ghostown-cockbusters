@@ -152,7 +152,6 @@ static short envelope2[envelope_length-8] = {
 };
 
 static CopListT *MakeCopperList(void) {
-  // short i;
   CopListT *cp = 
     NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
 
@@ -198,20 +197,6 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, bplcon1, NULL);
     }
   }
-
-
-  // for (i = 0; i < 15; i++) {
-  //   CopWaitSafe(cp, Y(i), 0);
-  //   CopMove16(cp, bplcon1, 15);
-  // }
-  // for (i = 16; i < 31; i++) { // TODO: clean up into one for loop
-  //   CopWaitSafe(cp, Y(i+offset), 0);
-  //   CopMove16(cp, bplcon1, 15);
-  // }
-  // CopWaitSafe(cp, Y(31+offset), 0);
-  // CopMove16(cp, bplcon1, 0);
-
-
 
   return CopListFinish(cp);
 }
