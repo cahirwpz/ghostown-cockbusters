@@ -17,7 +17,6 @@
 #define DEPTH 4
 #define NSPRITE 3
 
-//static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
 static __code CopListT *cp;

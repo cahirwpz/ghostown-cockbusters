@@ -20,8 +20,6 @@ static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code short oldgradientno = 0;
-//static __code short activecl = 0;
-
 
 #include "data/cock_scene_1.c"
 #include "data/cock_scene_2.c"
@@ -228,7 +226,6 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-  
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
     maybeSkipFrame = 0;
@@ -237,7 +234,7 @@ static void Render(void) {
       return;
     }
   }
-  
+
   ProfilerStart(AnimRender);
   {
     BlitterClear(screen, active);
@@ -269,6 +266,5 @@ static void Render(void) {
     maybeSkipFrame = 1;
   }
 }
-
 
 EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);

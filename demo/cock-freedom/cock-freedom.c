@@ -81,7 +81,7 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
   cp = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
   MakeCopperList(cp, 0);
-  
+
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
 }
