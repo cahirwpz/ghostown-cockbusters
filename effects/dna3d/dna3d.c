@@ -55,8 +55,9 @@
 
 #include "data/tearing-table.c"
 
+// For glitches
 int animationFrame = -1;
-// static short offset = 70;
+short hPos = 0;
 
 static __code Object3D *object;
 static __code CopListT *cp;
@@ -217,7 +218,8 @@ static CopListT *MakeCopperList(void) {
 }
 static void Init(void) {
   TimeWarp(dna3d_start);
-  TrackInit(&TearingGlitch);
+  TrackInit(&GlitchAnimFrame);
+  TrackInit(&GlitchHPos);
 
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
@@ -739,36 +741,36 @@ static void Render(void) {
   CopInsSet32(&bplptr[2], screen[active]->planes[1]);
   CopInsSet32(&bplptr[4], screen[active]->planes[2]);
 
-  if (animationFrame > -1) {
-    animationFrame--;
-  }
-
   active ^= 1;
 }
 
 // For glitches
 static void VBlank(void) {
-  // short i = 0;
-  short j = 0;
-  short val = TrackValueGet(&TearingGlitch, frameCount);
+  short i = 0;
+  short animFrame = TrackValueGet(&GlitchAnimFrame, frameCount);
+  short line = TrackValueGet(&GlitchHPos, frameCount);
+
   CopInsT *ins = linecol[0];
 
-  if (val != 0) {
-    animationFrame = 16;
+  // Please, let's make something other than 0 
+  // a default track value >_<
+  if (animFrame != 0) {
+    animationFrame = animFrame - 1;
+  }
+  if (line != 0) {
+    hPos = line;
   }
   
-  if (animationFrame > -1) {
-    for (j = 0; j < 30; j += 2) {
-      ins = linecol[val+j];
-      CopInsSet16(&ins[4], tears[j][animationFrame]);
+  if (animationFrame != -1) {
+    for (i = 0; i < 15; i++) {
+      ins = linecol[hPos+i];
+      CopInsSet16(&ins[4], tears[animationFrame][i]);
     }
-    for (j = 31; j < 62; j += 2) {
-      ins = linecol[val+j];
-      CopInsSet16(&ins[4], tears[31-j][animationFrame]);
+    for (i = 15; i < 31; i++) {
+      ins = linecol[hPos+i];
+      CopInsSet16(&ins[4], tears[animationFrame][31-i]);
     }
-    ins = linecol[val + 62];
-    CopInsSet16(&ins[4], 0);    
-  }
+  } 
 }
 
 EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, VBlank);

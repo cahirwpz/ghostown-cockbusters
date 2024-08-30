@@ -2,6 +2,12 @@
 @event start $0c00
 @event end $1000
 
-@track TearingGlitch
-$0d00 100 !event
+@track GlitchAnimFrame
+$0d00 16 !trigger
+$0e00 16 !trigger
+@end
+
+@track GlitchHPos
+$0d00 70 !event
+$0e00 120 !event
 @end
