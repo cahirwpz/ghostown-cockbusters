@@ -109,7 +109,7 @@ static inline void DrawEdge(short *coords, void *dst,
                             CustomPtrT custom_ asm("a6")) {
   /* XXX awful hack to find some unused chip memory to write first pixel to!
    * This avoids creating small memory allocation. */
-  short *tmp = (short *)cp->curr;
+  short *tmp = (short *)cp[activecl]->curr;
 
   short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
   short dmin, dmax, derr, offset;
