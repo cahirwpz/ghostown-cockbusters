@@ -234,9 +234,6 @@ static void DrawFrame(void *dst, CustomPtrT custom_ asm("a6")) {
 PROFILE(AnimRender);
 
 static void Render(void) {
-
-  
-  
   
   /* Frame lock the effect to 25 FPS */
   if (maybeSkipFrame) {
@@ -266,24 +263,29 @@ static void Render(void) {
   }
 
   TaskWaitVBlank();
-  {
-    u_short gno = TrackValueGet(&gradientno, frameCount);
-    if(oldgradientno != gno) {
-      oldgradientno = gno;
-      activecl ^= 1;
-      // this is not a leak as fas as I can tell
-      // since the length is not changed. We just need
-      // to regenerate the list starting w/ the first instruction
-      Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
-      cp[activecl]->curr = cp[activecl]->entry;
-      MakeCopperList(cp[activecl], gno, activecl);
-      Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
-    }
-  }
+  
   custom->cop1lc = (u_int) cp[activecl]->entry;
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
   
 }
 
-EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);
+static void VBlankHandler(void){
+
+  u_short gno = TrackValueGet(&gradientno, frameCount);
+  if(oldgradientno != gno) {
+    oldgradientno = gno;
+    activecl ^= 1;
+    // this is not a leak as fas as I can tell
+    // since the length is not changed. We just need
+    // to regenerate the list starting w/ the first instruction
+    Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
+    cp[activecl]->curr = cp[activecl]->entry;
+    MakeCopperList(cp[activecl], gno, activecl);
+    Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
+  }
+  
+
+}
+
+EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, VBlankHandler);
