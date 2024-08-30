@@ -1,69 +1,74 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
-@event start   $0000
+@event start   $1C00
 
 
-@track spritepos
-$0000    220
-$0008    180
-$0018    180
-$0020    220
-
-$0028    180
-$0038    180
-$0100    220
-
-$0108    180
-$0118    180
-$0120    220
-
-$0128    180
-$0138    180
-$0200    220
-
-$0208    180
-$0218    180
-$0220    220
-
-$0228    180
-$0238    180
-$0300    220
-
-$0308    180
-$0318    180
-$0320    220
-
-$0328    180
-$0338    180
-$0400    220
-
-$0408    180
-$0418    180
-$0420    220
-@end
 
 @track spriteno !value
-$0000    0    # Cahir
-$0020    1    # Slayer
-$0100    2    # Jazzcat
-$0120    3    # slizgi
-$0200    4    # Codi
-$0220    5    # spook
-$0300    6    # Zuko
-$0320    7    # Yumi
-$0400    8    # polprog
-
+$1C20    0    # Cahir
+$1C30    1    # Slayer
+$1D00    2    # Jazzcat
+$1D10    3    # slizgi
+$1D20    4    # Codi
+$1D30    5    # spook
+$1E00    6    # Zuko
+$1E10    7    # Yumi
+$1E20    8    # polprog
 @end
 
+@track spritepos
+# initial sprite pos
+$1C20    220
+# Cahir
+$1C24    180
+$1C2A    180
+$1C2F    220
+# Slayer
+$1C34    180
+$1C3A    180
+$1C3F    220
+# Jazzcat
+$1D04    180
+$1D0A    180
+$1D0F    220
+# slizgi
+$1D14    180
+$1D1A    180
+$1D1F    220
+# Codi
+$1D24    180
+$1D2A    180
+$1D2F    220
+# spook
+$1D34    180
+$1D3A    180
+$1D3F    220
+# zuko
+$1E04    180
+$1E0A    180
+$1E0F    220
+# Yumi
+$1E14    180
+$1E1A    180
+$1E1F    220
+# polprog
+$1E24    180
+$1E2A    180
+$1E2F    220
+@end
+
+
 @track techno_gradientno
-$0000    0
-$0020    1
-$0100    2
-$0120    3
-$0200    4
-$0220    5
-$0300    6
-$0320    7
-$0400    8
-$0420    9
-$0500    10
+# Warning: if you set the first gradient here
+# Change the oldgradientno variable in .c, or it CopListFinish will panic.
+$1C00    10    # blue-cold
+$1C10    1
+$1C20    2
+$1C30    3
+$1D00    4
+$1D10    5
+$1D20    6
+$1D30    7
+$1E00    8
+$1E10    9
+$1E20    10
 @end

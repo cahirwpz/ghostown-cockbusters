@@ -71,7 +71,7 @@ static __code short *active_pal;
 static short current_frame = 0;
 static CopInsT *colors[2];
 static CopInsPairT *sprmoves[2];
-static __code short oldgradientno = 0;
+static __code short oldgradientno = 10;
 static __code short oldspriteno   = 0;
 
 
