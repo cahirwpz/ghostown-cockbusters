@@ -320,7 +320,6 @@ static void Rotator(void) {
 }
 
 static void VBlank(void) {
-  static bool d = false;
   short t = ReadFrameCount();
   short i = 0;
 
@@ -329,16 +328,13 @@ static void VBlank(void) {
   } else if (t >= rotator_start + rotator_end - 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0, rotator_start + rotator_end - t);
   } else {
-    t = t % 16;
+    t = t % 31;
     for (i = 0; i < 16; ++i) {
-      if (d) {
+      if (t < 16) {
         SetColor(i, ColorTransition(bright_colors[i], dark_colors[i], t));
       } else {
-        SetColor(i, ColorTransition(dark_colors[i], bright_colors[i], t));
+        SetColor(i, ColorTransition(dark_colors[i], bright_colors[i], t-15));
       }
-    }
-    if (t % 16 == 15) {
-      d = !d;
     }
   }
 }

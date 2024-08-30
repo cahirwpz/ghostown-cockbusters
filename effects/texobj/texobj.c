@@ -13,6 +13,7 @@
 #define HEIGHT 128
 #define DEPTH 4
 
+#include "data/cube-bg-dark.c"
 #include "data/cube.c"
 #include "data/cube-bg.c"
 #include "data/cube-tex0.c"
@@ -602,13 +603,21 @@ static void Kill(void) {
 
 static void VBlank(void) {
   short t = ReadFrameCount();
+  short i = 0;
 
   if (t < texobj_start + 16) {
     FadeBlack(texture_colors, nitems(texture_colors), 0,  t - texobj_start);
-  }
-
-  if (t >= texobj_start + texobj_end - 16) {
+  } else if (t >= texobj_start + texobj_end - 16) {
     FadeBlack(texture_colors, nitems(texture_colors), 0, texobj_start + texobj_end - t);
+  } else {
+    t = t % 31;
+    for (i = 0; i < 16; ++i) {
+      if (t < 16) {
+        SetColor(i, ColorTransition(texture_colors[i], dark_colors[i], t));
+      } else {
+        SetColor(i, ColorTransition(dark_colors[i], texture_colors[i], t-15));
+      }
+    }
   }
 }
 
