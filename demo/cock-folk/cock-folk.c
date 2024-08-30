@@ -71,7 +71,9 @@ static void Kill(void) {
 
 static inline void DrawEdge(short *coords, void *dst,
                             CustomPtrT custom_ asm("a6")) {
-  static __chip short tmp;
+  /* XXX awful hack to find some unused chip memory to write first pixel to!
+   * This avoids creating small memory allocation. */
+  short *tmp = (short *)cp->curr;
 
   short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
   short dmin, dmax, derr, offset;
@@ -131,7 +133,7 @@ static inline void DrawEdge(short *coords, void *dst,
   custom_->bltbmod = bltbmod;
   custom_->bltamod = bltamod;
   custom_->bltcpt = dst + offset;
-  custom_->bltdpt = &tmp;
+  custom_->bltdpt = tmp;
   custom_->bltsize = bltsize;
 }
 

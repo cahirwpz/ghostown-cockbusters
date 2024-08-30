@@ -433,7 +433,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
+  CopperStop();
+  BlitterStop();
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);

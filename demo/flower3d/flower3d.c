@@ -17,7 +17,6 @@ static __code BitmapT *screen[2];
 static __code BitmapT *buffer;
 static __code int active = 0;
 
-
 #include "data/bg-1-data.c"
 #include "data/bg-1-pal.c"
 #include "data/bg-2-data.c"
