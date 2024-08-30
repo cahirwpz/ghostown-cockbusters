@@ -3,5 +3,5 @@
 @event end $1000
 
 @track TearingGlitch
-$0d00 1 !event
+$0d00 100 !event
 @end

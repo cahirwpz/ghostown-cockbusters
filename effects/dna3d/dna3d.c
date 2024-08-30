@@ -53,7 +53,7 @@
 #include "data/fadein07.c"
 #include "data/fadein08.c"
 
-// #include "data/tearing-table.c"
+#include "data/tearing-table.c"
 
 int animationFrame = -1;
 // static short offset = 70;
@@ -163,17 +163,6 @@ static CopListT *MakeCopperList(void) {
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
 
-  // for (i = 0; i < 15; i++) {
-  //   CopWaitSafe(cp, Y(i), 0);
-  //   CopMove16(cp, bplcon1, NULL);
-  // }
-  // for (i = 16; i < 31; i++) { // TODO: clean up into one for loop
-  //   CopWaitSafe(cp, Y(i+offset), 0);
-  //   CopMove16(cp, bplcon1, NULL);
-  // }
-  // CopWaitSafe(cp, Y(31+offset), 0);
-  // CopMove16(cp, bplcon1, 0);
-
   bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
   CopMove32(cp, bplpt[1], necrocoq.planes[0]);
   CopMove32(cp, bplpt[2], screen[1]->planes[1]);
@@ -206,8 +195,21 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, color[9], *pf2_data++);
       CopMove16(cp, color[10], *pf2_data++);
       CopMove16(cp, color[11], *pf2_data++);
+      CopMove16(cp, bplcon1, NULL);
     }
   }
+
+
+  // for (i = 0; i < 15; i++) {
+  //   CopWaitSafe(cp, Y(i), 0);
+  //   CopMove16(cp, bplcon1, 15);
+  // }
+  // for (i = 16; i < 31; i++) { // TODO: clean up into one for loop
+  //   CopWaitSafe(cp, Y(i+offset), 0);
+  //   CopMove16(cp, bplcon1, 15);
+  // }
+  // CopWaitSafe(cp, Y(31+offset), 0);
+  // CopMove16(cp, bplcon1, 0);
 
 
 
@@ -736,14 +738,36 @@ static void Render(void) {
   CopInsSet32(&bplptr[0], screen[active]->planes[0]);
   CopInsSet32(&bplptr[2], screen[active]->planes[1]);
   CopInsSet32(&bplptr[4], screen[active]->planes[2]);
+
+  if (animationFrame > -1) {
+    animationFrame--;
+  }
+
   active ^= 1;
 }
 
+// For glitches
 static void VBlank(void) {
+  // short i = 0;
+  short j = 0;
   short val = TrackValueGet(&TearingGlitch, frameCount);
+  CopInsT *ins = linecol[0];
 
   if (val != 0) {
-    Log("%d", val);
+    animationFrame = 16;
+  }
+  
+  if (animationFrame > -1) {
+    for (j = 0; j < 30; j += 2) {
+      ins = linecol[val+j];
+      CopInsSet16(&ins[4], tears[j][animationFrame]);
+    }
+    for (j = 31; j < 62; j += 2) {
+      ins = linecol[val+j];
+      CopInsSet16(&ins[4], tears[31-j][animationFrame]);
+    }
+    ins = linecol[val + 62];
+    CopInsSet16(&ins[4], 0);    
   }
 }
 
