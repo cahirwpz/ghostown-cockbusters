@@ -21,6 +21,7 @@ static __code void **c2p_bpl;
 static __code u_short *textureHi, *textureLo;
 
 #include "data/texture-bright.c"
+#include "data/texture-dark.c"
 #include "data/rotator.c"
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] x 2 */
@@ -319,14 +320,26 @@ static void Rotator(void) {
 }
 
 static void VBlank(void) {
+  static bool d = false;
   short t = ReadFrameCount();
+  short i = 0;
 
   if (t < rotator_start + 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0,  t - rotator_start);
-  }
-
-  if (t >= rotator_start + rotator_end - 16) {
+  } else if (t >= rotator_start + rotator_end - 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0, rotator_start + rotator_end - t);
+  } else {
+    t = t % 16;
+    for (i = 0; i < 16; ++i) {
+      if (d) {
+        SetColor(i, ColorTransition(bright_colors[i], dark_colors[i], t));
+      } else {
+        SetColor(i, ColorTransition(dark_colors[i], bright_colors[i], t));
+      }
+    }
+    if (t % 16 == 15) {
+      d = !d;
+    }
   }
 }
 
