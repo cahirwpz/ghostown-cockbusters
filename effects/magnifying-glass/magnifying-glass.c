@@ -543,9 +543,9 @@ static void VBlank(void) {
   if (t < magnifying_glass_start + 16) {
     FadeBlack(logo_pal_colors, 16, 0,  t-magnifying_glass_start);
     FadeBlack(logo_pal_colors, 16, 16, t-magnifying_glass_start);
-  } else if (t >= magnifying_glass_start + 0x100 &&
-             t <= magnifying_glass_start + 0x100 + 0x8) {
-    FadeBlack(logo_pal_colors, 16, 0,  15 - (t - (magnifying_glass_start + 0x100)));
+  } else if (t >= magnifying_glass_start + 0x80 &&
+             t <= magnifying_glass_start + 0x80 + 0x8) {
+    FadeBlack(logo_pal_colors, 16, 0,  15 - (t - (magnifying_glass_start + 0x80)));
   }
 }
 

@@ -433,6 +433,7 @@ static void Init(void) {
 }
 
 static void Kill(void) {
+  ITER(i, 0, 31, SetColor(i, 0x000));
   CopperStop();
   BlitterStop();
 

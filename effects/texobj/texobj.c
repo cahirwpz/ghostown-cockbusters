@@ -568,7 +568,7 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
-  LoadColors(texture_colors, 0);
+  LoadColors(dark_colors, 0);
 
   cp[0] = MakeCopperList(0);
   cp[1] = MakeCopperList(1);
@@ -606,10 +606,10 @@ static void VBlank(void) {
   short i = 0;
 
   if (t < texobj_start + 16) {
-    FadeBlack(texture_colors, nitems(texture_colors), 0,  t - texobj_start);
+    FadeBlack(dark_colors, nitems(dark_colors), 0,  t - texobj_start);
   } else if (t >= texobj_start + texobj_end - 16) {
-    FadeBlack(texture_colors, nitems(texture_colors), 0, texobj_start + texobj_end - t);
-  } else {
+    FadeBlack(dark_colors, nitems(dark_colors), 0, texobj_start + texobj_end - t);
+  } else  if (t > texobj_start + 0x100){
     t = t % 31;
     for (i = 0; i < 16; ++i) {
       if (t < 16) {
