@@ -1,7 +1,8 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/bobs.c data/bobs2.c data/bobs_gradient.c data/bobs_gradient2.c data/dna.* \
-	data/necrocoq-??.c data/necrocoq2-??.c data/necrocoq-00-data.c data/necrocoq-00-pal.c data/fadein*.c
+	data/necrocoq-??.c data/necrocoq2-??.c data/necrocoq-00-data.c data/necrocoq-00-pal.c \
+	data/fadein*.c data/tearing-table.c
 
 LIBS := lib3d
 
@@ -55,5 +56,8 @@ include $(TOPDIR)/build/effect.mk
 %.obj %.mtl: %_gen.py
 	@echo "[GEN] $@"
 	$(PYTHON3) $*_gen.py --circular $*
+
+data/tearing-table.c:
+	$(PYTHON3) data/gen_tearing.py  $< $@ || (rm -f $@ && exit 1)
 
 .PRECIOUS: data/dna.obj data/dna.mtl

@@ -151,8 +151,8 @@ if __name__ == '__main__':
             session.select_window(debugger.name)
         else:
             session.select_window(args.window or par_port.name)
-        Session.attach(session)
+        Session.attach_session(session)
     except exc.TmuxObjectDoesNotExist:
         pass
     finally:
-        Server.kill(server)
+        Server.kill_server(server)

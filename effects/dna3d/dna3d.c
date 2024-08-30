@@ -4,6 +4,7 @@
 #include "3d.h"
 #include "fx.h"
 #include "debug.h"
+#include "sync.h"
 
 #define WIDTH  256
 #define HEIGHT 256
@@ -51,6 +52,11 @@
 #include "data/fadein06.c"
 #include "data/fadein07.c"
 #include "data/fadein08.c"
+
+// #include "data/tearing-table.c"
+
+int animationFrame = -1;
+// static short offset = 70;
 
 static __code Object3D *object;
 static __code CopListT *cp;
@@ -146,6 +152,7 @@ static short envelope2[envelope_length-8] = {
 };
 
 static CopListT *MakeCopperList(void) {
+  // short i;
   CopListT *cp = 
     NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
 
@@ -155,6 +162,17 @@ static CopListT *MakeCopperList(void) {
 
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
+
+  // for (i = 0; i < 15; i++) {
+  //   CopWaitSafe(cp, Y(i), 0);
+  //   CopMove16(cp, bplcon1, NULL);
+  // }
+  // for (i = 16; i < 31; i++) { // TODO: clean up into one for loop
+  //   CopWaitSafe(cp, Y(i+offset), 0);
+  //   CopMove16(cp, bplcon1, NULL);
+  // }
+  // CopWaitSafe(cp, Y(31+offset), 0);
+  // CopMove16(cp, bplcon1, 0);
 
   bplptr = CopMove32(cp, bplpt[0], screen[1]->planes[0]);
   CopMove32(cp, bplpt[1], necrocoq.planes[0]);
@@ -191,10 +209,13 @@ static CopListT *MakeCopperList(void) {
     }
   }
 
+
+
   return CopListFinish(cp);
 }
 static void Init(void) {
   TimeWarp(dna3d_start);
+  TrackInit(&TearingGlitch);
 
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
@@ -718,4 +739,12 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, NULL);
+static void VBlank(void) {
+  short val = TrackValueGet(&TearingGlitch, frameCount);
+
+  if (val != 0) {
+    Log("%d", val);
+  }
+}
+
+EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, VBlank);
