@@ -20,7 +20,7 @@
 //static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr[2];
-static CopListT *cp[2];
+static __code CopListT *cp[2];
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
@@ -68,9 +68,9 @@ static SpriteT *halloffame[] = {
 static __code SpriteT *active_sprite;
 static __code short *active_pal;
 /* Reading polygon data */
-static short current_frame = 0;
-static CopInsT *colors[2];
-static CopInsPairT *sprmoves[2];
+static __code short current_frame = 0;
+static __code CopInsT *colors[2];
+static __code CopInsPairT *sprmoves[2];
 static __code short oldgradientno = 0;
 static __code short oldspriteno   = 0;
 
@@ -293,7 +293,6 @@ static void Render(void) {
   }
 
   
-  if(1) {   
   ProfilerStart(AnimRender);
   {
     BlitterClear(screen, active);
@@ -303,7 +302,7 @@ static void Render(void) {
   ProfilerStop(AnimRender);
 
   // chicken afterglow
-  if(1) {
+  {
     short n = DEPTH;
 
     while (--n >= 0) {
@@ -312,16 +311,9 @@ static void Render(void) {
       CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
     }
   }
-  }
-  TaskWaitVBlank();
   
   
-  
-  active = mod16(active + 1, DEPTH + 1);
-  maybeSkipFrame = 1;
-}
 
-static void VBlankHandler(void){
   //short actcl = 0;
 
   // overwrite active copperlist positions to move sprites
@@ -353,7 +345,6 @@ static void VBlankHandler(void){
       
     }
   }
-  custom->cop1lc = (u_int)cp[activecl]->entry;
 
   // Change active sprite
   {
@@ -363,8 +354,12 @@ static void VBlankHandler(void){
       active_sprite = halloffame[sno];
     }
   }
-
+  TaskWaitVBlank();
+  custom->cop1lc = (u_int)cp[activecl]->entry;
+  active = mod16(active + 1, DEPTH + 1);
+  maybeSkipFrame = 1;
 }
 
 
-EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, VBlankHandler);
+
+EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, NULL);

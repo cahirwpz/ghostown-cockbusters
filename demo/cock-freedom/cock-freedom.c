@@ -266,9 +266,9 @@ static void Render(void) {
       MakeCopperList(cp[activecl], gno, activecl);
     }
   }
-  custom->cop1lc = (u_int)cp[activecl]->entry;
 
   TaskWaitVBlank();
+  custom->cop1lc = (u_int)cp[activecl]->entry;
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }

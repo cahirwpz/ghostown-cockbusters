@@ -259,29 +259,24 @@ static void Render(void) {
       CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
     }
   }
-
-  TaskWaitVBlank();
+  {
+    u_short gno = TrackValueGet(&gradientno, frameCount);
+    if(oldgradientno != gno) {
+      oldgradientno = gno;
+      activecl ^= 1;
+      // this is not a leak as fas as I can tell
+      // since the length is not changed. We just need
+      // to regenerate the list starting w/ the first instruction
+      cp[activecl]->curr = cp[activecl]->entry;
+      MakeCopperList(cp[activecl], gno, activecl);
+    }
+    TaskWaitVBlank();
   
-  custom->cop1lc = (u_int) cp[activecl]->entry;
-  active = mod16(active + 1, DEPTH + 1);
-  maybeSkipFrame = 1;
-  
-}
-
-static void VBlankHandler(void){
-
-  u_short gno = TrackValueGet(&gradientno, frameCount);
-  if(oldgradientno != gno) {
-    oldgradientno = gno;
-    activecl ^= 1;
-    // this is not a leak as fas as I can tell
-    // since the length is not changed. We just need
-    // to regenerate the list starting w/ the first instruction
-    cp[activecl]->curr = cp[activecl]->entry;
-    MakeCopperList(cp[activecl], gno, activecl);
+    custom->cop1lc = (u_int) cp[activecl]->entry;
+    active = mod16(active + 1, DEPTH + 1);
+    maybeSkipFrame = 1;
   }
-  
-
 }
 
-EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, VBlankHandler);
+
+EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);
