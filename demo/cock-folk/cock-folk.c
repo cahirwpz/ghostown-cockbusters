@@ -15,12 +15,12 @@
 #define DEPTH 4
 
 static __code BitmapT *screen;
-static __code CopInsPairT *bplptr[2];
-static __code CopListT *cp[2];
+static __code CopInsPairT *bplptr;
+static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code short oldgradientno = 0;
-static __code short activecl = 0;
+//static __code short activecl = 0;
 
 
 #include "data/cock_scene_1.c"
@@ -48,8 +48,8 @@ static const PixmapT *palettes[] = {
 /* Reading polygon data */
 static __code short current_frame = 0;
 
-static CopListT *MakeCopperList(CopListT *cp, short gno, int acl) {
-  bplptr[acl] = CopSetupBitplanes(cp, screen, DEPTH);
+static CopListT *MakeCopperList(CopListT *cp, short gno) {
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
 
   {
     short *pixels = palettes[gno]->pixels;
@@ -83,19 +83,16 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp[0] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
-  MakeCopperList(cp[0], 0, 0);
-  cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
-  MakeCopperList(cp[1], 0, 1);
-  CopListActivate(cp[0]);
+  cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp, 0);
+  CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp[0]);
-  DeleteCopList(cp[1]);
+  DeleteCopList(cp);
 
   DeleteBitmap(screen);
 }
@@ -104,7 +101,7 @@ static inline void DrawEdge(short *coords, void *dst,
                             CustomPtrT custom_ asm("a6")) {
   /* XXX awful hack to find some unused chip memory to write first pixel to!
    * This avoids creating small memory allocation. */
-  short *tmp = (short *)cp[activecl]->curr;
+  short *tmp = (short *)cp->curr;
 
   short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
   short dmin, dmax, derr, offset;
@@ -255,19 +252,18 @@ static void Render(void) {
     while (--n >= 0) {
       short i = mod16(active + n + 1 - DEPTH, DEPTH + 1);
       if (i < 0) i += DEPTH + 1;
-      CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
+      CopInsSet32(&bplptr[n], screen->planes[i]);
     }
   }
   {
     u_short gno = TrackValueGet(&gradientno, frameCount);
     if (oldgradientno != gno) {
       oldgradientno = gno;
-      activecl ^= 1;
-      CopListReset(cp[activecl]);
-      MakeCopperList(cp[activecl], gno, activecl);
+      CopListReset(cp);
+      MakeCopperList(cp, gno);
     }
 
-    CopListRun(cp[activecl]);
+    CopListRun(cp);
     TaskWaitVBlank();
     active = mod16(active + 1, DEPTH + 1);
     maybeSkipFrame = 1;

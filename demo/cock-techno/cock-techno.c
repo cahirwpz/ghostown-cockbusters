@@ -19,12 +19,11 @@
 
 //static __code SpriteT sprite[8 * NSPRITE];
 static __code BitmapT *screen;
-static __code CopInsPairT *bplptr[2];
-static __code CopListT *cp[2];
+static __code CopInsPairT *bplptr;
+static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code SprDataT *sprdat;
-static __code short activecl = 0;
 
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
@@ -69,16 +68,16 @@ static __code SpriteT *active_sprite;
 static __code short *active_pal;
 /* Reading polygon data */
 static __code short current_frame = 0;
-static __code CopInsT *colors[2];
-static __code CopInsPairT *sprmoves[2];
+static __code CopInsT *colors;
+static __code CopInsPairT *sprmoves;
 static __code short oldgradientno = 0;
 static __code short oldspriteno   = 0;
 
 
-static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
+static CopListT *MakeCopperList(CopListT *cp, short gno) {
   CopInsPairT *sprptr = CopSetupSprites(cp);
-  sprmoves[act] = sprptr;
-  bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
+  sprmoves = sprptr;
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
 
   {
     short *pixels = palettes[gno]->pixels;
@@ -87,7 +86,7 @@ static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
     for(i = 0; i < 8; i++) {
       CopInsSetSprite(&sprptr[i], &active_sprite[i]);
     }
-    colors[act] = CopSetColor(cp, 16, 0xdead);
+    colors = CopSetColor(cp, 16, 0xdead);
     for(i = 1; i < 16; i++) {
       CopSetColor(cp, i+16, 0xdead);
     }
@@ -125,12 +124,10 @@ static void Init(void) {
 
   active_sprite = cahir;
   active_pal = cahir_colors;
-  cp[0] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
-  MakeCopperList(cp[0], 0, 0);
-  cp[1] = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
-  MakeCopperList(cp[1], 0, 1);
+  cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp, 0);
 
-  CopListActivate(cp[0]);
+  CopListActivate(cp);
 
   EnableDMA(DMAF_SPRITE | DMAF_RASTER);
 }
@@ -138,7 +135,7 @@ static void Init(void) {
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp[0]);
+  DeleteCopList(cp);
 
   DeleteBitmap(screen);
   MemFree(sprdat);
@@ -150,7 +147,7 @@ static inline void DrawEdge(short *coords, void *dst,
                             CustomPtrT custom_ asm("a6")) {
   /* XXX awful hack to find some unused chip memory to write first pixel to!
    * This avoids creating small memory allocation. */
-  short *tmp = (short *)cp[activecl]->curr;
+  short *tmp = (short *)cp->curr;
 
   short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
   short dmin, dmax, derr, offset;
@@ -298,7 +295,7 @@ static void Render(void) {
     while (--n >= 0) {
       short i = mod16(active + n + 1 - DEPTH, DEPTH + 1);
       if (i < 0) i += DEPTH + 1;
-      CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
+      CopInsSet32(&bplptr[n], screen->planes[i]);
     }
   }
 
@@ -308,11 +305,12 @@ static void Render(void) {
   {
     short i = 0;
     for (i = 0; i < 16; i++) {
-      CopInsSet16( &colors[activecl][i], active_pal[i&3]);
+      CopInsSet16( &colors[i], active_pal[i&3]);
     }
     for (i = 0; i < 8; i++) {
-      CopInsSet32(&sprmoves[activecl][i], active_sprite[i].sprdat);
-      SpriteUpdatePos(&active_sprite[i], X(0x10 + i*0x10), Y(TrackValueGet(&spritepos, frameCount)));
+      short y = TrackValueGet(&spritepos, frameCount);
+      CopInsSet32(&sprmoves[i], active_sprite[i].sprdat);
+      SpriteUpdatePos(&active_sprite[i], X(0x10 + i*0x10), Y(y));
     }
   }
 
@@ -322,12 +320,11 @@ static void Render(void) {
 
     if (oldgradientno != gno) {
       oldgradientno = gno;
-      activecl ^= 1;
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
-      CopListReset(cp[activecl]);
-      MakeCopperList(cp[activecl], gno, activecl);
+      CopListReset(cp);
+      MakeCopperList(cp, gno);
     }
   }
 
@@ -339,7 +336,7 @@ static void Render(void) {
       active_sprite = halloffame[sno];
     }
   }
-  CopListRun(cp[activecl]);
+  CopListRun(cp);
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
