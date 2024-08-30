@@ -56,8 +56,7 @@
 #include "data/tearing-table.c"
 
 // For glitches
-int animationFrame = -1;
-short hPos = 0;
+static __code short hPos = 0;
 
 static __code Object3D *object;
 static __code CopListT *cp;
@@ -754,14 +753,13 @@ static void VBlank(void) {
 
   // Please, let's make something other than 0 
   // a default track value >_<
-  animationFrame = animFrame;
   if (line != 0) {
     hPos = line;
   }
   
   for (i = 0; i < 31; i++) {
     ins = linecol[hPos+i];
-    CopInsSet16(&ins[4], tears[animationFrame][i]);
+    CopInsSet16(&ins[4], tears[animFrame][i]);
   }
 } 
 
