@@ -131,10 +131,6 @@ void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   }
 }
 
-short ReadFrameCount(void) {
-  return ReadFrameCounter();
-}
-
 static volatile EffectFuncT VBlankHandler = NULL;
 
 static int VBlankISR(void) {

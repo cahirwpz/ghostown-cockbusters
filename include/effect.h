@@ -29,6 +29,11 @@
 extern short frameCount;
 
 /*
+ * Get current frame count from VBlank() context.
+ */
+short ReadFrameCount(void);
+
+/*
  * The time when Render() was called previously.
  * Used to calculate how much did it take to render last frame.
  */

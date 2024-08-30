@@ -107,7 +107,7 @@ static void Init(void) {
   SetupMode(MODE_DUALPF, DEPTH + bg_3_depth);
   LoadColors(pal_gray_colors, 4);
   LoadColors(pal_gray_colors, 0);
-  
+ 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
 
@@ -514,8 +514,7 @@ static void Render(void) {
 static void VBlank(void) {
   short val = TrackValueGet(&BgChange, frameCount);
 
-
-  if(val != 0 && val != active_bg) {
+  if (val != 0 && val != active_bg) {
     active_bg = val;
     if (active_bg == 2) {
       LoadColors(pattern_2_colors, 4);
@@ -523,10 +522,7 @@ static void VBlank(void) {
     } else if (active_bg == 3) {
       LoadColors(pattern_1_colors, 4);
       LoadColors(pattern_2_colors, 0);
-    } 
-
-    // CopInsSet32(&bplptr[1], bg_bpl[active_bg]->planes[0]);
-    // CopInsSet32(&bplptr[3], bg_bpl[active_bg]->planes[1]);
+    }
 
     {
       u_short *data = bg_pixels[active_bg];
@@ -539,9 +535,7 @@ static void VBlank(void) {
         CopInsSet16(&colptr[(i*5) + 5], *data++);
       }
     }
-
   }
-
 }
 
 EFFECT(Flower3D, NULL, NULL, Init, Kill, Render, VBlank);
