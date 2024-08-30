@@ -6,6 +6,9 @@
 #include <sprite.h>
 #include <system/memory.h>
 #include <c2p_1x1_4.h>
+#include <color.h>
+#include <sync.h>
+#include "data/magnifying-glass.c"
 
 #define S_WIDTH 320
 #define S_HEIGHT 256
@@ -72,6 +75,8 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
+  TimeWarp(magnifying_glass_start);
+
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode();
 
@@ -95,8 +100,9 @@ static void Init(void) {
   }
 
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
-  LoadColors(logo_pal_colors, 0);
-  LoadColors(logo_pal_colors, 16);
+  ITER(i, 0, 31, SetColor(i, 0x000));
+  // LoadColors(logo_pal_colors, 0);
+  // LoadColors(logo_pal_colors, 16);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -531,6 +537,18 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   }
 }
 
+static void VBlank(void) {
+  short t = ReadFrameCount();
+
+  if (t < magnifying_glass_start + 16) {
+    FadeBlack(logo_pal_colors, 16, 0,  t-magnifying_glass_start);
+    FadeBlack(logo_pal_colors, 16, 16, t-magnifying_glass_start);
+  } else if (t >= magnifying_glass_start + 0x100 &&
+             t <= magnifying_glass_start + 0x100 + 0x8) {
+    FadeBlack(logo_pal_colors, 16, 0,  15 - (t - (magnifying_glass_start + 0x100)));
+  }
+}
+
 PROFILE(UVMapRender);
 PROFILE(ChunkyToPlanar);
 PROFILE(CropPixmapBlitter);
@@ -568,4 +586,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(MagnifyingGlass, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(MagnifyingGlass, NULL, NULL, Init, Kill, Render, VBlank);
