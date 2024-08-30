@@ -4,6 +4,7 @@
 #include "3d.h"
 #include "fx.h"
 #include "debug.h"
+#include "sync.h"
 
 #define WIDTH  256
 #define HEIGHT 256
@@ -51,6 +52,11 @@
 #include "data/fadein06.c"
 #include "data/fadein07.c"
 #include "data/fadein08.c"
+
+#include "data/tearing-table.c"
+
+// For glitches
+static __code short hPos = 0;
 
 static __code Object3D *object;
 static __code CopListT *cp;
@@ -188,6 +194,7 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, color[9], *pf2_data++);
       CopMove16(cp, color[10], *pf2_data++);
       CopMove16(cp, color[11], *pf2_data++);
+      CopMove16(cp, bplcon1, NULL);
     }
   }
 
@@ -195,6 +202,8 @@ static CopListT *MakeCopperList(void) {
 }
 static void Init(void) {
   TimeWarp(dna3d_start);
+  TrackInit(&GlitchAnimFrame);
+  TrackInit(&GlitchHPos);
 
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
@@ -715,7 +724,29 @@ static void Render(void) {
   CopInsSet32(&bplptr[0], screen[active]->planes[0]);
   CopInsSet32(&bplptr[2], screen[active]->planes[1]);
   CopInsSet32(&bplptr[4], screen[active]->planes[2]);
+
   active ^= 1;
 }
 
-EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, NULL);
+// For glitches
+static void VBlank(void) {
+  short i = 0;
+  short animFrame = TrackValueGet(&GlitchAnimFrame, frameCount);
+  short line = TrackValueGet(&GlitchHPos, frameCount);
+
+  CopInsT *ins = linecol[0];
+
+  // Please, let's make something other than 0 
+  // a default track value >_<
+  if (line != 0) {
+    hPos = line;
+  }
+  
+  for (i = 0; i < 31; i++) {
+    ins = linecol[hPos+i];
+    CopInsSet16(&ins[4], tears[animFrame][i]);
+  }
+} 
+
+
+EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, VBlank);

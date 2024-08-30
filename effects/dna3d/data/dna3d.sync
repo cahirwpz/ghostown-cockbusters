@@ -1,3 +1,17 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
 @event start $0c00
 @event end $1000
+
+@track GlitchAnimFrame
+$0c18 16 !trigger
+$0c38 16 !trigger
+$0d18 16 !trigger
+$0f14 16 !trigger
+@end
+
+@track GlitchHPos
+$0c18 100 !event
+$0c38 50 !event
+$0d18 140 !event
+$0f14 65 !event
+@end
