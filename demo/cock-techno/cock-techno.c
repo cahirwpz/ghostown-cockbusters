@@ -116,7 +116,7 @@ static void Init(void) {
   TimeWarp(cock_techno_start);
   TrackInit(&spritepos);
   TrackInit(&spriteno);
-  TrackInit(&gradientno);
+  TrackInit(&techno_gradientno);
 
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
@@ -341,7 +341,7 @@ static void VBlankHandler(void){
 
   // Swap copperlist and change palette
   {
-    u_short gno = TrackValueGet(&gradientno, frameCount);
+    u_short gno = TrackValueGet(&techno_gradientno, frameCount);
     if(oldgradientno != gno) {
       oldgradientno = gno;
       activecl ^= 1;

@@ -54,7 +54,7 @@ $0400    8    # polprog
 
 @end
 
-@track gradientno
+@track techno_gradientno
 $0000    0
 $0020    1
 $0100    2
