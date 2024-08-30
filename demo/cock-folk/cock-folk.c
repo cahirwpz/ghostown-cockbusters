@@ -6,6 +6,7 @@
 #include <line.h>
 #include <pixmap.h>
 #include <types.h>
+#include <sync.h>
 #include <system/memory.h>
 
 #define WIDTH 320
@@ -18,19 +19,38 @@ static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
+static __code short oldgradientno = 0;
 
 #include "data/cock_scene_1.c"
 #include "data/cock_scene_2.c"
 #include "data/cock-pal.c"
+#include "data/cock-pal2.c"
+#include "data/cock-pal3.c"
+#include "data/cock-pal4.c"
+#include "data/cock-pal5.c"
+#include "data/cock-pal6.c"
+#include "data/cock-pal7.c"
+#include "data/cock-pal8.c"
+#include "data/cock-pal9.c"
+#include "data/cock-pal10.c"
+#include "data/cock-pal11.c"
+#include "data/cock-folk.c"
+
+static const PixmapT *palettes[] = {
+  &gradient1, &gradient2, &gradient3, &gradient4,
+  &gradient5, &gradient6, &gradient7,
+  &gradient8, &gradient9, &gradient10,
+  &gradient11
+};
 
 /* Reading polygon data */
 static __code short current_frame = 0;
 
-static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * ((1 << DEPTH) + 1));
+static CopListT *MakeCopperList(CopListT *cp, short gno) {
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+
   {
-    short *pixels = gradient.pixels;
+    short *pixels = palettes[gno]->pixels;
     short i, j, k, n;
 
     for (i = 0; i < HEIGHT / 10; i++) {
@@ -46,10 +66,14 @@ static CopListT *MakeCopperList(void) {
       }
     }
   }
+
   return CopListFinish(cp);
 }
 
 static void Init(void) {
+  TimeWarp(cock_folk_start);
+  TrackInit(&gradientno);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
 
   EnableDMA(DMAF_BLITTER);
@@ -57,7 +81,8 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp = MakeCopperList();
+  cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp, 0);
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
 }
@@ -66,6 +91,7 @@ static void Kill(void) {
   BlitterStop();
   CopperStop();
   DeleteCopList(cp);
+
   DeleteBitmap(screen);
 }
 
@@ -226,10 +252,19 @@ static void Render(void) {
       CopInsSet32(&bplptr[n], screen->planes[i]);
     }
   }
+  {
+    u_short gno = TrackValueGet(&gradientno, frameCount);
+    if (oldgradientno != gno) {
+      oldgradientno = gno;
+      CopListReset(cp);
+      MakeCopperList(cp, gno);
+    }
 
-  TaskWaitVBlank();
-  active = mod16(active + 1, DEPTH + 1);
-  maybeSkipFrame = 1;
+    CopListRun(cp);
+    TaskWaitVBlank();
+    active = mod16(active + 1, DEPTH + 1);
+    maybeSkipFrame = 1;
+  }
 }
 
 EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);

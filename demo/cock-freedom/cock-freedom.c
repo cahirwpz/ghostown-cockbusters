@@ -6,6 +6,7 @@
 #include <line.h>
 #include <pixmap.h>
 #include <types.h>
+#include <sync.h>
 #include <system/memory.h>
 
 #define WIDTH 320
@@ -18,36 +19,69 @@ static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
+static __code short oldgradientno = 0;
 
 #include "data/cock_scene_4.c"
 #include "data/cock-pal.c"
+#include "data/cock-pal2.c"
+#include "data/cock-pal3.c"
+#include "data/cock-pal4.c"
+#include "data/cock-pal5.c"
+#include "data/cock-pal6.c"
+#include "data/cock-pal7.c"
+#include "data/cock-pal8.c"
+#include "data/cock-pal9.c"
+#include "data/cock-pal10.c"
+#include "data/cock-pal11.c"
+
+#include "data/cock-freedom.c"
+
+static const PixmapT *palettes[] = {
+  &gradient, &gradient2, &gradient3,
+  &gradient4,  &gradient5,  &gradient6,
+  &gradient7,  &gradient8,  &gradient9,
+  &gradient10,  &gradient11
+};
 
 /* Reading polygon data */
-static short current_frame = 0;
+static __code short current_frame = 0;
 
-static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1));
+static CopListT *MakeCopperList(CopListT *cp, short gno) {
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   {
-    short *pixels = gradient.pixels;
+    short *pixels = palettes[gno]->pixels;
     short i, j;
 
     for (i = 0; i < HEIGHT / 10; i++) {
+      u_short c;
+      u_short k, n;
+
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
-      for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
+
+      CopSetColor(cp, 0, 0);
+      for (j = 1, n = 1; j < 16; n += n) {
+        c = *pixels++;
+        for (k = 0; k < n; k++, j++)
+          CopSetColor(cp, j, c);
+      }
     }
   }
   return CopListFinish(cp);
 }
 
 static void Init(void) {
+  TimeWarp(cock_freedom_start);
+  TrackInit(&freedom_gradientno);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp = MakeCopperList();
+  cp = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp, 0);
+
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
 }
@@ -214,6 +248,17 @@ static void Render(void) {
     }
   }
 
+  {
+    u_short gno = TrackValueGet(&freedom_gradientno, frameCount);
+    if (oldgradientno != gno) {
+      oldgradientno = gno;
+      // We just need to regenerate the list starting w/ the first instruction
+      CopListReset(cp);
+      MakeCopperList(cp, gno);
+    }
+  }
+
+  CopListRun(cp);
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;

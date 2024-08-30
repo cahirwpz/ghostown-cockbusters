@@ -6,57 +6,140 @@
 #include <line.h>
 #include <pixmap.h>
 #include <types.h>
+#include <sprite.h>
+#include <sync.h>
+#include <palette.h>
 #include <system/memory.h>
 
 #define WIDTH 320
 #define HEIGHT 180
 #define YOFF ((256 - HEIGHT) / 2)
 #define DEPTH 4
+#define NSPRITE 3
 
 static __code BitmapT *screen;
 static __code CopInsPairT *bplptr;
 static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
+static __code SprDataT *sprdat;
 
 #include "data/cock_scene_3.c"
 #include "data/cock-pal.c"
+#include "data/cock-pal2.c"
+#include "data/cock-pal3.c"
+#include "data/cock-pal4.c"
+#include "data/cock-pal5.c"
+#include "data/cock-pal6.c"
+#include "data/cock-pal7.c"
+#include "data/cock-pal8.c"
+#include "data/cock-pal9.c"
+#include "data/cock-pal10.c"
+#include "data/cock-pal11.c"
 
+#include "data/cock-techno.c"
+
+#include "data/cahir.c"
+#include "data/codi.c"
+#include "data/jazzcat.c"
+#include "data/polprog.c"
+#include "data/slayer.c"
+#include "data/slizgi.c"
+#include "data/spook.c"
+#include "data/yumi.c"
+#include "data/zuko.c"
+
+
+static const PixmapT *palettes[] = {
+  &gradient11, &gradient10, &gradient9,
+  &gradient8,  &gradient7,  &gradient6,
+  &gradient5,  &gradient4,  &gradient3,
+  &gradient2,  &gradient1
+};
+
+static SpriteT *halloffame[] = {
+  cahir, slayer, jazzcat, slizgi, codi,
+  spook, zuko,   yumi,    polprog
+};
+
+
+static __code SpriteT *active_sprite;
+static __code short *active_pal;
 /* Reading polygon data */
-static short current_frame = 0;
+static __code short current_frame = 0;
+static __code CopInsT *colors;
+static __code CopInsPairT *sprmoves;
+static __code short oldgradientno = 0;
+static __code short oldspriteno   = 0;
 
-static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient.height * (gradient.width + 1));
+
+static CopListT *MakeCopperList(CopListT *cp, short gno) {
+  CopInsPairT *sprptr = CopSetupSprites(cp);
+  sprmoves = sprptr;
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+
   {
-    short *pixels = gradient.pixels;
+    short *pixels = palettes[gno]->pixels;
     short i, j;
 
+    for(i = 0; i < 8; i++) {
+      CopInsSetSprite(&sprptr[i], &active_sprite[i]);
+    }
+    colors = CopSetColor(cp, 16, 0xdead);
+    for(i = 1; i < 16; i++) {
+      CopSetColor(cp, i+16, 0xdead);
+    }
+
     for (i = 0; i < HEIGHT / 10; i++) {
+      u_short c;
+      u_short k, n;
+
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
-      for (j = 0; j < 16; j++) CopSetColor(cp, j, *pixels++);
+
+      CopSetColor(cp, 0, 0);
+      for (j = 1, n = 1; j < 16; n += n) {
+        c = *pixels++;
+        for (k = 0; k < n; k++, j++)
+          CopSetColor(cp, j, c);
+      }
     }
   }
+
   return CopListFinish(cp);
 }
 
 static void Init(void) {
+  TimeWarp(cock_techno_start);
+  TrackInit(&spritepos);
+  TrackInit(&spriteno);
+  TrackInit(&techno_gradientno);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp = MakeCopperList();
+
+  active_sprite = cahir;
+  active_pal = cahir_colors;
+  cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp, 0);
+
   CopListActivate(cp);
-  EnableDMA(DMAF_RASTER);
+
+  EnableDMA(DMAF_SPRITE | DMAF_RASTER);
 }
 
 static void Kill(void) {
   BlitterStop();
   CopperStop();
   DeleteCopList(cp);
+
   DeleteBitmap(screen);
+  MemFree(sprdat);
+  DisableDMA(DMAF_SPRITE);
+
 }
 
 static inline void DrawEdge(short *coords, void *dst,
@@ -204,6 +287,7 @@ static void Render(void) {
   }
   ProfilerStop(AnimRender);
 
+  // chicken afterglow
   {
     short n = DEPTH;
 
@@ -214,9 +298,49 @@ static void Render(void) {
     }
   }
 
+  // overwrite active copperlist positions to move sprites
+  // would be nice to have this in the same place as MakeCopperList but its
+  // not 1:1
+  {
+    short i = 0;
+    for (i = 0; i < 16; i++) {
+      CopInsSet16( &colors[i], active_pal[i&3]);
+    }
+    for (i = 0; i < 8; i++) {
+      short y = TrackValueGet(&spritepos, frameCount);
+      CopInsSet32(&sprmoves[i], active_sprite[i].sprdat);
+      SpriteUpdatePos(&active_sprite[i], X(0x10 + i*0x10), Y(y));
+    }
+  }
+
+  // Swap copperlist and change palette
+  {
+    u_short gno = TrackValueGet(&techno_gradientno, frameCount);
+
+    if (oldgradientno != gno) {
+      oldgradientno = gno;
+      // this is not a leak as fas as I can tell
+      // since the length is not changed. We just need
+      // to regenerate the list starting w/ the first instruction
+      CopListReset(cp);
+      MakeCopperList(cp, gno);
+    }
+  }
+
+  // Change active sprite
+  {
+    u_short sno = TrackValueGet(&spriteno, frameCount);
+    if (oldspriteno != sno) {
+      oldspriteno = sno;
+      active_sprite = halloffame[sno];
+    }
+  }
+  CopListRun(cp);
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
 }
+
+
 
 EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, NULL);
