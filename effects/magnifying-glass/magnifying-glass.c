@@ -558,7 +558,12 @@ static void Render(void) {
   short xo, yo;
 
   {
-    short *frame = ball_anim[(frameCount - magnifying_glass_start) % ball_anim_frames];
+    short *frame;
+    short pos = (frameCount - magnifying_glass_start);
+    if (pos >= ball_anim_frames) {
+      pos = ball_anim_frames - 1;
+    }
+    frame = ball_anim[pos];
     xo = S_WIDTH - *frame++ - WIDTH;
     yo = *frame++;
   }
