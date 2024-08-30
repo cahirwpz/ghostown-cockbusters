@@ -26,9 +26,9 @@ static __code CopListT *cp;
 #include "data/ball.c"
 
 #define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
-void (*UVMapRender)(u_char *chunky asm("a0"),
-                    u_char *textureHi asm("a1"),
-                    u_char *textureLo asm("a2"));
+static __code void (*UVMapRender)(u_char *chunky asm("a0"),
+                                  u_char *textureHi asm("a1"),
+                                  u_char *textureLo asm("a2"));
 
 static void ChunkyToPlanar(PixmapT *input, BitmapT *output);
 

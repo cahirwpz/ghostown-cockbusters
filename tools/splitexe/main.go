@@ -71,6 +71,7 @@ func splitExe(hunks []hunk.Hunk) []*Loadable {
 }
 
 func writeExe(exeName string, l *Loadable) {
+	println(exeName)
 	println(l.Hunks[0].String())
 
 	for _, h := range l.Hunks {

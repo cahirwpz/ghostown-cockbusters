@@ -49,22 +49,22 @@ typedef enum phase {
 
 
 static const __data  BitmapT *ufo[6] = {&ufo0, &ufo1, &ufo2, &ufo3, &ufo4, &ufo5};
-static BitmapT *screen[2];
-static CopInsPairT *bplptr;
-static CopInsPairT *sprptr;
-static CopInsT *ring_pal;
-static CopListT *cp;
-static short active = 0;
+static __code BitmapT *screen[2];
+static __code CopInsPairT *bplptr;
+static __code CopInsPairT *sprptr;
+static __code CopInsT *ring_pal;
+static __code CopListT *cp;
+static __code short active = 0;
 
-static phaseE phase = FADEIN;
+static __code phaseE phase = FADEIN;
 
-static short ufo_idx = 0;
-static short ufo_pos = 25;
-static short cock_pos = 255-24;
-static short cock_speed = 2;
-static short beam_pos[2] = {X(137), X(167)};
+static __code short ufo_idx = 0;
+static __code short ufo_pos = 25;
+static __code short cock_pos = 255-24;
+static __code short cock_speed = 2;
+static __code short beam_pos[2] = {X(137), X(167)};
 
-static short active_pal = 0;
+static __code short active_pal = 0;
 static short beam_pal[4][7] = {
   {0xCEF, 0xCEF, 0xCEF, 0xF0F, 0x2AD, 0x079, 0x046},
   {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},

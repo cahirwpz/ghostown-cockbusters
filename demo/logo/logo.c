@@ -5,7 +5,7 @@
 
 #include "data/logo.c"
 
-static CopListT *cp;
+static __code CopListT *cp;
 
 static void Init(void) {
   SetupPlayfield(MODE_LORES, logo_depth, X(0), Y(0), logo_width, logo_height);
