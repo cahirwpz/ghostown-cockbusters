@@ -16,14 +16,14 @@ PNG2C.cock-pal10 := --pixmap gradient10,4x18x12
 PNG2C.cock-pal11 := --pixmap gradient11,4x18x12
 
 PNG2C.cahir   := --sprite cahir,32,8    --palette cahir,4
-PNG2C.codi    := --sprite codi,32,8     #--palette codi,4
-PNG2C.jazzcat := --sprite jazzcat,32,8  #--palette jazzcat,4
-PNG2C.polprog := --sprite polprog,32,8  #--palette polprog,4
-PNG2C.slayer  := --sprite slayer,32,8   #--palette slayer,4
-PNG2C.slizgi  := --sprite slizgi,32,8   #--palette slizgi,4
-PNG2C.spook   := --sprite spook,32,8    #--palette spook,4
-PNG2C.yumi    := --sprite yumi,32,8     #--palette yumi,4
-PNG2C.zuko    := --sprite zuko,32,8     #--palette zuko,4
+PNG2C.codi    := --sprite codi,32,8
+PNG2C.jazzcat := --sprite jazzcat,32,8
+PNG2C.polprog := --sprite polprog,32,8
+PNG2C.slayer  := --sprite slayer,32,8
+PNG2C.slizgi  := --sprite slizgi,32,8
+PNG2C.spook   := --sprite spook,32,8
+PNG2C.yumi    := --sprite yumi,32,8
+PNG2C.zuko    := --sprite zuko,32,8
 
 
 

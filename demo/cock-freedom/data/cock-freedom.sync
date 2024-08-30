@@ -1,0 +1,19 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start   $1C00
+
+
+@track freedom_gradientno
+# Warning: if you set the first gradient here
+# Change the oldgradientno variable in .c, or it CopListFinish will panic.
+$1C00    10    # blue-cold
+$1C08    9
+$1C10    8
+$1C18    7
+$1C20    6
+$1C28    5
+$1C30    4
+$1C38    3
+$1D00    2
+$1D08    1
+$1D10    0    # orange-warm
+@end

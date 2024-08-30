@@ -1,6 +1,6 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
 @event start   $1C00
-
+@event end     $2000
 
 
 @track spriteno !value
@@ -60,7 +60,7 @@ $1E2F    220
 @track techno_gradientno
 # Warning: if you set the first gradient here
 # Change the oldgradientno variable in .c, or it CopListFinish will panic.
-$1C00    10    # blue-cold
+$1C00    0    # blue-cold
 $1C10    1
 $1C20    2
 $1C30    3

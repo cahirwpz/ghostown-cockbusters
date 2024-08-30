@@ -6,7 +6,9 @@
 #include <line.h>
 #include <pixmap.h>
 #include <types.h>
+#include <sync.h>
 #include <system/memory.h>
+
 
 #define WIDTH 320
 #define HEIGHT 180
@@ -14,22 +16,43 @@
 #define DEPTH 4
 
 static __code BitmapT *screen;
-static __code CopInsPairT *bplptr;
-static __code CopListT *cp;
+static __code CopInsPairT *bplptr[2];
+static __code CopListT *cp[2];
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
+static __code short activecl = 0;
+static __code short oldgradientno = 0;
 
 #include "data/cock_scene_4.c"
 #include "data/cock-pal.c"
+#include "data/cock-pal2.c"
+#include "data/cock-pal3.c"
+#include "data/cock-pal4.c"
+#include "data/cock-pal5.c"
+#include "data/cock-pal6.c"
+#include "data/cock-pal7.c"
+#include "data/cock-pal8.c"
+#include "data/cock-pal9.c"
+#include "data/cock-pal10.c"
+#include "data/cock-pal11.c"
+
+#include "data/cock-freedom.c"
+
+static const PixmapT *palettes[] = {
+  &gradient, &gradient2, &gradient3,
+  &gradient4,  &gradient5,  &gradient6,
+  &gradient7,  &gradient8,  &gradient9,
+  &gradient10,  &gradient11
+};
+
 
 /* Reading polygon data */
 static short current_frame = 0;
 
-static CopListT *MakeCopperList(void) {
-  CopListT *cp = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
-  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+static CopListT *MakeCopperList(CopListT *cp, short gno, short act) {
+  bplptr[act] = CopSetupBitplanes(cp, screen, DEPTH);
   {
-    short *pixels = gradient.pixels;
+    short *pixels = palettes[gno]->pixels;
     short i, j;
 
     for (i = 0; i < HEIGHT / 10; i++) {
@@ -50,21 +73,29 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
+  TimeWarp(cock_freedom_start);
+  TrackInit(&freedom_gradientno);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp = MakeCopperList();
-  CopListActivate(cp);
+  cp[0] = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp[0], 0, 0);
+  cp[1] = NewCopList(100 + gradient_height * ((1 << DEPTH) + 1));
+  MakeCopperList(cp[1], 0, 1);
+
+  CopListActivate(cp[0]);
   EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
   BlitterStop();
   CopperStop();
-  DeleteCopList(cp);
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
   DeleteBitmap(screen);
 }
 
@@ -72,7 +103,7 @@ static inline void DrawEdge(short *coords, void *dst,
                             CustomPtrT custom_ asm("a6")) {
   /* XXX awful hack to find some unused chip memory to write first pixel to!
    * This avoids creating small memory allocation. */
-  short *tmp = (short *)cp->curr;
+  short *tmp = (short *)cp[activecl]->curr;
 
   short bltcon0, bltcon1, bltsize, bltbmod, bltamod;
   short dmin, dmax, derr, offset;
@@ -219,9 +250,27 @@ static void Render(void) {
     while (--n >= 0) {
       short i = mod16(active + n + 1 - DEPTH, DEPTH + 1);
       if (i < 0) i += DEPTH + 1;
-      CopInsSet32(&bplptr[n], screen->planes[i]);
+      CopInsSet32(&bplptr[activecl][n], screen->planes[i]);
     }
   }
+
+  {
+    u_short gno = TrackValueGet(&freedom_gradientno, frameCount);
+    if(oldgradientno != gno) {
+      oldgradientno = gno;
+      activecl ^= 1;
+      // this is not a leak as fas as I can tell
+      // since the length is not changed. We just need
+      // to regenerate the list starting w/ the first instruction
+      Log("CL swap prepare. gno=%d activecl=%d\n", gno, activecl);
+
+      cp[activecl]->curr = cp[activecl]->entry;
+      MakeCopperList(cp[activecl], gno, activecl);
+      
+      Log("CL swap done gno=%d activecl=%d\n", gno, activecl);
+    }
+  }
+  custom->cop1lc = (u_int)cp[activecl]->entry;
 
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
