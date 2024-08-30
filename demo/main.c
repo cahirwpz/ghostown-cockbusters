@@ -9,8 +9,6 @@
 #include <system/amigahunk.h>
 #include <system/file.h>
 
-#include "demo.h"
-
 #define _SYSTEM
 #include <system/boot.h>
 #include <system/cia.h>
