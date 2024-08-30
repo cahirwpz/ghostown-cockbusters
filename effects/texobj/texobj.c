@@ -1,5 +1,5 @@
-#include "custom.h"
 #include <effect.h>
+#include <color.h>
 #include <blitter.h>
 #include <copper.h>
 #include <fx.h>
@@ -600,6 +600,18 @@ static void Kill(void) {
   UnLoad();
 }
 
+static void VBlank(void) {
+  short t = ReadFrameCount();
+
+  if (t < texobj_start + 16) {
+    FadeBlack(texture_colors, nitems(texture_colors), 0,  t - texobj_start);
+  }
+
+  if (t >= texobj_start + texobj_end - 16) {
+    FadeBlack(texture_colors, nitems(texture_colors), 0, texobj_start + texobj_end - t);
+  }
+}
+
 PROFILE(UpdateGeometry);
 PROFILE(DrawObject);
 
@@ -643,4 +655,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(TexTri, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(TexTri, NULL, NULL, Init, Kill, Render, VBlank);
