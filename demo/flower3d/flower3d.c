@@ -12,7 +12,7 @@
 static __code Object3D *object;
 static __code CopListT *cp;
 static __code CopInsPairT *bplptr;
-static __code CopInsT *colptr;
+static __code CopInsT *colptr[HEIGHT];
 static __code BitmapT *screen[2];
 static __code BitmapT *buffer;
 static __code int active = 0;
@@ -64,15 +64,15 @@ static CopListT *MakeCopperList(void) {
 
   {
     u_short *data = bg_pixels[active_bg];
+    short k = IsAGA() ? 8 : 0;
     short i;
 
-    colptr = CopWait(cp, Y(-1), 0);
     for (i = 0; i < bg_3_height; i++) {
-      CopWait(cp, Y(i), 0); 
-      CopMove16(cp, color[0], *data++); 
-      CopMove16(cp, color[9], *data++); 
-      CopMove16(cp, color[10], *data++); 
-      CopMove16(cp, color[11], *data++); 
+      CopWaitSafe(cp, Y(i), 0);
+      colptr[i] = CopMove16(cp, color[0], *data++);
+      CopMove16(cp, color[9+k], *data++);
+      CopMove16(cp, color[10+k], *data++);
+      CopMove16(cp, color[11+k], *data++);
     } 
   }
 
@@ -108,7 +108,9 @@ static void Init(void) {
   LoadColors(pal_gray_colors, 0);
  
   /* reverse playfield priorities */
-  custom->bplcon2 = 0;
+  custom->bplcon2 = BPLCON2_PF2PRI;
+  /* AGA fix */
+  custom->bplcon3 = BPLCON3_PF2OF0;
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -469,10 +471,39 @@ static void BitmapClearFast(BitmapT *dst) {
   custom->bltsize = bltsize;
 }
 
+static void UpdatePalette(void) {
+  short val = TrackValueGet(&BgChange, frameCount);
+
+  if (val != 0 && val != active_bg) {
+    active_bg = val;
+    if (active_bg == 2) {
+      LoadColors(pattern_2_colors, 4);
+      LoadColors(pattern_2_colors, 0);
+    } else if (active_bg == 3) {
+      LoadColors(pattern_1_colors, 4);
+      LoadColors(pattern_2_colors, 0);
+    }
+
+    {
+      u_short *data = bg_pixels[active_bg];
+      short i;
+
+      for (i = 0; i < bg_3_height; i++) {
+        CopInsT *ins = colptr[i];
+        CopInsSet16(ins++, *data++);
+        CopInsSet16(ins++, *data++);
+        CopInsSet16(ins++, *data++);
+        CopInsSet16(ins++, *data++);
+      }
+    }
+  }
+}
+
 PROFILE(Transform);
 PROFILE(Draw);
 
 static void Render(void) {
+  UpdatePalette();
   BitmapClearFast(screen[active]);
 
   {
@@ -510,31 +541,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-static void VBlank(void) {
-  short val = TrackValueGet(&BgChange, frameCount);
-
-  if (val != 0 && val != active_bg) {
-    active_bg = val;
-    if (active_bg == 2) {
-      LoadColors(pattern_2_colors, 4);
-      LoadColors(pattern_2_colors, 0);
-    } else if (active_bg == 3) {
-      LoadColors(pattern_1_colors, 4);
-      LoadColors(pattern_2_colors, 0);
-    }
-
-    {
-      u_short *data = bg_pixels[active_bg];
-      short i;
-
-      for (i = 0; i < bg_3_height; i++) {
-        CopInsSet16(&colptr[(i*5) + 2], *data++);
-        CopInsSet16(&colptr[(i*5) + 3], *data++);
-        CopInsSet16(&colptr[(i*5) + 4], *data++);
-        CopInsSet16(&colptr[(i*5) + 5], *data++);
-      }
-    }
-  }
-}
-
-EFFECT(Flower3D, NULL, NULL, Init, Kill, Render, VBlank);
+EFFECT(Flower3D, NULL, NULL, Init, Kill, Render, NULL);

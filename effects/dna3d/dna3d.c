@@ -177,6 +177,7 @@ static CopListT *MakeCopperList(void) {
 
   {
     u_short *pf1_data = bobs_cols_pixels;
+    short k = IsAGA() ? 8 : 0;
     short i;
 
     for (i = 0; i < necrocoq_height; i++) {
@@ -197,9 +198,9 @@ static CopListT *MakeCopperList(void) {
 
       CopWaitSafe(cp, Y(i), 0);
       linecol[i] = CopMove16(cp, color[0], 0x000);
-      CopMove16(cp, color[9], 0x000);
-      CopMove16(cp, color[10], 0x000);
-      CopMove16(cp, color[11], 0x000);
+      CopMove16(cp, color[9+k], 0x000);
+      CopMove16(cp, color[10+k], 0x000);
+      CopMove16(cp, color[11+k], 0x000);
       CopMove16(cp, bplcon1, NULL);
     }
   }
@@ -229,6 +230,8 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
+  /* AGA fix */
+  custom->bplcon3 = BPLCON3_PF2OF0;
 
   /* bitplane modulos for both playfields */
   custom->bpl2mod = WIDTH / 8 * (necrocoq_depth - 1);
