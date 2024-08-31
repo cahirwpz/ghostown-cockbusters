@@ -68,16 +68,32 @@ static __code short *active_pal;
 /* Reading polygon data */
 static __code short current_frame = 0;
 static __code CopInsT *colors;
+static __code CopInsT *lineptr[HEIGHT/10];
 static __code CopInsPairT *sprmoves;
 static __code short oldgradientno = 0;
 static __code short oldspriteno   = 0;
+
+static void UpdateGradient(short gno) {
+  short *pixels = palettes[gno]->pixels;
+  short i, j, k, n;
+
+  for (i = 0; i < HEIGHT / 10; i++) {
+    CopInsT *ins = lineptr[i];
+
+    CopInsSet16(ins++, 0);
+    for (j = 1, n = 1; j < 16; n += n) {
+      u_short c = *pixels++;
+      for (k = 0; k < n; k++, j++)
+        CopInsSet16(ins++, c);
+    }
+  }
+}
 
 
 static CopListT *MakeCopperList(CopListT *cp, short gno) {
   CopInsPairT *sprptr = CopSetupSprites(cp);
   sprmoves = sprptr;
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
-
   {
     short *pixels = palettes[gno]->pixels;
     short i, j;
@@ -96,7 +112,7 @@ static CopListT *MakeCopperList(CopListT *cp, short gno) {
 
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
 
-      CopSetColor(cp, 0, 0);
+      lineptr[i] = CopSetColor(cp, 0, 0);
       for (j = 1, n = 1; j < 16; n += n) {
         c = *pixels++;
         for (k = 0; k < n; k++, j++)
@@ -298,6 +314,7 @@ static void Render(void) {
     }
   }
 
+
   // overwrite active copperlist positions to move sprites
   // would be nice to have this in the same place as MakeCopperList but its
   // not 1:1
@@ -322,8 +339,7 @@ static void Render(void) {
       // this is not a leak as fas as I can tell
       // since the length is not changed. We just need
       // to regenerate the list starting w/ the first instruction
-      CopListReset(cp);
-      MakeCopperList(cp, gno);
+      UpdateGradient(gno);
     }
   }
 
@@ -335,7 +351,6 @@ static void Render(void) {
       active_sprite = halloffame[sno];
     }
   }
-  CopListRun(cp);
   TaskWaitVBlank();
   active = mod16(active + 1, DEPTH + 1);
   maybeSkipFrame = 1;
