@@ -80,14 +80,15 @@ static void Init(void) {
   CopListFinish(cp);
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 
 }
 
 static void Kill(void) {
+  BlitterStop();
   CopperStop();
-  DeleteCopList(cp);
+  ResetSprites();
 
+  DeleteCopList(cp);
   DeleteBitmap(screen);
 
   PtEnd();

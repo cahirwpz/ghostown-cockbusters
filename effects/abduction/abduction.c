@@ -435,12 +435,11 @@ static void Init(void) {
 static void Kill(void) {
   CopperStop();
   BlitterStop();
+  ResetSprites();
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-  ITER(i, 0, 31, SetColor(i, 0x000));
-  ResetSprites();
 }
 
 PROFILE(Abduction);

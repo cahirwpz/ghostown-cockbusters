@@ -134,12 +134,12 @@ static void Init(void) {
 static void Kill(void) {
   BlitterStop();
   CopperStop();
+  ResetSprites();
+
   DeleteCopList(cp);
 
   DeleteBitmap(screen);
   MemFree(sprdat);
-  DisableDMA(DMAF_SPRITE);
-
 }
 
 static inline void DrawEdge(short *coords, void *dst,
