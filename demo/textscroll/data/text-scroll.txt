@@ -1,63 +1,83 @@
-                              ELECTRIC LIFEFORMS
+                                  COCKBUSTERS
                                       BY
                                    GHOSTOWN
 
 
-                            AMIGA 500 OCS 64K INTRO
-                           RELEASED AT REVISION 2023
+                             AMIGA 500 OCS TRACKMO
+                            RELEASED AT XENIUM 2024
                                             
                                   MAIN CODING:
                                      CAHIR
 
                                     CODING:
-                                  KRIS + SPOOK
+                              CODI, POLPROG, ZUKO
 
                                ADDITIONAL CODING:
-                                 TYGRYS + CODI
+                                     SPOOK
 
-                               GLITCHY PIXELLER:
+                                PIXEL DIRECTOR:
                                     SLAYER
 
-                             ADDITIONAL GRAPHICS:
+                              ADDITIONAL GRAPHICS:
                                      YUMI
 
-                             AMIGA KLANG SCIENTIST:
-                                    VIRGILL
+                               BLENDER MAGICIANS:
+                                 SLIZGI & CODI
 
-                                  TUBA ABUSE:
-                                    JAZZCAT
+                                  BANJO MAN:
+                                   JAZZCAT
 
                                    TOOLING:
                              PTPLAYER BY FRANK WILLE
-                        SHRINKLER BY BLUEBERRY / LOONIES
-               CELLULAR AUTOMATON RULES TO BLITS BY PIOTR POLESIUK
+                          ZX0 & LZSA BY EMMANUEL MARTY
+
+            SPECIAL THANKS TO CARRION FOR SHARING HIS COPPER SECRETS!
 
 
-                      LET'S GO BACK TO OUR GREETINGS LIST
+                                  GREETINGS
 
-   FLEX                       FLOPPY      FOCUS DESIGN              FUTURIS
-   HAUJOBB                    INSANE      JOKER                      LAMERS
-   LEMON                     LOONIES      MAWI                MOODS PLATEAU    
-   NAH-KOLOR              RESISTANCE      RNO                        SKARLA
-   SPACEBALLS              SPECCY.PL      OXYRON                   TRACTION
-   TULOU TEK                 UN AMOR      UNIQUE                   UP ROUGH
-   VOID                       Y-CREW      WHELPZ                    ZYMOSIS
+   BINARY                      BOOM!      NAH-KOLOR                 NUKLEUS
+   COSMIC ORBS             CRAP TEAM      ONSLAUGHT                     RNO
+   DESIRE                  EPHIDRENA      SKARLA                 SPACEBALLS     
+   FLEX                       FLOPPY      SPECCY.PL                  OXYRON
+   FOCUS DESIGN              FUTURIS      TRACTION                    TULOU
+   HAUJOBB                    INSANE      TEK                          TRSI
+   JOKER TEAM                 LAMERS      UN AMOR                    UNIQUE
+   LEMON.                    LOONIES      UP ROUGH                     VOID
+   MAWI                MOODS PLATEAU      Y-CREW                    ZYMOSIS
 
 
                              CAHIR ON THE KEYBOARD
 
-   THE WORK ON INTRO BEGUN ALMOST 1,5 YEARS AGO AS A TEACHING EXPERIMENT.
- THANKS TO COURTESY OF COMPUTER SCIENCE DEPARTMENT / UNIVERSITY OF WROCLAW
-  I GAVE A COURSE IN AMIGA DEMOSCENE PROGRAMMING. A FEW FOLKS HAS ATTENDED
-      AND TO MY SURPRISE THREE WERE INTERESTED IN LONG-TERM COOPERATION.
-  AS THE RESULT GHOSTOWN GAINED NEW MEMBERS - AND MORE IMPORTANTLY - CODERS!
- THIS PRODUCTION IS THEIR FIRST RELEASE ON DEMOSCENE. WELCOME SPOOK AND KRIS!
+I'M STILL SURPRISED THAT THIS DEMO WORKS AT ALL. ONLY A WEEK BEFORE THE PARTY
+I MANAGED TO FIX ALL REMAINING BUGS IN THE SMALL OPERATING SYSTEM THAT RUNS 
+THIS TRACKMO. THERE ARE TWO IMPORTANT THREADS. BOTH RUN CONCURRENTLY SO THE NEW
+EFFECT IS BEING LOADED INTO MEMORY, DECOMPRESSED AND RELOCATED, WHILE THE MAIN 
+THREAD RENDERS THE PREVIOUS EFFECT.
 
-YOU WANT NEW PEOPLE CONTRIBUTE TO THE DEMOSCENE? THEN TEACH THEM HOW TO DO SO!
+WE HAVEN'T MADE FULL USE OF THIS "TECHNOLOGY" - SO EXPECT MORE TO FOLLOW ;)
+SIGNIFICANT ENHANCEMENTS WERE MADE IN MY 3D RENDERING CODE, AGAIN WITH SOME
+ROOM FOR IMPROVEMENT. THANKS TO CARRION WE STARTED USING COLORFUL 2-BITPLANE
+IMAGES THAT MADE OUR BACKGROUNDS WAY MORE INTERESTING.
 
-AND LAST BUT NOT LEAST, THANK YOU ALICE FOR YOUR SUPPORT DURING THIS JOURNEY <3
+            ALL IN ALL OUR INITIAL EXPECTATIONS WERE GREATLY EXCEEDED.
+                   WE ARE TRULY PROUD OF THIS TRACKMO. ENJOY!
+
+                AS ALWAYS, I SEND LOTS OF HUGS & KISSES TO ALICE,
+       FOR HER SUPPORT THROUGHOUT WHOLE DEMO-MAKING PROCESS. THANK YOU <3
 
 
-                       JAZZCAT & SLAYER ON THE KEYBOARD
+                      JAZZCAT & SLAYER ON THE KEYBOARD
 
-                    SEE YOU AT HEX PISTONS 2 THIS SUMMER!
+       WE'D LIKE TO WELCOME OUR NEW MEMBERS: POLPROG, ZUKO,  AND SLIZGI!
+                            YOU ARE ALL AWESOME!! 
+
+             AND REMEMBER - THE EARTH IS FLAT, BECAUSE YOU ARE FAT!
+
+                SEE YOU ALL AT BOOM PARTY IN TUCHOLA NEXT YEAR. 
+
+
+                    A FEW WORDS FROM POLPROG, SPOOK & YUMI
+
+                FAREWELL AOJIRU, YOU LEFT THE PARTY WAY TOO SOON.
+                            WE MISS YOU EVERY DAY. 
