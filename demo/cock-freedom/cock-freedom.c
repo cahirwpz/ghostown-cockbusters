@@ -78,13 +78,10 @@ static void UpdateGradient(short gno) {
 
   for (i = 0; i < HEIGHT / 10; i++) {
     CopInsT *ins = lineptr[i];
-    u_short c;
-
-    CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
 
     CopInsSet16(ins++, 0);
     for (j = 1, n = 1; j < 16; n += n) {
-      c = *pixels++;
+      u_short c = *pixels++;
       for (k = 0; k < n; k++, j++)
         CopInsSet16(ins++, c);
     }
