@@ -349,7 +349,6 @@ static void Render(void) {
     if (oldspriteno != sno) {
       oldspriteno = sno;
       active_sprite = halloffame[sno];
-      Log("sprite updated sno=%d\n", sno);
     }
   }
   TaskWaitVBlank();
