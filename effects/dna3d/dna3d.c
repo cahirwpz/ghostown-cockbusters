@@ -151,13 +151,20 @@ static short envelope2[envelope_length-8] = {
   1, 1,
 };
 
+static void BitmapClearI(BitmapT *bm) {
+  WaitBlitter();
+
+  custom->bltadat = 0;
+  custom->bltcon0 = DEST | A_TO_D;
+  custom->bltcon1 = 0;
+  custom->bltdmod = 0;
+  custom->bltdpt = bm->planes[0];
+  custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
+}
+
 static CopListT *MakeCopperList(void) {
   CopListT *cp = 
     NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
-
-  /* bitplane modulos for both playfields */
-  CopMove16(cp, bpl2mod, WIDTH / 8 * (necrocoq_depth - 1));
-  CopMove16(cp, bpl1mod, WIDTH / 8 * (DEPTH - 1));
 
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
@@ -170,7 +177,6 @@ static CopListT *MakeCopperList(void) {
 
   {
     u_short *pf1_data = bobs_cols_pixels;
-    u_short *pf2_data = necrocoq_00_cols_pixels;
     short i;
 
     for (i = 0; i < necrocoq_height; i++) {
@@ -190,10 +196,10 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, color[7], fgcol);
 
       CopWaitSafe(cp, Y(i), 0);
-      linecol[i] = CopMove16(cp, color[0], *pf2_data++);
-      CopMove16(cp, color[9], *pf2_data++);
-      CopMove16(cp, color[10], *pf2_data++);
-      CopMove16(cp, color[11], *pf2_data++);
+      linecol[i] = CopMove16(cp, color[0], 0x000);
+      CopMove16(cp, color[9], 0x000);
+      CopMove16(cp, color[10], 0x000);
+      CopMove16(cp, color[11], 0x000);
       CopMove16(cp, bplcon1, NULL);
     }
   }
@@ -212,8 +218,8 @@ static void Init(void) {
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-  BitmapClear(screen[0]);
-  BitmapClear(screen[1]);
+  BitmapClearI(screen[0]);
+  BitmapClearI(screen[1]);
   WaitBlitter();
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
@@ -223,6 +229,10 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
+
+  /* bitplane modulos for both playfields */
+  custom->bpl2mod = WIDTH / 8 * (necrocoq_depth - 1);
+  custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -574,17 +584,6 @@ static void DrawLinks(Object3D *object, void *dst,
   } while (*group);
 }
 
-static void BitmapClearI(BitmapT *bm) {
-  WaitBlitter();
-
-  custom->bltadat = 0;
-  custom->bltcon0 = DEST | A_TO_D;
-  custom->bltcon1 = 0;
-  custom->bltdmod = 0;
-  custom->bltdpt = bm->planes[0];
-  custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
-}
-
 static void SetBackgroundColor(short color) {
   CopInsT **lineptr = linecol;
   short i;
@@ -656,11 +655,12 @@ PROFILE(TransformObject);
 PROFILE(DrawObject);
 
 static void Render(void) {
-  static bool show_cock = true;
-  static bool new_bobs = false;
-  static short mod = 0;
-  static bool aux = true;
-  static bool idx = 20;
+  static __code bool show_cock = true;
+  static __code bool new_bobs = false;
+  static __code short mod = 0;
+  static __code bool aux = true;
+  static __code bool idx = 20;
+
   BitmapClearI(screen[active]);
 
   if (frameCount < dna3d_start + (dna3d_end / 6)) {
