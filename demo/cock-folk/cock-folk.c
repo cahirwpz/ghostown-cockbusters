@@ -20,6 +20,7 @@ static __code CopListT *cp;
 static __code short active = 0;
 static __code short maybeSkipFrame = 0;
 static __code short oldgradientno = 0;
+static __code CopInsT *lineptr[HEIGHT/10];
 
 #include "data/cock_scene_1.c"
 #include "data/cock_scene_2.c"
@@ -46,7 +47,8 @@ static const PixmapT *palettes[] = {
 /* Reading polygon data */
 static __code short current_frame = 0;
 
-static CopListT *MakeCopperList(CopListT *cp, short gno) {
+static CopListT *MakeCopperList(short gno) {
+  CopListT *cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
 
   {
@@ -58,7 +60,7 @@ static CopListT *MakeCopperList(CopListT *cp, short gno) {
 
       CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
 
-      CopSetColor(cp, 0, 0);
+      lineptr[i] = CopSetColor(cp, 0, 0);
       for (j = 1, n = 1; j < 16; n += n) {
         c = *pixels++;
         for (k = 0; k < n; k++, j++)
@@ -68,6 +70,25 @@ static CopListT *MakeCopperList(CopListT *cp, short gno) {
   }
 
   return CopListFinish(cp);
+}
+
+static void UpdateGradient(short gno) {
+  short *pixels = palettes[gno]->pixels;
+  short i, j, k, n;
+
+  for (i = 0; i < HEIGHT / 10; i++) {
+    CopInsT *ins = lineptr[i];
+    u_short c;
+
+    CopWait(cp, Y(YOFF + i * 10 - 1), 0xde);
+
+    CopInsSet16(ins++, 0);
+    for (j = 1, n = 1; j < 16; n += n) {
+      c = *pixels++;
+      for (k = 0; k < n; k++, j++)
+        CopInsSet16(ins++, c);
+    }
+  }
 }
 
 static void Init(void) {
@@ -81,8 +102,7 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(YOFF), WIDTH, HEIGHT);
-  cp = NewCopList(100 + gradient1.height * ((1 << DEPTH) + 1));
-  MakeCopperList(cp, 0);
+  cp = MakeCopperList(0);
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER);
 }
@@ -252,19 +272,18 @@ static void Render(void) {
       CopInsSet32(&bplptr[n], screen->planes[i]);
     }
   }
+
   {
     u_short gno = TrackValueGet(&gradientno, frameCount);
     if (oldgradientno != gno) {
       oldgradientno = gno;
-      CopListReset(cp);
-      MakeCopperList(cp, gno);
+      UpdateGradient(gno);
     }
-
-    CopListRun(cp);
-    TaskWaitVBlank();
-    active = mod16(active + 1, DEPTH + 1);
-    maybeSkipFrame = 1;
   }
+
+  TaskWaitVBlank();
+  active = mod16(active + 1, DEPTH + 1);
+  maybeSkipFrame = 1;
 }
 
 EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);
