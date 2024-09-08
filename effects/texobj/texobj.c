@@ -34,7 +34,14 @@ static __code volatile short c2p_phase;
 static __code short c2p_active;
 static __code void **c2p_bpl;
 static __code Object3D *object;
-static __code short *texture[5];
+
+static __code short *texture[5] = {
+  (short *)texture_0_pixels,
+  (short *)texture_1_pixels,
+  (short *)texture_2_pixels,
+  (short *)texture_3_pixels,
+  (short *)texture_4_pixels,
+};
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] */
 static const short Pixel[16] = {
@@ -59,16 +66,21 @@ static void ScrambleBackground(void) {
   }
 }
 
-static short *ScrambleTexture(u_char *src) {
-  short *tex = MemAlloc(texture_0_width * texture_0_height * 2, MEMF_PUBLIC);
-  short n = texture_0_width * texture_0_height;
-  short *dst = tex;
+static void ScrambleTexture(u_char *tex) {
+  u_char *src = &tex[texture_0_height * texture_0_width];
+  short *dst = (short *)src;
+  short n = texture_0_height;
 
   while (--n >= 0) {
-    *dst++ = Pixel[*src++];
+    short m = texture_0_width / 2 / 4;
+    src -= texture_0_width / 2;
+    while (--m >= 0) {
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+    }
   }
-
-  return tex;
 }
 
 typedef struct Corner {
@@ -535,11 +547,11 @@ static CopListT *MakeCopperList(short active) {
 static void Load(void) {
   ScrambleBackground();
 
-  texture[0] = ScrambleTexture(texture_0_pixels);
-  texture[1] = ScrambleTexture(texture_1_pixels);
-  texture[2] = ScrambleTexture(texture_2_pixels);
-  texture[3] = ScrambleTexture(texture_3_pixels);
-  texture[4] = ScrambleTexture(texture_4_pixels);
+  ScrambleTexture(texture_0_pixels);
+  ScrambleTexture(texture_1_pixels);
+  ScrambleTexture(texture_2_pixels);
+  ScrambleTexture(texture_3_pixels);
+  ScrambleTexture(texture_4_pixels);
 
   object = NewObject3D(&cube);
   object->translate.z = fx4i(-256);
@@ -547,16 +559,9 @@ static void Load(void) {
 
 static void UnLoad(void) {
   DeleteObject3D(object);
-
-  MemFree(texture[0]);
-  MemFree(texture[1]);
-  MemFree(texture[2]);
-  MemFree(texture[3]);
-  MemFree(texture[4]);
 }
 
 static void Init(void) {
-  Load();
   TimeWarp(texobj_start);
 
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
@@ -597,8 +602,6 @@ static void Kill(void) {
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-
-  UnLoad();
 }
 
 static void VBlank(void) {
@@ -664,4 +667,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(TexTri, NULL, NULL, Init, Kill, Render, VBlank);
+EFFECT(TexTri, Load, UnLoad, Init, Kill, Render, VBlank);
