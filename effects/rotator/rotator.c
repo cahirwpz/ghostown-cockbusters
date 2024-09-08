@@ -36,11 +36,9 @@ static u_short PixelLo[16] = {
   0x2020, 0x2121, 0x2222, 0x2323, 0x3030, 0x3131, 0x3232, 0x3333, 
 };
 
-static void PixmapToTexture(const PixmapT *image,
-                            u_short *imageHi, u_short *imageLo) 
-{
-  u_char *data = image->pixels;
-  short n = image->width * image->height;
+static void PixmapToTexture(u_short *imageHi, u_short *imageLo) {
+  u_char *data = texture_pixels;
+  short n = texture_width * texture_height;
   /*
    * Since texturing loop may iterate over whole texture (offset = 0...16383),
    * and starting point may be set up at any position (start = 0...16383),
@@ -213,9 +211,9 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
-  textureHi = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  textureLo = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture, textureHi, textureLo);
+  textureHi = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
+  textureLo = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
+  PixmapToTexture(textureHi, textureLo);
 }
 
 static void UnLoad(void) {
@@ -225,7 +223,6 @@ static void UnLoad(void) {
 
 static void Init(void) {
   TimeWarp(rotator_start);
-  Load();
 
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
@@ -266,8 +263,6 @@ static void Kill(void) {
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-
-  UnLoad();
 }
 
 void GenDrawSpan(short du asm("d2"), short dv asm("d3"));
@@ -350,4 +345,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(Rotator, NULL, NULL, Init, Kill, Render, VBlank);
+EFFECT(Rotator, Load, UnLoad, Init, Kill, Render, VBlank);
