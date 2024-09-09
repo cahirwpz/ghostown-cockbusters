@@ -667,4 +667,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(TexTri, Load, UnLoad, Init, Kill, Render, VBlank);
+EFFECT(TexObj, Load, UnLoad, Init, Kill, Render, VBlank);

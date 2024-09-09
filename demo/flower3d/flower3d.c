@@ -79,13 +79,20 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  TimeWarp(flower3d_start);
-  TrackInit(&BgChange);
-
+static void Load(void) {
   object = NewObject3D(&flower);
   object->translate.z = fx4i(-256);
   AllFacesDoubleSided(object);
+
+  TrackInit(&BgChange);
+}
+
+static void UnLoad(void) {
+  DeleteObject3D(object);
+}
+
+static void Init(void) {
+  TimeWarp(flower3d_start);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
@@ -124,7 +131,6 @@ static void Kill(void) {
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);
   DeleteCopList(cp);
-  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E)                                                       \
@@ -541,4 +547,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Flower3D, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Flower3D, Load, UnLoad, Init, Kill, Render, NULL);

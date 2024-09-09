@@ -74,11 +74,17 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  TimeWarp(magnifying_glass_start);
-
+static void Load(void) {
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode();
+}
+
+static void UnLoad(void) {
+  MemFree(UVMapRender);
+}
+
+static void Init(void) {
+  TimeWarp(magnifying_glass_start);
 
   // segment_bp and segment_p are bitmap and pixmap for the magnified segment
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
@@ -101,8 +107,6 @@ static void Init(void) {
 
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
   ITER(i, 0, 31, SetColor(i, 0x000));
-  // LoadColors(logo_pal_colors, 0);
-  // LoadColors(logo_pal_colors, 16);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -115,7 +119,6 @@ static void Kill(void) {
   BlitterStop();
 
   DeleteCopList(cp);
-  MemFree(UVMapRender);
   MemFree(sprdat);
 
   MemFree(texture_hi);
@@ -591,4 +594,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(MagnifyingGlass, NULL, NULL, Init, Kill, Render, VBlank);
+EFFECT(MagnifyingGlass, Load, UnLoad, Init, Kill, Render, VBlank);

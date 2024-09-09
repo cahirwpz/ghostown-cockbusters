@@ -65,7 +65,7 @@ static __code short cock_speed = 2;
 static __code short beam_pos[2] = {X(137), X(167)};
 
 static __code short active_pal = 0;
-static short beam_pal[4][7] = {
+static __code short beam_pal[4][7] = {
   {0xCEF, 0xCEF, 0xCEF, 0xF0F, 0x2AD, 0x079, 0x046},
   {0xDFF, 0xDFF, 0xDFF, 0xF0F, 0x3BE, 0x18A, 0x157},
   {0xFFF, 0xFFF, 0xFFF, 0xF0F, 0x4CF, 0x29B, 0x268},
@@ -73,7 +73,7 @@ static short beam_pal[4][7] = {
 };
 
 #define pal_count 32
-static const u_short pal[pal_count] = {
+static const __code u_short pal[pal_count] = {
   [0]  = 0x034,
   [1]  = 0x000,
   [2]  = 0xFFF,
@@ -117,13 +117,13 @@ static const u_short pal[pal_count] = {
 
 
 static void BlitterFadeIn(void** planes, short bpi, short idx, short y, short x, u_short quote[], short w) {
-  static short tab1[16] = {
+  static __code short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
     0x3771, 0x3773, 0x7773, 0x7E73,
     0x7F77, 0xFF77, 0xFF7F, 0xFFFF,
   };
-  static short tab2[16] = {
+  static __code short tab2[16] = {
     0x0010, 0x0014, 0x1041, 0x1051,
     0x1451, 0x5451, 0xD451, 0xD455,
     0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
@@ -164,13 +164,13 @@ static void BlitterFadeIn(void** planes, short bpi, short idx, short y, short x,
 }
 
 static void BlitterFadeOut(void** planes, short bpi, short idx, short y, short x, u_short quote[], short w) {
-  static short tab1[16] = {
+  static __code short tab1[16] = {
     0x1000, 0x1010, 0x1011, 0x1111,
     0x1131, 0x3131, 0x3171, 0x3371,
     0x3771, 0x3773, 0x7773, 0x7E73,
     0x7F77, 0xFF77, 0xFF7F, 0xFFFF,
   };
-  static short tab2[16] = {
+  static __code short tab2[16] = {
     0x0010, 0x0014, 0x1041, 0x1051,
     0x1451, 0x5451, 0xD451, 0xD455,
     0xDC55, 0xDC5D, 0xDCDD, 0xDCFD,
@@ -265,7 +265,7 @@ static void SwitchBeamPal(void) {
 
 
 static void Abduct(void) {
-  static short mod = 1;
+  static __code short mod = 1;
   short i = 0;
 
   for (i = 64+16; i <= 256 - 16; i += RING_H*2) {
@@ -296,13 +296,13 @@ static void Abduct(void) {
 }
 
 static void RetractBeam(void) {
-  static unsigned short beam_gradient[15] = {
+  static __code u_short beam_gradient[15] = {
     0xcef,0xcdf,0xbce,0xacd,0x9bc,0x8ab,0x79a,0x689,
     0x578,0x478,0x367,0x356,0x245,0x144,0x034
   };
-  static short idx = 0;
-  static short h = 224;
-  static short s = 0;
+  static __code short idx = 0;
+  static __code short h = 224;
+  static __code short s = 0;
   short i = 0;
   CopInsT *ins = ring_pal + 2;
   Area2D ring_area = {133, h, RING_W, RING_H};
@@ -356,8 +356,8 @@ static void Escape(void) {
 }
 
 static void FadeOut(void) {
-  static short i = 0;
-  static unsigned short fadeout_gradient[6] = {
+  static __code short i = 0;
+  static __code unsigned short fadeout_gradient[6] = {
     0x034,0x023,0x022,0x012,0x011,0x000
   };
   CopperStop();
@@ -399,14 +399,15 @@ static CopListT *MakeCopperList(void) {
 static void Init(void) {
   TimeWarp(abduction_start);
 
-  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadColors(pal, 0);
 
-  EnableDMA(DMAF_BLITTER);
+  EnableDMA(DMAF_BLITTER|DMAF_BLITHOG);
+  BitmapClear(screen[0]);
+  BitmapClear(screen[1]);
 
-  (void)DrawBackground;
   DrawBackground(screen[0]);
   DrawBackground(screen[1]);
   DrawUfo(screen[0]);
@@ -426,8 +427,6 @@ static void Init(void) {
   SpriteUpdatePos(&mid_beam,    X(152), Y(56));
   SpriteUpdatePos(&side_beam_l, X(137), Y(56));
   SpriteUpdatePos(&side_beam_r, X(167), Y(56));
-
-  LoadColors(pal, 0);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
@@ -450,8 +449,8 @@ PROFILE(Abduction);
 #define NAKED_OUT (abduction_start + 4*(abduction_end/5))
 
 static void Render(void) {
-  static short idx = 0;
-  (void)idx;
+  static __code short idx = 0;
+
   ProfilerStart(Abduction);
   {
 
@@ -470,7 +469,7 @@ static void Render(void) {
         BlitterFadeIn(screen[1]->planes,  2, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
         BlitterFadeIn(screen[0]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
         BlitterFadeIn(screen[1]->planes,  3, idx-16, 128, 24, _sing_bpl, sing.bytesPerRow);
-      
+
         BlitterFadeOut(screen[0]->planes, 2, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
         BlitterFadeOut(screen[1]->planes, 2, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);
         BlitterFadeOut(screen[0]->planes, 3, idx-16, 160, 6, _talk_bpl, talk.bytesPerRow);

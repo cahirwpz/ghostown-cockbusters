@@ -88,12 +88,14 @@ static void UpdateGradient(short gno) {
   }
 }
 
+static void Load(void) {
+  TrackInit(&freedom_gradientno);
+}
 
 static void Init(void) {
   TimeWarp(cock_freedom_start);
-  TrackInit(&freedom_gradientno);
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, 0);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
@@ -280,4 +282,4 @@ static void Render(void) {
   maybeSkipFrame = 1;
 }
 
-EFFECT(CockFreedom, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(CockFreedom, Load, NULL, Init, Kill, Render, NULL);

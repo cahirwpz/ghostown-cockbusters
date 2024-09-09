@@ -124,13 +124,16 @@ static CopListT *MakeCopperList(CopListT *cp, short gno) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  TimeWarp(cock_techno_start);
+static void Load(void) {
   TrackInit(&spritepos);
   TrackInit(&spriteno);
   TrackInit(&techno_gradientno);
+}
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
+static void Init(void) {
+  TimeWarp(cock_techno_start);
+
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, 0);
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
   WaitBlitter();
@@ -356,6 +359,4 @@ static void Render(void) {
   maybeSkipFrame = 1;
 }
 
-
-
-EFFECT(CockTechno, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(CockTechno, Load, NULL, Init, Kill, Render, NULL);

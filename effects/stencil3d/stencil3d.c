@@ -61,11 +61,17 @@ static CopListT *MakeCopperList(void) {
   return CopListFinish(cp);
 }
 
-static void Init(void) {
-  TimeWarp(stencil3d_start);
-
+static void Load(void) {
   object = NewObject3D(&kurak);
   object->translate.z = fx4i(-256);
+}
+
+static void UnLoad(void) {
+  DeleteObject3D(object);
+}
+
+static void Init(void) {
+  TimeWarp(stencil3d_start);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
@@ -104,7 +110,6 @@ static void Kill(void) {
   DeleteBitmap(screen[1]);
   DeleteBitmap(buffer);
   DeleteCopList(cp);
-  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E)                                                       \
@@ -492,4 +497,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Stencil3D, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Stencil3D, Load, UnLoad, Init, Kill, Render, NULL);

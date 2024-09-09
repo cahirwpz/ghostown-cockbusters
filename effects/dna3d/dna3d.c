@@ -66,7 +66,7 @@ static CopInsT *linecol[necrocoq_height];
 static CopInsT *bobscol[necrocoq_height];
 static __code int active = 0;
 
-static u_short *necrochicken_cols[11] = {
+static __code u_short *necrochicken_cols[11] = {
   necrocoq_00_cols_pixels,
   necrocoq_01_cols_pixels,
   necrocoq_02_cols_pixels,
@@ -80,7 +80,7 @@ static u_short *necrochicken_cols[11] = {
   necrocoq_10_cols_pixels,
 };
 
-static u_short *necrochicken2_cols[11] = {
+static __code u_short *necrochicken2_cols[11] = {
   necrocoq2_00_cols_pixels,
   necrocoq2_01_cols_pixels,
   necrocoq2_02_cols_pixels,
@@ -94,7 +94,7 @@ static u_short *necrochicken2_cols[11] = {
   necrocoq2_10_cols_pixels,
 };
 
-static u_short *fadein_cols[9] = {
+static __code u_short *fadein_cols[9] = {
   fadein08_cols_pixels,
   fadein07_cols_pixels,
   fadein06_cols_pixels,
@@ -109,7 +109,7 @@ static u_short *fadein_cols[9] = {
 
 #define envelope_length 40
 
-static short envelope[envelope_length] = {
+static __code short envelope[envelope_length] = {
   0, 0,
   1, 1,
   2, 2,
@@ -132,7 +132,7 @@ static short envelope[envelope_length] = {
   1, 1,
 };
 
-static short envelope2[envelope_length-8] = {
+static __code short envelope2[envelope_length-8] = {
   0, 0,
   1, 1,
   2, 2,
@@ -207,13 +207,21 @@ static CopListT *MakeCopperList(void) {
 
   return CopListFinish(cp);
 }
-static void Init(void) {
-  TimeWarp(dna3d_start);
+
+static void Load(void) {
   TrackInit(&GlitchAnimFrame);
   TrackInit(&GlitchHPos);
 
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
+}
+
+static void UnLoad(void) {
+  DeleteObject3D(object);
+}
+
+static void Init(void) {
+  TimeWarp(dna3d_start);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
@@ -249,7 +257,6 @@ static void Kill(void) {
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E) {              \
@@ -675,7 +682,7 @@ static void Render(void) {
       show_cock = false;
     }
   }
-  
+ 
   if (frameCount >  dna3d_start + (2 * (dna3d_end / 6)) &&
       frameCount <= dna3d_start + (3 * (dna3d_end / 5))){
     if (aux) {
@@ -744,12 +751,11 @@ static void VBlank(void) {
   if (line != 0) {
     hPos = line;
   }
-  
+
   for (i = 0; i < 31; i++) {
     ins = linecol[hPos+i];
     CopInsSet16(&ins[4], tears[animFrame][i]);
   }
-} 
+}
 
-
-EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, VBlank);
+EFFECT(Dna3D, Load, UnLoad, Init, Kill, Render, VBlank);

@@ -88,11 +88,14 @@ static void UpdateGradient(short gno) {
   }
 }
 
+static void Load(void) {
+  TrackInit(&gradientno);
+}
+
 static void Init(void) {
   TimeWarp(cock_folk_start);
-  TrackInit(&gradientno);
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, 0);
 
   EnableDMA(DMAF_BLITTER);
   BitmapClear(screen);
@@ -283,4 +286,4 @@ static void Render(void) {
   maybeSkipFrame = 1;
 }
 
-EFFECT(AnimPolygons, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(CockFolk, Load, NULL, Init, Kill, Render, NULL);
