@@ -61,6 +61,11 @@ static SpriteT *halloffame[] = {
   cahir, slayer, jazzcat, slizgi, codi,
   spook, zuko,   yumi,    polprog
 };
+static u_short *halloffame_pal[] = {
+  cahir_colors, slayer_colors, jazzcat_colors, slizgi_colors, codi_colors,
+  spook_colors, zuko_colors,   yumi_colors,    polprog_colors
+};
+
 
 
 static __code SpriteT *active_sprite;
@@ -352,6 +357,8 @@ static void Render(void) {
     if (oldspriteno != sno) {
       oldspriteno = sno;
       active_sprite = halloffame[sno];
+      //palettes updated by copperlist in the next Render()
+      active_pal = halloffame_pal[sno];
     }
   }
   TaskWaitVBlank();
