@@ -7,13 +7,12 @@
 #include <common.h>
 
 #define WIDTH  320
-#define HEIGHT 256
+#define HEIGHT 256 // 128
 #define DEPTH  3
 
-#define N 1
-#define VERTICAL    0
-#define HORIZONTAL  1
-#define NO_OF_LINES 3
+#define V_LINE_WIDTH  12
+#define H_LINE_WIDTH  7
+#define NO_OF_LINES 6
 
 
 static CopListT *cp;
@@ -21,35 +20,65 @@ static CopInsPairT *bplptr;
 static BitmapT *screen[2];
 static short active = 0;
 
-static short horizont[256] = {0};
-static short h_lines[NO_OF_LINES] = {16, 128, 196};
 
-static short __data_chip vertical[3][20];
-static short v_lines[NO_OF_LINES] = {60, 160, 260};
+static short v_lines[NO_OF_LINES] = {0, 70, 140, 166, 236, 306};
+static short h_lines[NO_OF_LINES] = {0, 60, 120, 129, 189, 249};
 
-static short __data_chip carry[2][(WIDTH/16)*HEIGHT] = {{0}};
-static short c = 0;
+static short __data_chip carry[2][H_LINE_WIDTH * (WIDTH/16)] = {{0}};
 
-static u_short LINE[3] = {
-  85 << 9,  // bin: 101010101
-  54 << 9,  // bin: 011000110
-   8 << 9,  // bin: 000111000
+static u_short V_LINE[3] = {
+  13107 << 2,  // bin: 11001100110011
+   3900 << 2,  // bin: 00111100111100
+    192 << 2,  // bin: 00000011000000
 };
 
-// static u_short LINE[3] = {
+// static u_short V_LINE[3] = {
+//   85 << 9,  // bin: 1010101
+//   54 << 9,  // bin: 0110110
+//    8 << 9,  // bin: 0001000
+// };
+
+// static u_short V_LINE[3] = {
 //   341 << 7,  // bin: 101010101
 //   198 << 7,  // bin: 011000110
 //    56 << 7,  // bin: 000111000
 // };
 
+static short __data_chip H_LINE[3][7][20] = {
+  {
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+  },
+  {
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+  },
+  {
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+    {0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,},
+  },
+};
+
 
 static void DoMagic(void **planes) {
-  (void)DoMagic;
-  (void)planes;
-  (void)carry;
-  (void)c;
+  short i = 0;
 
-  custom->bltamod = -40;
+  custom->bltamod = 0;
   custom->bltbmod = 0;
   custom->bltcmod = 0;
   custom->bltdmod = 0;
@@ -62,328 +91,106 @@ static void DoMagic(void **planes) {
   custom->bltafwm = -1;
   custom->bltalwm = -1;
 
-  /* BITPLANE 0 */
-  /* CARRY */
-  custom->bltapt = vertical[0];
-  custom->bltbpt = planes[0];
-  custom->bltdpt = carry[0];
-
-  custom->bltcon0 = (SRCA | SRCB | DEST ) | A_AND_B;
   custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-  /* SUM */
-  custom->bltapt = vertical[0];
-  custom->bltbpt = planes[0];
-  custom->bltdpt = planes[0];
-
-  custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  /* BITPLANE 1 */
-  /* CARRY */
-  custom->bltapt = vertical[1];
-  custom->bltbpt = planes[1];
-  custom->bltcpt = carry[0];
-  custom->bltdpt = carry[1];
-
-  custom->bltcon0 = (SRCA | SRCB | SRCC | DEST ) | FULL_ADDER_CARRY;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-  /*SUM */
-  custom->bltapt = vertical[1];
-  custom->bltbpt = planes[1];
-  custom->bltcpt = carry[0];
-  custom->bltdpt = planes[1];
-
-  custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | FULL_ADDER;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  /* BITPLANE 2 */
-  /* CARRY */
-  custom->bltapt = vertical[2];
-  custom->bltbpt = planes[2];
-  custom->bltcpt = carry[1];
-  custom->bltdpt = carry[0];
-
-  custom->bltcon0 = (SRCA | SRCB | SRCC | DEST ) | FULL_ADDER_CARRY;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-  /* SUM */
-  custom->bltapt = vertical[2];
-  custom->bltbpt = planes[2];
-  custom->bltcpt = carry[1];
-  custom->bltdpt = planes[2];
-
-  custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | FULL_ADDER;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  /* PROPAGATE CARRY */
-  custom->bltamod = 0;
-
-  custom->bltapt = carry[0];
-  custom->bltbpt = planes[0];
-  custom->bltdpt = planes[0];
-
-  custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  custom->bltapt = carry[0];
-  custom->bltbpt = planes[1];
-  custom->bltdpt = planes[1];
-
-  custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  custom->bltapt = carry[0];
-  custom->bltbpt = planes[2];
-  custom->bltdpt = planes[2];
-
-  custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
-  custom->bltcon1 = 0;
-
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-}
-
-
-/* HORIZONTAL */
-static void __ClearLine(void **planes, short pos, short thickness) {
-  if (pos > 256) {
-    return;
-  }
-  if (pos + thickness >= 256) {
-    thickness = 256 - pos;
-  }
-  if (pos < 0) {
-    thickness += pos;
-    pos = 0;
-  }
-  if (thickness < 1) {
-    return;
-  }
-
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
-
-  custom->bltafwm = -1;
-  custom->bltalwm = -1;
-
-  custom->bltdpt = *planes + pos*40;
-
-  custom->bltcon0 = DEST | 0x00;
-  custom->bltcon1 = 0;
-  custom->bltsize = (thickness << 6) | 20;
-
-  WaitBlitter();
-}
-
-static void ClearLines(void **planes) {
-  short i = 0;
-  short pos = 0;
 
   for (i = 0; i < NO_OF_LINES; ++i) {
-    pos = h_lines[i];
-    __ClearLine(&planes[0], pos-N, N);
-    __ClearLine(&planes[1], pos-N, N);
-    __ClearLine(&planes[2], pos-N, N);
+    short pos = h_lines[i] * 40;
+    /* BITPLANE 0 */
+    /* CARRY */
+    custom->bltapt = H_LINE[0];
+    custom->bltbpt = planes[0] + pos;
+    custom->bltdpt = carry[0];
 
-    __ClearLine(&planes[0], pos, N);
-    __ClearLine(&planes[1], pos, N);
-    __ClearLine(&planes[2], pos, N);
+    custom->bltcon0 = HALF_ADDER_CARRY;
 
-    __ClearLine(&planes[0], pos+N, N);
-    __ClearLine(&planes[1], pos+N, N);
-    __ClearLine(&planes[2], pos+N, N);
-    
-    __ClearLine(&planes[0], pos+N*2, N);
-    __ClearLine(&planes[1], pos+N*2, N);
-    __ClearLine(&planes[2], pos+N*2, N);
-    
-    __ClearLine(&planes[0], pos+N*3, N);
-    __ClearLine(&planes[1], pos+N*3, N);
-    __ClearLine(&planes[2], pos+N*3, N);
-    
-    __ClearLine(&planes[0], pos+N*4, N);
-    __ClearLine(&planes[1], pos+N*4, N);
-    __ClearLine(&planes[2], pos+N*4, N);
-    
-    __ClearLine(&planes[0], pos+N*5, N);
-    __ClearLine(&planes[1], pos+N*5, N);
-    __ClearLine(&planes[2], pos+N*5, N);
-    
-    __ClearLine(&planes[0], pos+N*6, N);
-    __ClearLine(&planes[1], pos+N*6, N);
-    __ClearLine(&planes[2], pos+N*6, N);
-    
-    __ClearLine(&planes[0], pos+N*7, N);
-    __ClearLine(&planes[1], pos+N*7, N);
-    __ClearLine(&planes[2], pos+N*7, N);
-    
-    __ClearLine(&planes[0], pos+N*8, N);
-    __ClearLine(&planes[1], pos+N*8, N);
-    __ClearLine(&planes[2], pos+N*8, N);
-    
-    __ClearLine(&planes[0], pos+N*9, N);
-    __ClearLine(&planes[1], pos+N*9, N);
-    __ClearLine(&planes[2], pos+N*9, N);
-    
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+    /* SUM */
+    custom->bltapt = H_LINE[0];
+    custom->bltbpt = planes[0] + pos;
+    custom->bltdpt = planes[0] + pos;
+
+    custom->bltcon0 = HALF_ADDER;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+
+    /* BITPLANE 1 */
+    /* CARRY */
+    custom->bltapt = H_LINE[1];
+    custom->bltbpt = planes[1] + pos;
+    custom->bltcpt = carry[0];
+    custom->bltdpt = carry[1];
+
+    custom->bltcon0 = FULL_ADDER_CARRY;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+    /* SUM */
+    custom->bltapt = H_LINE[1];
+    custom->bltbpt = planes[1] + pos;
+    custom->bltcpt = carry[0];
+    custom->bltdpt = planes[1] + pos;
+
+    custom->bltcon0 = FULL_ADDER;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+
+    /* BITPLANE 2 */
+    /* CARRY */
+    custom->bltapt = H_LINE[2];
+    custom->bltbpt = planes[2] + pos;
+    custom->bltcpt = carry[1];
+    custom->bltdpt = carry[0];
+
+    custom->bltcon0 = FULL_ADDER_CARRY;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+    /* SUM */
+    custom->bltapt = H_LINE[2];
+    custom->bltbpt = planes[2] + pos;
+    custom->bltcpt = &carry[1];
+    custom->bltdpt = planes[2] + pos;
+
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (A_OR_B | A_OR_C); // FULL_ADDER;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+
+    /* PROPAGATE CARRY */
+    custom->bltamod = 0;
+
+    custom->bltapt = carry[0];
+    custom->bltbpt = planes[0] + pos;
+    custom->bltdpt = planes[0] + pos;
+
+    custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
+
+    custom->bltapt = carry[0];
+    custom->bltbpt = planes[1] + pos;
+    custom->bltdpt = planes[1] + pos;
+
+    custom->bltcon0 = (SRCA | SRCB | DEST) | A_OR_B;
+
+    custom->bltsize = (H_LINE_WIDTH << 6) | 20;
+    WaitBlitter();
   }
 }
 
-static void __BlitHorizontal(void **planes, short pos, short thickness) {
-  if (pos > 256) {
-    return;
-  }
-  if (pos + thickness >= 256) {
-    thickness = 256 - pos;
-  }
-  if (pos < 0) {
-    thickness += pos;
-    pos = 0;
-  }
-  if (thickness < 1) {
-    return;
-  }
-
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
-
-  custom->bltafwm = -1;
-  custom->bltalwm = -1;
-
-  custom->bltdpt = *planes + pos*40;
-
-  custom->bltcon0 = DEST | 0xFF;
-  custom->bltcon1 = 0;
-  custom->bltsize = (thickness << 6) | 20;
-
-  WaitBlitter();
-}
-
-static void BlitLine(void **planes, short pos, short brightness) {
-  switch (brightness) {
-    case 0:
-      break;
-
-    case 1:
-      __BlitHorizontal(&planes[0], pos, N);
-      break;
-
-    case 2:
-      __BlitHorizontal(&planes[1], pos, N);
-      break;
-
-    case 3:
-      __BlitHorizontal(&planes[0], pos, N);
-      __BlitHorizontal(&planes[1], pos, N);
-      break;
-
-    case 4:
-      __BlitHorizontal(&planes[2], pos, N);
-      break;
-    
-    case 5:
-      __BlitHorizontal(&planes[0], pos, N);
-      __BlitHorizontal(&planes[2], pos, N);
-      break;
-
-    case 6:
-      __BlitHorizontal(&planes[1], pos, N);
-      __BlitHorizontal(&planes[2], pos, N);
-      break;
-
-    case 7:
-    default:
-      __BlitHorizontal(&planes[0], pos, N);
-      __BlitHorizontal(&planes[1], pos, N);
-      __BlitHorizontal(&planes[2], pos, N);
-  }
-}
-
-static void CalculateAndDrawHorizontalLines(void** planes) {
-  short i = 0;
-  short pos = 0;
-
-  for (i = 0; i < 256; ++i) {
-    horizont[i] = 0;
-  }
-
-  pos =h_lines[0];
-
-  horizont[pos+0] = 1;
-  horizont[pos+1] = 2;
-  horizont[pos+2] = 3;
-  horizont[pos+3] = 4;
-  horizont[pos+4] = 3;
-  horizont[pos+5] = 2;
-  horizont[pos+6] = 1;
-
-  for (i = 1; i < NO_OF_LINES; ++i) {
-    pos = h_lines[i];
-
-    horizont[pos+0] += 1;
-    horizont[pos+1] += 2;
-    horizont[pos+2] += 3;
-    horizont[pos+3] += 4;
-    horizont[pos+4] += 3;
-    horizont[pos+5] += 2;
-    horizont[pos+6] += 1;
-  }
-
-  for (i = 0; i < 256; ++i) {
-    BlitLine(planes, i, horizont[i]);
-  }
-}
-
-static void HorizontalTest(void) {
-  (void)ClearLines;
-  // ClearLines(screen[active]->planes);
-  // h_lines[0]++;
-  // if (h_lines[0] > 200) {
-  //   h_lines[0] = 16;
-  // }
-  // h_lines[2]--;
-  // if (h_lines[2] < 16) {
-  //   h_lines[2] = 196;
-  // }
-  CalculateAndDrawHorizontalLines(screen[active]->planes);
-}
-
-
-/* VERTICAL */
-static void CalculateFirstLine(void) {
+static void CalculateFirstLine(void **planes) {
   short word, offset, aux;
   short *ptr;
   short i, j;
+  (void)aux;
 
   /* Set first line to 0 */
   for (i = 0; i < 3; ++i) {
-    ptr = vertical[i];
+    ptr = planes[i];
     for (j = 0; j < 20; ++j) {
       ptr[j] = 0;
     }
@@ -395,10 +202,10 @@ static void CalculateFirstLine(void) {
 
   /* Draw first beam */
   for (i = 0; i < 3; ++i) {
-    ptr = vertical[i];
-    ptr[word] = LINE[i] >> offset;
-    if (offset > 7) {
-      ptr[word+1] = LINE[i] << (16 - offset);
+    ptr = planes[i];
+    ptr[word] = V_LINE[i] >> offset;
+    if (offset > 2) {
+      ptr[word+1] = V_LINE[i] << (16 - offset);
     }
   }
 
@@ -409,36 +216,36 @@ static void CalculateFirstLine(void) {
     word = v_lines[i]/16;
     offset = v_lines[i] - (word * 16);
 
-    ptr = vertical[0];
-    w1 = LINE[0] >> offset;
+    ptr = planes[0];
+    w1 = V_LINE[0] >> offset;
     c1 = ptr[word] & w1;
     ptr[word] = ptr[word] ^ w1;
-    if (offset > 7) {
-      w2 = LINE[0] << (16 - offset);
+    if (offset > (16 - V_LINE_WIDTH)) {
+      w2 = V_LINE[0] << (16 - offset);
       c2 = ptr[word+1] & w2;
       ptr[word+1] = ptr[word+1] ^ w2;
     }
 
-    ptr = vertical[1];
-    w1 = LINE[1] >> offset;
+    ptr = planes[1];
+    w1 = V_LINE[1] >> offset;
     /* circural dependency */
     aux = ptr[word];
     ptr[word] = (ptr[word] ^ w1) ^ c1;
     c1 = ((aux ^ w1) & c1) ^ (aux & w1);
-    if (offset > 7) {
-      w2 = LINE[1] << (16 - offset);
+    if (offset > (16 - V_LINE_WIDTH)) {
+      w2 = V_LINE[1] << (16 - offset);
       aux = ptr[word+1];
       ptr[word+1] = ptr[word+1] ^ w2 ^ c2;
       c2 = ((aux ^ w2) & c2) ^ (aux & w2);
     }
 
-    ptr = vertical[2];
-    w1 = LINE[2] >> offset;
+    ptr = planes[2];
+    w1 = V_LINE[2] >> offset;
     aux = ptr[word];
     ptr[word] = ptr[word] ^ w1 ^ c1;
     c1 = ((aux ^ w1) & c1) ^ (aux & w1);
-    if (offset > 7) {
-      w2 = LINE[2] << (16 - offset);
+    if (offset > (16 - V_LINE_WIDTH)) {
+      w2 = V_LINE[2] << (16 - offset);
       aux = ptr[word+1];
       ptr[word+1] = ptr[word+1] ^ w2 ^ c2;
       c2 = ((aux ^ w2) & c2) ^ (aux & w2);
@@ -446,24 +253,12 @@ static void CalculateFirstLine(void) {
     
     ptr[word] |= c1;
     ptr[word+1] |= c2;
-    ptr = vertical[0];
+    ptr = planes[0];
     ptr[word] |= c1;
     ptr[word+1] |= c2;
-    ptr = vertical[1];
+    ptr = planes[1];
     ptr[word] |= c1;
     ptr[word+1] |= c2;
-  }
-}
-
-static void CopyFirstLine(void** planes) {
-  short i, j;
-  short *ptr;
-
-  for (i = 0; i < 3; ++i) {
-    ptr = planes[i];
-    for (j = 0; j < 20; ++j) {
-      ptr[j] = vertical[i][j];
-    }
   }
 }
 
@@ -501,37 +296,59 @@ static void VerticalFill(void** planes) {
   WaitBlitter();
 }
 
+static void Move(void) {
+  short i = 0;
 
-static void ClearBitplanes(void **planes) {
-  custom->bltdmod = 0;
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
+  if (frameCount % 3 == 0) {
+    return;
+  }
+  h_lines[0] += 1;
+  h_lines[1] += 2;
+  h_lines[2] += 1;
+  h_lines[3] -= 1;
+  h_lines[4] -= 2;
+  h_lines[5] -= 1;
 
-  custom->bltdpt = planes[0];
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
+  v_lines[0] += 1;
+  v_lines[1] += 2;
+  v_lines[2] += 1;
+  v_lines[3] -= 1;
+  v_lines[4] -= 2;
+  v_lines[5] -= 1;
 
-  custom->bltdmod = 0;
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
+  for (i = 0; i < NO_OF_LINES; ++i) {
+    if (h_lines[i] > HEIGHT - 7) {
+      h_lines[i] = 0;
+    }
+    if (h_lines[i] < 0) {
+      h_lines[i] = HEIGHT - 7;
+    }
+  }
 
-  custom->bltdpt = planes[1];
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
-
-  custom->bltdmod = 0;
-  custom->bltcon0 = (DEST) | 0x0;
-  custom->bltcon1 = 0;
-
-  custom->bltdpt = planes[2];
-  custom->bltsize = (HEIGHT << 6) | 20;
-  WaitBlitter();
+  for (i = 0; i < NO_OF_LINES; ++i) {
+    if (v_lines[i] > 306) {
+      v_lines[i] = 0;
+    }
+    if (v_lines[i] < 0) {
+      v_lines[i] = 306;
+    }
+  }
 }
 
 
 static CopListT *MakeCopperList(void) {
-  cp = NewCopList(128);
+  short i = 0;
+  (void)i;
+
+  cp = NewCopList(1024);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
+
+  /* Line duplication */
+  // for (i = 0; i < HEIGHT * 2; i++) {
+  //   CopWaitSafe(cp, Y(i), 0);
+  //   CopMove16(cp, bpl1mod, ((i & 1) != 1) ? -40 : 0);
+  //   CopMove16(cp, bpl2mod, ((i & 1) != 1) ? -40 : 0);
+  // }
 
   CopListFinish(cp);
 
@@ -539,77 +356,53 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER);  // DMAF_BLITHOG
+  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, 256);
 
+  // SetColor(0, 0x000);
+  // SetColor(1, 0x313);
+  // SetColor(2, 0x535);
+  // SetColor(3, 0x757);
+  // SetColor(4, 0x979);
+  // SetColor(5, 0xB9B);
+  // SetColor(6, 0xDBD);
+  // SetColor(7, 0xFFF);
+
   SetColor(0, 0x000);
-  SetColor(1, 0x111);
-  SetColor(2, 0x333);
-  SetColor(3, 0x555);
-  SetColor(4, 0x777);
-  SetColor(5, 0x999);
-  SetColor(6, 0xBBB);
-  SetColor(7, 0xDDD);
+  SetColor(1, 0x313);
+  SetColor(2, 0x535);
+  SetColor(3, 0x757);
+  SetColor(4, 0x979);
+  SetColor(5, 0xC9C);
+  SetColor(6, 0xFBF);
+  SetColor(7, 0xFFF);
 
   cp = MakeCopperList();
   CopListActivate(cp);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_BLITTER | DMAF_RASTER);
+  DisableDMA(DMAF_BLITTER | DMAF_BLITHOG | DMAF_RASTER);
 
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
 }
 
-PROFILE(Horiz);
-PROFILE(Verti);
-PROFILE(Magic);
 PROFILE(Total);
 
 static void Render(void) {
-  (void)ClearBitplanes;
-  (void)HorizontalTest;
-  (void)VerticalFill;
-  (void)CopyFirstLine;
-  (void)carry;
-
   ProfilerStart(Total);
-  ClearBitplanes(screen[active]->planes);
-
-  ProfilerStart(Verti);
   {
-    CalculateFirstLine();
-    // CopyFirstLine(screen[active]->planes);
-    // VerticalFill(screen[active]->planes);
-    v_lines[0]++;
-    if (v_lines[0] > WIDTH - 10) {
-      v_lines[0] = 0;
-    }
+    CalculateFirstLine(screen[active]->planes); // 20
+    VerticalFill(screen[active]->planes); // 215
+    DoMagic(screen[active]->planes); // 149
+    Move();
   }
-  ProfilerStop(Verti);
-
-  ProfilerStart(Horiz);
-  {
-    HorizontalTest();
-    h_lines[0]++;
-    if (h_lines[0] > HEIGHT - 10) {
-      h_lines[0] = 0;
-    }
-  }
-  ProfilerStop(Horiz);
-
-  ProfilerStart(Magic);
-  {
-    DoMagic(screen[active]->planes);
-  }
-  ProfilerStop(Magic);
-
-  ProfilerStop(Total);  
+  ProfilerStop(Total);
 
   ITER(i, 0, DEPTH - 1, CopInsSet32(&bplptr[i], screen[active]->planes[i]));
 
