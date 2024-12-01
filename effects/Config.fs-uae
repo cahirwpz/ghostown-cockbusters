@@ -4,18 +4,33 @@ governor_warning = 0
 fade_in_duration = 0
 fade_out_duration = 0
 accuracy = 1
+
+### amiga_model: A500, A500+, A600, A1000, A1200, A1200/020, A3000, A4000/040, CD32, CDTV
 amiga_model = A500
-# A500 A500+ A600 A1200 A1200/020 A3000 A4000/040
-# chip_memory = 512
+### chip_memory: 256, 512, 1024, 1536, 2048
+# chip_memory = 1024
+### slow_memory: 0, 512, 1024, 1536, 1792
 # slow_memory = 512
-# fast_memory = 2048
+### fast_memory: 0, 64, 128, 256, 512, 1024, 2048, 4096, 8192 (Zorro II)
+# fast_memory = 4096
+### uae_chipset: ocs, ecs, ecs_agnus, ecs_denise, aga]
 # uae_chipset = ecs_agnus
+### uae_cpu_model: [68000, 68010, 68020, 68030, 68040, 68060]
 # uae_cpu_model = 68010
+### uae_fpu_model: [0, 68881, 68882, 68040, 68060]
+# uae_fpu_model = 68881
+### uae_cpu_24bit_addressing: [true, false]
+# uae_cpu_24bit_addressing = false
+### uae_cpu_multiplier: [0..256] (for cpu-exact emulation)
 # uae_cpu_multiplier = 16
+### floppy_drive_speed: 0 (turbo), 100, 200, 400, 800
+# floppy_drive_speed = 800
+### these are necessary for UAE traps to be callable
+uae_boot_rom_uae = min
+uae_uaeboard = min
+
 automatic_input_grab = 0
 stereo_separation = 0
-floppy_drive_speed = 800
-# floppy_drive_speed = 100
 floppy_drive_volume = 10
 low_latency_vsync = 1
 scanlines = 0
@@ -34,4 +49,3 @@ keyboard_key_f11 = action_pause
 keyboard_key_f10 = action_enter_debugger
 keyboard_key_f9 = action_screenshot
 joystick_port_1_mode = nothing
-uae_boot_rom_uae = min
