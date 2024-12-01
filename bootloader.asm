@@ -27,6 +27,7 @@
         include 'dos/doshunks.i'
         include 'devices/trackdisk.i'
         include 'hardware/custom.i'
+        include 'lvo/exec_lib.i'
 
 ; Export some symbols so they appear in disassembly.
 
@@ -48,13 +49,6 @@ CHIPMAX         EQU     $200000 ; maximum size of chip memory (2MB)
 CUSTOM          EQU     $dff000
 CIAA            EQU     $bfe001
 CIAB            EQU     $bfd000
-
-; jump vector entires from exec.library
-
-_LVOSuperState          EQU     -150
-_LVOAllocMem            EQU     -198
-_LVODoIO                EQU     -456
-_LVOCacheControl        EQU     -648
 
 ; These flags are not related to AmigaOS memory management.
 
