@@ -64,79 +64,47 @@ InitHW:
         clr.b   ciatodmid(a5)
         clr.b   ciatodlow(a5)
 
+InitIrq:
+        lea     $0.w,a0
+        move.l  #ChipStart,(a0)+
+        move.l  #Entry,(a0)+
+
+        lea     .handler(pc),a1
+        move.w  #$2f-2,d0
+.loop:  move.l  a1,(a0)+
+        dbf     d0,.loop
+
+        bra.s   ChipMem
+
+.handler:
+        stop    #$2700
+        illegal
+
 ; Chip Memory check
 ; Output:
-;  [d4] Upper limit of chip memory
+;  [d4] Size of chip memory
 ChipMem:
-        move.l  #Ghostown,d0    ; Our signature
-        suba.l  a0,a0
-        clr.l   (a0)            ; Write a zero to the first location
-
-.loop   adda.l  #$40000,a0      ; Increment current location by 256KiB
-        cmp.l   #ChipEnd,a0
-        bgt.s   .exit
-        move.l  d0,(a0)         ; Write signature into the memory
-
-        ; Has address decoding wrapped around,
-        ; due to incomplete address decoding?
-        tst.l   $0.w            ; Was first location overwritten?
-        bne.s   .exit
-        cmp.l   (a0),d0         ; Is signature still there?
-        beq.s   .loop
-
-.exit   move.l  a0,d4
+        lea     ChipStart,a0
+        lea     ChipEnd,a1
+        move.l  #$400,d0
+        bsr     MemoryTest
+        move.l  d0,d4
 
 ; Slow Memory check
 ; Output:
-;  [d5] Upper limit of expansion memory or zero if missing
+;  [d5] Size of expansion memory or zero if missing
 SlowMem:
-        clr.l   0.w             ; Write a zero to the first location
         lea     SlowStart,a0
-
-.loop   move.l  a0,a1
-        lea     $1000(a0),a0              ; Check next 4KiB
-
-        ; If the location written to is INTENA, then INTENAR location
-        ; will read zero, because value $3fff disables all interrupts.
-        ; In the other case INTENA location was memory, and the value
-        ; of INTENAR location is non-determined - could be zero as well.
-        move.w  #$3fff,-$1000+intena(a0)
-        tst.w   -$1000+intenar(a0)
-        bne.s   .memory
-
-        ; If the location written to is INTENA, then INTENAR location
-        ; will read $3fff, because value $bfff enables all interrupts
-        ; (not really, consider master bit). We know that INTENAR location
-        ; was zero, so now it must read as $3fff, if it is not memory.
-        move.w  #$bfff,-$1000+intena(a0)
-        cmp.w   #$3fff,-$1000+intenar(a0)
-        beq.s   .exit
-
-.memory move.l  d0,(a1)         ; Write signature into the memory
-
-        ; Has address decoding wrapped around,
-        ; due to incomplete address decoding?
-        tst.l   $0.w            ; Was first location overwritten?
-        bne.s   .exit
-        cmp.l   (a1),d0         ; Is signature still there?
-        bne.s   .exit
-
-        cmp.l   #SlowEnd,a0
-        blt.s   .loop
-
-.exit   ; Just in case disable interrupts
-        move.w  #$7fff,-$1000+intenar(a0)
-        move.l  a1,a0
-        cmp.l   #SlowStart,a0
-        bne.s   .done
-        suba.l  a0,a0
-
-.done   move.l  a0,d5
+        lea     SlowEnd,a1
+        move.l  #$400,d0
+        bsr     MemoryTest
+        move.l  d0,d5
 
 ; This prepares memory and registers to jump into Start
 ; It needs to set up d2-d3/a3/a6/sp
 ;
-; [d4] The end of CHIP memory
+; [d4] The size of chip memory
+; [d5] The size of expansion memory
 Setup:
         move.l  HunkFileSize(pc),d2
         move.l  HunkFilePtr(pc),d3
@@ -158,6 +126,7 @@ Setup:
         beq.s   .chip
 
         move.l  #SlowStart,(a2)+
+        add.l   #SlowStart,d5
         move.l  d5,(a2)+
         move.w  #MEMF_FAST|MEMF_PUBLIC,(a2)+
         add.w   #1,BD_NREGIONS(a6)
@@ -261,9 +230,10 @@ AutoConfig:
 ;
 ; IN: A0 - Address, A1 - Max end address, D0 = block size
 ; OUT: D0 - Detected size
-; TRASH: D1, D2, D3, D4, D5, A1, A2, A3
 
 MemoryTest:
+        movem.l d2-d5/a2-a3,-(sp)
+
         move.l  d0,d5
         move.l  a1,d0
         sub.l   a0,d0                   ; max size
@@ -314,12 +284,12 @@ MemoryTest:
         bne.s   .chipcheck_done         ; no chiptest if 32bit address
         move.w  #$7fff,custom+intena
         nop
-        tst.w   intenar(a0,d1)          ; If non-zero, this is not INTENAR
+        tst.w   intenar(a0,d1.l)        ; If non-zero, this is not INTENAR
         bne.s   .chipcheck_done
         ; It was zero ...
         move.w  #$c000,custom+intena    ; Try the master enable
         nop
-        tst.w   intenar(a0,d1)          ; If still zero, not INTENAR
+        tst.w   intenar(a0,d1.l)        ; If still zero, not INTENAR
         bne     .done                   ; It was a custom chip.
 .chipcheck_done:
 
@@ -331,12 +301,12 @@ MemoryTest:
         bcs.s   .next
 .nottestcode:
 
-        move.l  (a0,d1),d3              ; read old value
+        move.l  (a0,d1.l),d3            ; read old value
         move.l  (a0),a2                 ; save mirror test contents
         move.l  #$fecaf00d,(a0)         ; write mirror test value
         nop
         move.l  #$cafed00d,d2
-        move.l  d2,(a0,d1)              ; write test pattern
+        move.l  d2,(a0,d1.l)            ; write test pattern
         nop
         tst.l   d1                      ; first test addrress?
         beq.s   .nomirror
@@ -347,31 +317,31 @@ MemoryTest:
 .nomirror:
 
         not.l   d2
-        move.l  4(a0,d1),a3             ; read temp address
-        move.l  d2,4(a0,d1)             ; fill bus with something else
+        move.l  4(a0,d1.l),a3           ; read temp address
+        move.l  d2,4(a0,d1.l)           ; fill bus with something else
         not.l   d2
         nop
-        move.l  (a0,d1),d4              ; read test pattern
-        move.l  a3,4(a0,d1)             ; restore
+        move.l  (a0,d1.l),d4            ; read test pattern
+        move.l  a3,4(a0,d1.l)           ; restore
 
         cmp.l   d4,d2                   ; pattern match?
         bne.s   .done
         neg.l   d2                      ; test pattern 2
 
-        move.l  d2,(a0,d1)              ; write test pattern
+        move.l  d2,(a0,d1.l)            ; write test pattern
         nop
         not.l   d2
-        move.l  4(a0,d1),a3             ; read temp address
-        move.l  d2,4(a0,d1)             ; fill bus with something else
+        move.l  4(a0,d1.l),a3           ; read temp address
+        move.l  d2,4(a0,d1.l)           ; fill bus with something else
         not.l   d2
         nop
-        move.l  (a0,d1),d4              ; read test pattern
-        move.l  a3,4(a0,d1)             ; restore
+        move.l  (a0,d1.l),d4            ; read test pattern
+        move.l  a3,4(a0,d1.l)           ; restore
 
         cmp.l   d4,d2
         bne.s   .done
         not.l   d2
-        move.l  d3,(a0,d1)              ; write old value back
+        move.l  d3,(a0,d1.l)            ; write old value back
 
         move.l  a2,(a0)                 ; restore mirror test contents
 .next:
@@ -380,16 +350,18 @@ MemoryTest:
 
 .done:
         move.l  d1,d0
+        movem.l (sp)+,d2-d5/a2-a3
         rts
 .end
 
 ; Based on arch/m68k-amiga/boot/cpu_detect.S from AROS repository.
 ; OUT: D0 - Detected CPU/FPU model (same as AttnFlags in ExecBase)
-; TRASH: A0, A1, D0, D1, D2
 
         mc68060
 
 CpuDetect:
+        move.l  d2,-(sp)
+
         moveq.l #0,d0                   ; detected CPU/FPU model
         move.l  sp,a0                   ; save stack pointer
 
@@ -478,6 +450,7 @@ CpuDetect:
 
 .fpu_done:
         move.l  a0,sp           ; remove exception stack frame
+        move.l  (sp)+,d2
         rts                     ; return from CpuDetect
 
 ; vim: ft=asm68k:ts=8:sw=8:et:
