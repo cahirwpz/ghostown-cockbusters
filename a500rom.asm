@@ -13,6 +13,7 @@ ChipStart       equ $400
 ChipEnd         equ $200000
 SlowStart       equ $c00000
 SlowEnd         equ $dc0000
+RamseyEnd       equ $8000000
 AutoConfigZ2    equ $e80000
 AutoConfigZ3    equ $ff000000
 MemSpaceZ2      equ $200000
@@ -103,6 +104,24 @@ SlowMem:
         bsr     MemoryTest
         move.l  d0,d5
 
+; Fast Memory check (Ramsey on A3000/A4000)
+; Output:
+;   [d6] Size of fast memory or zero if missing
+FastMem:
+        move.l  #-1<<24,d2
+        moveq   #2,d3
+
+.loop   lea     RamseyEnd,a1
+        lea     (a1,d2.l),a0
+        move.l  #1<<16,d0
+        bsr     MemoryTest
+        move.l  d0,d6
+        bne.s   .found
+        asr.l   #1,d2
+        dbf     d3,.loop
+
+.found
+
 ; This prepares memory and registers to jump into Start
 ; It needs to set up d2-d3/a3/a6/sp
 ;
@@ -111,7 +130,7 @@ SlowMem:
 Setup:
         move.l  HunkFileSize(pc),d2
         move.l  HunkFilePtr(pc),d3
-        move.l  #BD_SIZE+3*MR_SIZE,a3
+        move.l  #BD_SIZE+4*MR_SIZE,a3
         sub.l   a3,sp
         move.l  sp,a6
 
@@ -124,12 +143,20 @@ Setup:
         lea     BD_REGION(a6),a2
 
         lea     AutoConfigZ2,a0
-        lea     MemSpaceZ2,a1
         bsr     AutoConfig
 
         lea     AutoConfigZ3,a0
-        lea     MemSpaceZ3,a1
         bsr     AutoConfig
+
+.fast   tst.l   d6
+        beq.s   .slow
+
+        sub.l   #RamseyEnd,d6
+        not.l   d6
+        move.l  d6,(a2)+
+        move.l  #RamseyEnd,(a2)+
+        move.w  #MEMF_FAST|MEMF_PUBLIC,(a2)+
+        add.w   #1,BD_NREGIONS(a6)
 
 .slow   tst.l   d5
         beq.s   .chip
@@ -230,15 +257,15 @@ AutoConfig:
         move.l  d0,d3
 
         cmp.b   #$ff,d2
-        beq.s   .nodev
+        beq     .nodev
 
         move.b  d2,d1
         and.b   #ERT_TYPEMASK,d1
-        beq.s   .nodev
+        beq     .nodev
 
         move.b  d2,d1
         and.b   #ERT_MEMLIST,d1
-        beq.s   .nodev
+        beq     .nodev
 
         ; Is it Zorro II device?
         btst    #ERFB_ZORRO_III,d3
@@ -252,11 +279,13 @@ AutoConfig:
         btst    #ERFB_EXTENDED,d3
         beq.s   .z2size
 
-.z3size move.l  #1<<24,d1
+.z3size lea     MemSpaceZ3,a1
+        move.l  #1<<24,d1
         lsl.l   d0,d1
         bra.s   .chunk
 
-.z2size subq.w  #1,d0
+.z2size lea     MemSpaceZ2,a1
+        subq.w  #1,d0
         and.w   #ERT_MEMMASK,d0
         move.l  #$10000,d1
         lsl.l   d0,d1
