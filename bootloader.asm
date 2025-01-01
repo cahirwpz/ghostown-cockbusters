@@ -98,7 +98,7 @@ COMP_ZX0        EQU     3
         section	'.text',code
 
         dc.b    'DOS',0
-        dc.l	0
+        dc.l	0               ; checksum (to be filled by adfutil.py)
 
         ; Executable file image information
         ; length / start (sector aligned, shifted right by 8)

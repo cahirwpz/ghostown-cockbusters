@@ -24,9 +24,10 @@ static FileEntryT *NextFileEntry(FileEntryT *fe) {
   return (void *)fe + fe->reclen;
 }
 
-static FileT *FileSysDev;
+static __code FileT *FileSysDev;
 /* Finished by NUL character (reclen = 0). */
-static FileEntryT *FileSysRootDir;
+static __code FileEntryT *FileSysRootDir;
+static __code short FileSysStartSector;
 
 struct File {
   FileOpsT *ops;
@@ -72,7 +73,7 @@ FileT *OpenFile(const char *path) {
 
   f = MemAlloc(sizeof(FileT), MEMF_PUBLIC|MEMF_CLEAR);
   f->ops = &FsOps;
-  f->start = (entry->start + 2) * SECTOR_SIZE;
+  f->start = (entry->start + FileSysStartSector) * SECTOR_SIZE;
   f->size = entry->size;
 
   Debug("%s: %d+%d", path, f->start, f->size);
@@ -110,7 +111,7 @@ static int FsRead(FileT *f, void *buf, u_int nbyte) {
 static int FsSeek(FileT *f, int offset, int whence) {
   if (f->flags & IOF_ERR)
     return EIO;
-  
+ 
   Debug("$%p %d %d", f, offset, whence);
 
   f->flags &= ~IOF_EOF;
@@ -140,14 +141,27 @@ static int FsSeek(FileT *f, int offset, int whence) {
 #define ONSTACK(x) (&(x)), sizeof((x))
 
 void InitFileSys(FileT *dev) {
+  u_long dosHeader;
   u_short rootDirLen;
 
   Assume(dev != NULL);
 
   FileSysDev = dev;
 
+  /* skip bootblock or ROM initialization code */
+  FileRead(dev, ONSTACK(dosHeader));
+
+  if (dosHeader == 0x444f5300) /* DOS0 */ {
+    FileSysStartSector = 2;
+    Log("[FileSys] Initialized from floppy drive.\n");
+  } else {
+    FileSysStartSector = 4;
+    Log("[FileSys] Initialized from ROM image.\n");
+  }
+
+  FileSeek(dev, SECTOR_SIZE * FileSysStartSector, SEEK_SET);
+
   /* read directory size */
-  FileSeek(dev, SECTOR_SIZE * 2, SEEK_SET);
   FileRead(dev, ONSTACK(rootDirLen));
 
   Log("[FileSys] Reading directory of %d bytes.\n", rootDirLen);
