@@ -16,7 +16,7 @@ SlowEnd         equ $dc0000
 AutoConfigZ2    equ $e80000
 AutoConfigZ3    equ $ff000000
 MemSpaceZ2      equ $200000
-MemSpaceZ3      equ $10000000
+MemSpaceZ3      equ $40000000
 
 Ghostown  equ $47544e21
 
@@ -127,6 +127,10 @@ Setup:
         lea     MemSpaceZ2,a1
         bsr     AutoConfig
 
+        lea     AutoConfigZ3,a0
+        lea     MemSpaceZ3,a1
+        bsr     AutoConfig
+
 .slow   tst.l   d5
         beq.s   .chip
 
@@ -149,27 +153,28 @@ ROM = 1
         include 'bootloader.asm'
 
 ; [a0] board
-; [d0] offset (multiplied by 4)
+; [d0] register offset
 ReadZorro:
-        movem.l d1/d2,-(sp)
+        movem.l d1/d2/a1,-(sp)
 
         move.l  a0,d2
         and.l   #AutoConfigZ3,d2
         beq.s   .lo_z2
-.lo_z3  move.b  100(a0,d0.w),d1 ; read lo nibble (Zorro3)
+.lo_z3  lea     $100(a0),a1
+        move.b  (a1,d0.w),d1    ; read lo nibble (Zorro3)
         bra.s   .hi
-.lo_z2  move.b  2(a0,d0.w),d1   ; read lo nibble (Zorro2)
+.lo_z2  move.b  $2(a0,d0.w),d1  ; read lo nibble (Zorro2)
 
 .hi     move.b  (a0,d0.w),d0    ; read hi nibble
         and.b   #$f0,d0
         lsr.b   #4,d1
         or.b    d1,d0
 
-        movem.l (sp)+,d1/d2
+        movem.l (sp)+,d1/d2/a1
         rts
 
 ; [a0] board
-; [d0] offset (multiplied by 4)
+; [d0] register offset
 ; [d1] byte
 WriteZorro:
         movem.l a0/d0/d2,-(sp)
@@ -182,9 +187,9 @@ WriteZorro:
         move.l  a0,d2
         and.l   #AutoConfigZ3,d2
         beq.s   .lo_z2
-.lo_z3  move.b  d1,100(a0)      ; write lo nibble (Zorro3)
+.lo_z3  move.b  d1,$100(a0)      ; write lo nibble (Zorro3)
         bra.s   .hi
-.lo_z2  move.b  d1,2(a0)        ; write lo nibble (Zorro2)
+.lo_z2  move.b  d1,$2(a0)        ; write lo nibble (Zorro2)
 
 .hi     move.b  d0,(a0)         ; write hi nibble
 
@@ -192,58 +197,99 @@ WriteZorro:
         rts
 
 ; Zorro registers
-ER_TYPE         equ     0<<2
-EC_BASEADDRESS  equ     18<<2
-EC_SHUTUP       equ     19<<2
+ER_TYPE         equ     $00
+ER_FLAGS        equ     $08
+EC_Z3_HIGHBASE  equ     $44
+EC_BASEADDRESS  equ     $48
+EC_SHUTUP       equ     $4c
 
+; ER_TYPE register
 ERT_TYPEMASK    equ     $c0
 ERT_ZORROII     equ     $c0
 ERT_ZORROIII    equ     $80
 ERT_MEMLIST     equ     $20
 ; Zorro2: (0)8MiB (1)64KiB (2)128KiB (3)256KiB (4)512KiB (5)1MiB (6)2MiB (7)4MiB
+; Zorro3: (0)16MiB (1)32MiB (2)64MiB (3)128MiB (4)256MiB (5)512MiB (6)1GiB (7)reserved
 ERT_MEMMASK     equ     $07
 
-; Zorro II AutoConfig Memory check
+; ER_FLAGS register
+ERFB_EXTENDED   equ     5
+ERFB_ZORRO_III  equ     4
+
+; Zorro II/III AutoConfig Memory check
 AutoConfig:
-        lea     AutoConfigStart,a0
+        movem.l d2-d3,-(sp)
 
         moveq.l #ER_TYPE,d0
         bsr     ReadZorro
+        move.l  d0,d2
 
-        cmp.b   #$ff,d0
+        moveq.l #ER_FLAGS,d0
+        bsr     ReadZorro
+        not.b   d0              ; flags are negated!
+        move.l  d0,d3
+
+        cmp.b   #$ff,d2
         beq.s   .nodev
 
-        move.b  d0,d1
+        move.b  d2,d1
         and.b   #ERT_TYPEMASK,d1
-        cmp.b   #ERT_ZORROII,d1
-        bne.s   .nodev
+        beq.s   .nodev
 
-        move.b  d0,d1
+        move.b  d2,d1
         and.b   #ERT_MEMLIST,d1
         beq.s   .nodev
 
+        ; Is it Zorro II device?
+        btst    #ERFB_ZORRO_III,d3
+        beq.s   .z2size
+
+        ; Extract memory size bits
+        move.b  d2,d0
         and.w   #ERT_MEMMASK,d0
-        subq.w  #1,d0
+
+        ; How size should be interpreted? (extended / unextended)
+        btst    #ERFB_EXTENDED,d3
+        beq.s   .z2size
+
+.z3size move.l  #1<<24,d1
+        lsl.l   d0,d1
+        bra.s   .chunk
+
+.z2size subq.w  #1,d0
         and.w   #ERT_MEMMASK,d0
         move.l  #$10000,d1
         lsl.l   d0,d1
 
-        move.l  a1,(a2)+
+.chunk  move.l  a1,(a2)+
         add.l   a1,d1
         move.l  d1,(a2)+
         move.w  #MEMF_FAST|MEMF_PUBLIC,(a2)+
         add.w   #1,BD_NREGIONS(a6)
 
-        moveq.l #EC_BASEADDRESS,d0
+        ; determine A31-A16 of physical address to map the device
         move.l  a1,d1
         swap    d1
+
+        ; write it to Zorro II/III base address register
+        move.b  d2,d0
+        and.b   #ERT_TYPEMASK,d0
+        cmp.b   #ERT_ZORROII,d0
+        beq.s   .z2base
+
+.z3base move.b  d1,EC_BASEADDRESS(a0)
+        move.w  d1,EC_Z3_HIGHBASE(a0)
+        bra.s   .shutup
+
+.z2base moveq.l #EC_BASEADDRESS,d0
         bsr     WriteZorro
 
-        moveq.l #EC_SHUTUP,d0
+.shutup moveq.l #EC_SHUTUP,d0
         moveq.l #0,d1
         bsr     WriteZorro
 
-.nodev  rts
+.nodev  movem.l (sp)+,d2-d3
+        rts
 
 ; Modified version of arch/m68k-amiga/expansion/memorytest.S
 ; from AROS repository.
