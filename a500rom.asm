@@ -13,7 +13,10 @@ ChipStart       equ $400
 ChipEnd         equ $200000
 SlowStart       equ $c00000
 SlowEnd         equ $dc0000
-AutoConfigStart equ $e80000
+AutoConfigZ2    equ $e80000
+AutoConfigZ3    equ $ff000000
+MemSpaceZ2      equ $200000
+MemSpaceZ3      equ $10000000
 
 Ghostown  equ $47544e21
 
@@ -120,6 +123,8 @@ Setup:
 
         lea     BD_REGION(a6),a2
 
+        lea     AutoConfigZ2,a0
+        lea     MemSpaceZ2,a1
         bsr     AutoConfig
 
 .slow   tst.l   d5
@@ -145,40 +150,55 @@ ROM = 1
 
 ; [a0] board
 ; [d0] offset (multiplied by 4)
-ReadZorro2:
-        move.l  d1,-(sp)
+ReadZorro:
+        movem.l d1/d2,-(sp)
 
-        move.b  2(a0,d0.w),d1   ; read lo nibble
-        move.b  (a0,d0.w),d0    ; read hi nibble
+        move.l  a0,d2
+        and.l   #AutoConfigZ3,d2
+        beq.s   .lo_z2
+.lo_z3  move.b  100(a0,d0.w),d1 ; read lo nibble (Zorro3)
+        bra.s   .hi
+.lo_z2  move.b  2(a0,d0.w),d1   ; read lo nibble (Zorro2)
+
+.hi     move.b  (a0,d0.w),d0    ; read hi nibble
         and.b   #$f0,d0
         lsr.b   #4,d1
         or.b    d1,d0
 
-        move.l  (sp)+,d1
+        movem.l (sp)+,d1/d2
         rts
 
 ; [a0] board
 ; [d0] offset (multiplied by 4)
 ; [d1] byte
-WriteZorro2:
-        movem.l a0/d0,-(sp)
+WriteZorro:
+        movem.l a0/d0/d2,-(sp)
 
         lea     (a0,d0.w),a0    ; register base
 
         move.b  d1,d0
         lsl.b   #4,d1
-        move.b  d1,2(a0)        ; write lo nibble
-        move.b  d0,(a0)         ; write hi nibble
 
-        movem.l (sp)+,a0/d0
+        move.l  a0,d2
+        and.l   #AutoConfigZ3,d2
+        beq.s   .lo_z2
+.lo_z3  move.b  d1,100(a0)      ; write lo nibble (Zorro3)
+        bra.s   .hi
+.lo_z2  move.b  d1,2(a0)        ; write lo nibble (Zorro2)
+
+.hi     move.b  d0,(a0)         ; write hi nibble
+
+        movem.l (sp)+,a0/d0/d2
         rts
 
+; Zorro registers
 ER_TYPE         equ     0<<2
 EC_BASEADDRESS  equ     18<<2
 EC_SHUTUP       equ     19<<2
 
 ERT_TYPEMASK    equ     $c0
 ERT_ZORROII     equ     $c0
+ERT_ZORROIII    equ     $80
 ERT_MEMLIST     equ     $20
 ; Zorro2: (0)8MiB (1)64KiB (2)128KiB (3)256KiB (4)512KiB (5)1MiB (6)2MiB (7)4MiB
 ERT_MEMMASK     equ     $07
@@ -188,7 +208,7 @@ AutoConfig:
         lea     AutoConfigStart,a0
 
         moveq.l #ER_TYPE,d0
-        bsr     ReadZorro2
+        bsr     ReadZorro
 
         cmp.b   #$ff,d0
         beq.s   .nodev
@@ -196,11 +216,11 @@ AutoConfig:
         move.b  d0,d1
         and.b   #ERT_TYPEMASK,d1
         cmp.b   #ERT_ZORROII,d1
-        bne.b   .nodev
+        bne.s   .nodev
 
         move.b  d0,d1
         and.b   #ERT_MEMLIST,d1
-        beq.b   .nodev
+        beq.s   .nodev
 
         and.w   #ERT_MEMMASK,d0
         subq.w  #1,d0
@@ -208,20 +228,20 @@ AutoConfig:
         move.l  #$10000,d1
         lsl.l   d0,d1
 
-        lea     $200000,a1
         move.l  a1,(a2)+
-        add.l   d1,a1
-        move.l  a1,(a2)+
+        add.l   a1,d1
+        move.l  d1,(a2)+
         move.w  #MEMF_FAST|MEMF_PUBLIC,(a2)+
         add.w   #1,BD_NREGIONS(a6)
 
         moveq.l #EC_BASEADDRESS,d0
-        moveq.l #$20,d1                 ; $200000
-        bsr     WriteZorro2
+        move.l  a1,d1
+        swap    d1
+        bsr     WriteZorro
 
         moveq.l #EC_SHUTUP,d0
         moveq.l #0,d1
-        bsr     WriteZorro2
+        bsr     WriteZorro
 
 .nodev  rts
 
