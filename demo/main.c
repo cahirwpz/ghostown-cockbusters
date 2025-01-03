@@ -4,6 +4,7 @@
 #include <palette.h>
 #include <sync.h>
 #include <sprite.h>
+#include <uae.h>
 #include <system/task.h>
 #include <system/interrupt.h>
 #include <system/amigahunk.h>
@@ -284,6 +285,7 @@ int main(void) {
   RunLoader();
 
   EffectInit(ExeFile[EXE_PROTRACKER].effect);
+  UaeWarpMode(0);
   RunEffects();
   EffectKill(ExeFile[EXE_PROTRACKER].effect);
 

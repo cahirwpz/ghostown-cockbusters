@@ -55,6 +55,7 @@ class FSUAE(Launchable):
             self.options.append('--kickstart_file=' + os.path.realpath(rom))
         if debug:
             self.options.append('--use_debugger=1')
+        self.options.append('--warp_mode=1')
         self.options.append(HerePath('effects', 'Config.fs-uae'))
 
 
