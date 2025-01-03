@@ -4,6 +4,7 @@
 #include <palette.h>
 #include <sync.h>
 #include <sprite.h>
+#include <uae.h>
 #include <system/task.h>
 #include <system/interrupt.h>
 #include <system/amigahunk.h>
@@ -134,7 +135,7 @@ static void BgTaskLoop(__unused void *ptr) {
       case BG_INIT:
         /* XXX: awful hack to allocate long-lasting data
          * at the end of CHIP memory */
-        tmp = MemAlloc(81952 + 40992 + 55968 - 8, MEMF_CHIP);
+        tmp = MemAlloc(173770 - 8, MEMF_CHIP);
         LoadExe(EXE_PROTRACKER);
         MemFree(tmp);
         LoadExe(EXE_LOGO_GTN);
@@ -241,17 +242,6 @@ static void RunEffects(void) {
   }
 }
 
-#define ROMADDR 0xf80000
-#define ROMSIZE 0x07fff0
-#define ROMEXTADDR 0xe00000
-#define ROMEXTSIZE 0x080000
-
-static const MemBlockT rom[] = {
-  {(const void *)ROMADDR, ROMSIZE},
-  {(const void *)ROMEXTADDR, ROMEXTSIZE},
-  {NULL, 0}
-};
-
 int main(void) {
   /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
    * fetch segments locations to relocate symbol information read from file. */
@@ -262,8 +252,6 @@ int main(void) {
 
     if (BootDev == 0) /* floppy */ {
         dev = FloppyOpen();
-    } else if (BootDev == 1) /* rom/baremetal */ {
-        dev = MemOpen(rom);
     } else {
         PANIC();
     }
@@ -284,6 +272,7 @@ int main(void) {
   RunLoader();
 
   EffectInit(ExeFile[EXE_PROTRACKER].effect);
+  UaeWarpMode(0);
   RunEffects();
   EffectKill(ExeFile[EXE_PROTRACKER].effect);
 
