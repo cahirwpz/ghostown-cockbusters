@@ -135,7 +135,7 @@ static void BgTaskLoop(__unused void *ptr) {
       case BG_INIT:
         /* XXX: awful hack to allocate long-lasting data
          * at the end of CHIP memory */
-        tmp = MemAlloc(81952 + 40992 + 55968 - 8, MEMF_CHIP);
+        tmp = MemAlloc(173770 - 8, MEMF_CHIP);
         LoadExe(EXE_PROTRACKER);
         MemFree(tmp);
         LoadExe(EXE_LOGO_GTN);
