@@ -242,17 +242,6 @@ static void RunEffects(void) {
   }
 }
 
-#define ROMADDR 0xf80000
-#define ROMSIZE 0x07fff0
-#define ROMEXTADDR 0xe00000
-#define ROMEXTSIZE 0x080000
-
-static const MemBlockT rom[] = {
-  {(const void *)ROMADDR, ROMSIZE},
-  {(const void *)ROMEXTADDR, ROMEXTSIZE},
-  {NULL, 0}
-};
-
 int main(void) {
   /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
    * fetch segments locations to relocate symbol information read from file. */
@@ -263,8 +252,6 @@ int main(void) {
 
     if (BootDev == 0) /* floppy */ {
         dev = FloppyOpen();
-    } else if (BootDev == 1) /* rom/baremetal */ {
-        dev = MemOpen(rom);
     } else {
         PANIC();
     }
