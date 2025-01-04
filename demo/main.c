@@ -21,7 +21,10 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+  Log("[Memory] CHIP: largest=%d total=%d\n",
+      MemAvail(MEMF_CHIP|MEMF_LARGEST), MemAvail(MEMF_CHIP));
+  Log("[Memory] FAST: largest=%d total=%d\n",
+      MemAvail(MEMF_FAST|MEMF_LARGEST), MemAvail(MEMF_FAST));
 }
 
 #define EXE_LOADER 0
