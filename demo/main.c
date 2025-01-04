@@ -21,9 +21,8 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  Log("[Memory] CHIP: largest=%d total=%d\n",
-      MemAvail(MEMF_CHIP|MEMF_LARGEST), MemAvail(MEMF_CHIP));
-  Log("[Memory] FAST: largest=%d total=%d\n",
+  Log("[Memory] Free CHIP: max=%d total=%d FAST: max=%d total=%d\n",
+      MemAvail(MEMF_CHIP|MEMF_LARGEST), MemAvail(MEMF_CHIP),
       MemAvail(MEMF_FAST|MEMF_LARGEST), MemAvail(MEMF_FAST));
 }
 
@@ -89,6 +88,7 @@ static EffectT *LoadExe(int num) {
       exe->effect = effect;
       exe->hunk = hunk;
       EffectLoad(effect);
+      ShowMemStats();
       return effect;
     }
     ptr -= 2;
@@ -137,8 +137,8 @@ static void BgTaskLoop(__unused void *ptr) {
         /* Allocate long-lasting data at the end of CHIP memory */
         MemAllocDir(DirToggle);
         LoadExe(EXE_PROTRACKER);
-        LoadExe(EXE_FLOWER3D);
         LoadExe(EXE_LOGO_GTN);
+        LoadExe(EXE_FLOWER3D);
         MemAllocDir(DirToggle);
 
         Log("[BgTask] Done initial loading!\n");

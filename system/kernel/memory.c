@@ -160,7 +160,7 @@ void MemAllocDir(MemAllocDirT dir) {
   }
 }
 
-#if 1
+#if 0
 /* First fit */
 static WordT *ArenaFindFit(ArenaT *ar, u_int reqsz) {
   NodeT *n;
@@ -181,10 +181,7 @@ static WordT *ArenaFindFit(ArenaT *ar, u_int reqsz) {
   WordT *best = NULL;
   u_int bestsz = INT_MAX;
 
-  for (n = (AllocDir ? Head(ar)->prev : Head(ar)->next);
-       n != Head(ar);
-       n = (AllocDir ? n->prev : n->next))
-  {
+  for (n = Head(ar)->next; n != Head(ar); n = n->next) {
     WordT *bt = BtFromPtr(n);
     u_int sz = BtSize(bt);
     if (sz == reqsz)
