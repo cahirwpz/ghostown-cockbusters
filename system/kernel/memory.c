@@ -150,11 +150,24 @@ static inline u_int BlockSize(u_int size) {
   return roundup(size + USEDBLK_SZ, ALIGNMENT);
 }
 
-#if 0
+static MemAllocDirT AllocDir = DirForwards;
+
+void MemAllocDir(MemAllocDirT dir) {
+  if (dir == DirToggle) {
+    AllocDir = AllocDir ? DirForwards : DirBackwards;
+  } else {
+    AllocDir = dir;
+  }
+}
+
+#if 1
 /* First fit */
 static WordT *ArenaFindFit(ArenaT *ar, u_int reqsz) {
   NodeT *n;
-  for (n = Head(ar)->next; n != Head(ar); n = n->next) {
+  for (n = (AllocDir ? Head(ar)->prev : Head(ar)->next);
+       n != Head(ar);
+       n = (AllocDir ? n->prev : n->next))
+  {
     WordT *bt = BtFromPtr(n);
     if (BtSize(bt) >= reqsz)
       return bt;
@@ -168,7 +181,10 @@ static WordT *ArenaFindFit(ArenaT *ar, u_int reqsz) {
   WordT *best = NULL;
   u_int bestsz = INT_MAX;
 
-  for (n = Head(ar)->next; n != Head(ar); n = n->next) {
+  for (n = (AllocDir ? Head(ar)->prev : Head(ar)->next);
+       n != Head(ar);
+       n = (AllocDir ? n->prev : n->next))
+  {
     WordT *bt = BtFromPtr(n);
     u_int sz = BtSize(bt);
     if (sz == reqsz)
@@ -238,20 +254,34 @@ static WordT *ArenaMemAlloc(ArenaT *ar, u_int size) {
     u_int memsz = reqsz - USEDBLK_SZ;
     /* Mark found block as used. */
     u_int sz = BtSize(bt);
-    WordT *next;
 
     FreeRemove(bt);
-    BtMake(bt, reqsz, USED | is_last);
     /* Split free block if needed. */
-    next = BtNext(bt);
     if (sz > reqsz) {
-      BtMake(next, sz - reqsz, FREE | is_last);
-      BtClrIsLast(bt);
-      memsz += USEDBLK_SZ;
-      ArenaFreeInsert(ar, next);
-    } else if (!is_last) {
-      /* Nothing to split? Then previous block is not free anymore! */
-      BtClrPrevFree(next);
+      if (AllocDir == DirForwards) {
+        WordT *next;
+        BtMake(bt, reqsz, USED);
+        next = BtNext(bt);
+        BtMake(next, sz - reqsz, FREE | is_last);
+        memsz += USEDBLK_SZ;
+        ArenaFreeInsert(ar, next);
+      } else {
+        WordT *prev = bt;
+        BtMake(prev, sz - reqsz, FREE);
+        bt = BtNext(prev);
+        BtMake(bt, reqsz, USED | PREVFREE | is_last);
+        /* Mark previous block as not free in the successor block. */
+        if (!is_last)
+          BtClrPrevFree(BtNext(bt));
+        memsz += USEDBLK_SZ;
+        ArenaFreeInsert(ar, prev);
+      }
+    } else {
+      /* Nothing to split! */
+      BtMake(bt, reqsz, USED | is_last);
+      /* Mark previous block as not free in the successor block. */
+      if (!is_last)
+        BtClrPrevFree(BtNext(bt));
     }
     ArenaDecFree(ar, memsz);
   }
@@ -399,6 +429,8 @@ static void ArenaCheck(ArenaT *ar, int verbose) {
       prevfree = 0;
     }
   }
+
+  Msg("$%08lx: end\n", (uintptr_t)bt);
 
   Assume(BtGetIsLast(prev)); /* Last block set incorrectly? */
   Assume(freeMem == ar->totalFree); /* Total free memory miscalculated? */
