@@ -21,9 +21,8 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  Log("[Memory] Free CHIP: max=%d total=%d FAST: max=%d total=%d\n",
-      MemAvail(MEMF_CHIP|MEMF_LARGEST), MemAvail(MEMF_CHIP),
-      MemAvail(MEMF_FAST|MEMF_LARGEST), MemAvail(MEMF_FAST));
+  Log("[Memory] Max free chunk: CHIP=%d FAST=%d\n",
+      MemAvail(MEMF_CHIP | MEMF_LARGEST), MemAvail(MEMF_FAST | MEMF_LARGEST));
 }
 
 #define EXE_LOADER 0
@@ -77,6 +76,7 @@ static EffectT *LoadExe(int num) {
 
   file = OpenFile(exe->path);
   hunk = LoadHunkList(file);
+  FileClose(file);
   /* Assume code section is first and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
    * source file. */
@@ -278,6 +278,22 @@ int main(void) {
 
   RemIntServer(INTB_VERTB, VBlankInterrupt);
   KillFileSys();
+
+  /* Inspect the output to find memory leaks.
+   * All memory should be released at this point! */
+  {
+    int i;
+
+    for (i = 0; i < EXE_LAST; i++) {
+      ExeFileT *exe = &ExeFile[i];
+      if (exe->hunk) {
+        Log("[Effect] Effect '%s' has not been removed from memory!\n", exe->path);
+        UnLoadExe(i);
+      }
+    }
+  }
+
+  MemCheck(1);
 
   return 0;
 }
