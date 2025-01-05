@@ -1,33 +1,69 @@
 {
-  "Empty": ["empty/empty.o"],
-  "Loader": [
-    "loader/data/JazzCat-CockbustersLoader.smp.o",
-    "loader/data/JazzCat-CockbustersLoader.trk.o",
-    "loader/loader.o"
-  ],
-  "Protracker": [
-    "playpt/data/JazzCat-XenoCoq.trk.o",
-    "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
-    "playpt/playpt.o"
-  ],
-  "Dna3D": ["dna3d/dna3d.o"],
-  "Stencil3D": ["stencil3d/stencil3d.o"],
-  "CockFolk": ["cock-folk/cock-folk.o"],
-  "TexObj": [
-    "texobj/texobj.o",
-    "texobj/mainloop.o"
-  ],
-  "Flower3D": ["flower3d/flower3d.o"],
-  "Logo": ["logo/logo.o"],
-  "Rotator": [
+  "Empty": {
+    "objects" : [
+      "empty/empty.o"]
+  },
+  "Loader": {
+    "objects": [
+      "loader/data/JazzCat-CockbustersLoader.smp.o",
+      "loader/data/JazzCat-CockbustersLoader.trk.o",
+      "loader/loader.o"]
+  },
+  "Protracker": {
+    "objects": [
+      "playpt/data/JazzCat-XenoCoq.trk.o",
+      "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
+      "playpt/playpt.o"]
+  },
+  "Dna3D": {
+    "objects": [
+      "dna3d/dna3d.o"]
+  },
+  "Stencil3D": {
+    "objects": [
+      "stencil3d/stencil3d.o"]
+  },
+  "CockFolk": {
+    "objects": [
+      "cock-folk/cock-folk.o"]
+  },
+  "TexObj": {
+    "objects": [
+      "texobj/texobj.o",
+      "texobj/mainloop.o"]
+  },
+  "Flower3D": {
+    "objects": [
+    "flower3d/flower3d.o"]
+  },
+  "Logo": {
+    "objects": [
+      "logo/logo.o"]
+  },
+  "Rotator": {
+    "objects": [
     "rotator/rotator.o",
-    "rotator/mainloop.o"],
-  "TextScroll": [
-    "textscroll/textscroll.o",
-    "textscroll/data/text-scroll.o"
-  ],
-  "Abduction": ["abduction/abduction.o"],
-  "MagnifyingGlass": ["magnifying-glass/magnifying-glass.o"],
-  "CockTechno": ["cock-techno/cock-techno.o"],
-  "CockFreedom": ["cock-freedom/cock-freedom.o"]
+    "rotator/mainloop.o"]
+  },
+  "TextScroll": {
+    "objects": [
+      "textscroll/textscroll.o",
+      "textscroll/data/text-scroll.o"]
+  },
+  "Abduction": {
+    "objects": [
+      "abduction/abduction.o"]
+  },
+  "MagnifyingGlass": {
+    "objects": [
+      "magnifying-glass/magnifying-glass.o"]
+  },
+  "CockTechno": {
+    "objects": [
+      "cock-techno/cock-techno.o"]
+  },
+  "CockFreedom": {
+    "objects": [
+      "cock-freedom/cock-freedom.o"]
+  }
 }
