@@ -35,15 +35,8 @@ u_int MemAvail(u_int attributes);
 void AddMemory(void *ptr, u_int byteSize, u_int attributes);
 #endif
 
-typedef enum {
-  DirToggle = -1,
-  DirForwards = 0,
-  DirBackwards = 1
-} MemAllocDirT;
-
 void *MemAlloc(u_int byteSize, u_int attributes);
 void *MemResize(void *memoryBlock, u_int byteSize);
-void MemAllocDir(MemAllocDirT dir);
 void MemFree(void *memoryBlock);
 
 #endif /* !__SYSTEM_MEMORY_H__ */

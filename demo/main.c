@@ -134,12 +134,9 @@ static void BgTaskLoop(__unused void *ptr) {
   for (;;) {
     switch (BgTaskState) {
       case BG_INIT:
-        /* Allocate long-lasting data at the end of CHIP memory */
-        MemAllocDir(DirToggle);
         LoadExe(EXE_PROTRACKER);
         LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
-        MemAllocDir(DirToggle);
 
         Log("[BgTask] Done initial loading!\n");
         BgTaskState = BG_IDLE;
