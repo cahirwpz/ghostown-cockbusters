@@ -43,4 +43,12 @@ SECTIONS
     *(.bsschip)
   }
   __bss_chip_size = SIZEOF(.bsschip);
+  .stab :
+  {
+    *(.stab)
+  }
+  .stabstr :
+  {
+    *(.stabstr)
+  }
 }
