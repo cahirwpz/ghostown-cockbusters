@@ -21,7 +21,13 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+  unsigned chip_largest = MemAvail(MEMF_CHIP | MEMF_LARGEST);
+  unsigned fast_largest = MemAvail(MEMF_FAST | MEMF_LARGEST);
+  unsigned chip_total = MemAvail(MEMF_CHIP);
+  unsigned fast_total = MemAvail(MEMF_FAST);
+
+  Log("[Memory] Max/total free: CHIP %6d/%6d  FAST %6d/%6d\n", chip_largest,
+      chip_total, fast_largest, fast_total);
 }
 
 #define EXE_LOADER 0
@@ -75,6 +81,7 @@ static EffectT *LoadExe(int num) {
 
   file = OpenFile(exe->path);
   hunk = LoadHunkList(file);
+  FileClose(file);
   /* Assume code section is first and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
    * source file. */
@@ -86,6 +93,7 @@ static EffectT *LoadExe(int num) {
       exe->effect = effect;
       exe->hunk = hunk;
       EffectLoad(effect);
+      ShowMemStats();
       return effect;
     }
     ptr -= 2;
@@ -104,7 +112,6 @@ static void UnLoadExe(int num) {
   exe->effect = NULL;
   FreeHunkList(exe->hunk);
   exe->hunk = NULL;
-  ShowMemStats();
 }
 
 static volatile EffectFuncT VBlankHandler = NULL;
@@ -129,15 +136,9 @@ static void BgTaskLoop(__unused void *ptr) {
   Log("[BgTask] Started!\n");
 
   for (;;) {
-    void *tmp;
-
     switch (BgTaskState) {
       case BG_INIT:
-        /* XXX: awful hack to allocate long-lasting data
-         * at the end of CHIP memory */
-        tmp = MemAlloc(173770 - 8, MEMF_CHIP);
         LoadExe(EXE_PROTRACKER);
-        MemFree(tmp);
         LoadExe(EXE_LOGO_GTN);
         LoadExe(EXE_FLOWER3D);
 
@@ -217,7 +218,6 @@ static void RunEffects(void) {
       if (prev >= 0) {
         VBlankHandler = NULL;
         EffectKill(ExeFile[prev].effect);
-        ShowMemStats();
       }
       if (curr == -1)
         break;
@@ -278,6 +278,22 @@ int main(void) {
 
   RemIntServer(INTB_VERTB, VBlankInterrupt);
   KillFileSys();
+
+  /* Inspect the output to find memory leaks.
+   * All memory should be released at this point! */
+  {
+    int i;
+
+    for (i = 0; i < EXE_LAST; i++) {
+      ExeFileT *exe = &ExeFile[i];
+      if (exe->hunk) {
+        Log("[Effect] Effect '%s' has not been removed from memory!\n", exe->path);
+        UnLoadExe(i);
+      }
+    }
+  }
+
+  MemCheck(1);
 
   return 0;
 }
