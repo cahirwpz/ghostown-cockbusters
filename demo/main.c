@@ -21,8 +21,13 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  Log("[Memory] Max free chunk: CHIP=%d FAST=%d\n",
-      MemAvail(MEMF_CHIP | MEMF_LARGEST), MemAvail(MEMF_FAST | MEMF_LARGEST));
+  unsigned chip_largest = MemAvail(MEMF_CHIP | MEMF_LARGEST);
+  unsigned fast_largest = MemAvail(MEMF_FAST | MEMF_LARGEST);
+  unsigned chip_total = MemAvail(MEMF_CHIP);
+  unsigned fast_total = MemAvail(MEMF_FAST);
+
+  Log("[Memory] Max/total free: CHIP %6d/%6d  FAST %6d/%6d\n", chip_largest,
+      chip_total, fast_largest, fast_total);
 }
 
 #define EXE_LOADER 0
@@ -107,7 +112,6 @@ static void UnLoadExe(int num) {
   exe->effect = NULL;
   FreeHunkList(exe->hunk);
   exe->hunk = NULL;
-  ShowMemStats();
 }
 
 static volatile EffectFuncT VBlankHandler = NULL;
@@ -214,7 +218,6 @@ static void RunEffects(void) {
       if (prev >= 0) {
         VBlankHandler = NULL;
         EffectKill(ExeFile[prev].effect);
-        ShowMemStats();
       }
       if (curr == -1)
         break;
