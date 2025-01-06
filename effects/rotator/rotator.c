@@ -94,92 +94,90 @@ static void ChunkyToPlanar(CustomPtrT custom_) {
    * (WIDTH, HEIGHT/2, DEPTH) and will be placed in bpl[2] and bpl[3].
    */
 
-  for (; c2p_phase < C2P_LAST && !BlitterBusy(); c2p_phase++) {
-    switch (c2p_phase) {
-      case 0:
-        /* Initialize chunky to planar. */
-        custom_->bltamod = 2;
-        custom_->bltbmod = 2;
-        custom_->bltdmod = 0;
-        custom_->bltcdat = 0xF0F0;
-        custom_->bltafwm = -1;
-        custom_->bltalwm = -1;
+  custom_->intreq_ = INTF_BLIT;
 
-        /* Swap 4x2, pass 1, high-bits. */
-        custom_->bltapt = bpl[0];
-        custom_->bltbpt = bpl[0] + 2;
-        custom_->bltdpt = bpl[1] + BLTSIZE / 2;
+  switch (c2p_phase++) {
+    case 0:
+      /* Initialize chunky to planar. */
+      custom_->bltamod = 2;
+      custom_->bltbmod = 2;
+      custom_->bltdmod = 0;
+      custom_->bltcdat = 0xF0F0;
+      custom_->bltafwm = -1;
+      custom_->bltalwm = -1;
 
-        /* (a & 0xF0F0) | ((b >> 4) & ~0xF0F0) */
-        custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
-        custom_->bltcon1 = BSHIFT(4);
+      /* Swap 4x2, pass 1, high-bits. */
+      custom_->bltapt = bpl[0];
+      custom_->bltbpt = bpl[0] + 2;
+      custom_->bltdpt = bpl[1] + BLTSIZE / 2;
 
-      case 1:
-        /* overall size: BLTSIZE / 2 bytes */
-        custom_->bltsize = 1 | ((BLTSIZE / 8) << 6);
-        break;
+      /* (a & 0xF0F0) | ((b >> 4) & ~0xF0F0) */
+      custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
+      custom_->bltcon1 = BSHIFT(4);
 
-      case 2:
-        /* Swap 4x2, pass 2, low-bits. */
-        custom_->bltapt = bpl[1] - 4;
-        custom_->bltbpt = bpl[1] - 2;
-        custom_->bltdpt = bpl[1] + BLTSIZE / 2 - 2;
+    case 1:
+      /* overall size: BLTSIZE / 2 bytes */
+      custom_->bltsize = 1 | ((BLTSIZE / 8) << 6);
+      break;
 
-        /* ((a << 4) & 0xF0F0) | (b & ~0xF0F0) */
-        custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(4);
-        custom_->bltcon1 = BLITREVERSE;
+    case 2:
+      /* Swap 4x2, pass 2, low-bits. */
+      custom_->bltapt = bpl[1] - 4;
+      custom_->bltbpt = bpl[1] - 2;
+      custom_->bltdpt = bpl[1] + BLTSIZE / 2 - 2;
 
-      case 3:
-        /* overall size: BLTSIZE / 2 bytes */
-        custom_->bltsize = 1 | ((BLTSIZE / 8) << 6);
-        break;
+      /* ((a << 4) & 0xF0F0) | (b & ~0xF0F0) */
+      custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(4);
+      custom_->bltcon1 = BLITREVERSE;
 
-      case 4:
-        custom_->bltamod = 0;
-        custom_->bltbmod = 0;
-        custom_->bltdmod = 0;
-        custom_->bltcdat = 0xAAAA;
+    case 3:
+      /* overall size: BLTSIZE / 2 bytes */
+      custom_->bltsize = 1 | ((BLTSIZE / 8) << 6);
+      break;
 
-        custom_->bltapt = bpl[1];
-        custom_->bltbpt = bpl[1];
-        custom_->bltdpt = bpl[3];
+    case 4:
+      custom_->bltamod = 0;
+      custom_->bltbmod = 0;
+      custom_->bltdmod = 0;
+      custom_->bltcdat = 0xAAAA;
 
-        /* (a & 0xAAAA) | ((b >> 1) & ~0xAAAA) */
-        custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
-        custom_->bltcon1 = BSHIFT(1);
-        /* overall size: BLTSIZE bytes */
-        custom_->bltsize = 4 | ((BLTSIZE / 8) << 6);
-        break;
+      custom_->bltapt = bpl[1];
+      custom_->bltbpt = bpl[1];
+      custom_->bltdpt = bpl[3];
 
-      case 5:
-        custom_->bltapt = bpl[1] + BLTSIZE - 2;
-        custom_->bltbpt = bpl[1] + BLTSIZE - 2;
-        custom_->bltdpt = bpl[2] + BLTSIZE - 2;
-        custom_->bltcdat = 0xAAAA;
+      /* (a & 0xAAAA) | ((b >> 1) & ~0xAAAA) */
+      custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC);
+      custom_->bltcon1 = BSHIFT(1);
+      /* overall size: BLTSIZE bytes */
+      custom_->bltsize = 4 | ((BLTSIZE / 8) << 6);
+      break;
 
-        /* ((a << 1) & 0xAAAA) | (b & ~0xAAAA) */
-        custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(1);
-        custom_->bltcon1 = BLITREVERSE;
-        /* overall size: BLTSIZE bytes */
-        custom_->bltsize = 4 | ((BLTSIZE / 8) << 6);
-        break;
+    case 5:
+      custom_->bltapt = bpl[1] + BLTSIZE - 2;
+      custom_->bltbpt = bpl[1] + BLTSIZE - 2;
+      custom_->bltdpt = bpl[2] + BLTSIZE - 2;
+      custom_->bltcdat = 0xAAAA;
 
-      case 6:
-        {
-          CopInsPairT *ins = bplptr[c2p_active];
-          CopInsSet32(ins++, bpl[2]);
-          CopInsSet32(ins++, bpl[3]);
-          CopInsSet32(ins++, bpl[2] + BLTSIZE / 2);
-          CopInsSet32(ins++, bpl[3] + BLTSIZE / 2);
-          CopListRun(cp[c2p_active]);
-        }
-        break;
+      /* ((a << 1) & 0xAAAA) | (b & ~0xAAAA) */
+      custom_->bltcon0 = (SRCA | SRCB | DEST) | (ABC | ABNC | ANBC | NABNC) | ASHIFT(1);
+      custom_->bltcon1 = BLITREVERSE;
+      /* overall size: BLTSIZE bytes */
+      custom_->bltsize = 4 | ((BLTSIZE / 8) << 6);
+      break;
 
-      default:
-        break;
-    }
+    case 6:
+      {
+        CopInsPairT *ins = bplptr[c2p_active];
+        CopInsSet32(ins++, bpl[2]);
+        CopInsSet32(ins++, bpl[3]);
+        CopInsSet32(ins++, bpl[2] + BLTSIZE / 2);
+        CopInsSet32(ins++, bpl[3] + BLTSIZE / 2);
+        CopListRun(cp[c2p_active]);
+      }
+      break;
 
-    custom_->intreq_ = INTF_BLIT;
+    default:
+      break;
   }
 }
 
