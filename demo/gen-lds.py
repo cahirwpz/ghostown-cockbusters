@@ -55,9 +55,13 @@ SECTIONS
   }
   __bss_chip_size = SIZEOF(.bsschip);
   ${effects}
-  /DISCARD/ :
+  .stab :
   {
-    *(.stab .stabstr)
+    *(.stab)
+  }
+  .stabstr :
+  {
+    *(.stabstr)
   }
 }""")
 
