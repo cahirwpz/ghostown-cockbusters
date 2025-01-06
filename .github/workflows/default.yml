@@ -29,7 +29,7 @@ jobs:
     container: cahirwpz/demoscene:latest
     steps:
       - name: Checkout code
-        uses: nschloe/action-cached-lfs-checkout@v1
+        uses: nschloe/action-cached-lfs-checkout@v1.2.3
       - name: Setup GoLang
         uses: actions/setup-go@v4
         with:
