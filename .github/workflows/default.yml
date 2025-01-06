@@ -1,7 +1,12 @@
 name: Demoscene
 
 on:
-  push
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   style:
