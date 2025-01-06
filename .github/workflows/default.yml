@@ -9,9 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: nschloe/action-cached-lfs-checkout@v1
       - name: Setup Python 3.12
         uses: actions/setup-python@v4
         with:
@@ -29,9 +27,7 @@ jobs:
     container: cahirwpz/demoscene:latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: nschloe/action-cached-lfs-checkout@v1
       - name: Setup GoLang
         uses: actions/setup-go@v4
         with:
