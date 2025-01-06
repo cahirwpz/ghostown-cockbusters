@@ -17,7 +17,10 @@
   },
   "Dna3D": {
     "objects": [
-      "dna3d/dna3d.o"]
+      "dna3d/dna3d.o"],
+    "sections": [
+      ".datachip.bobs",
+      ".datachip.bobs2"]
   },
   "Stencil3D": {
     "objects": [

@@ -11,6 +11,8 @@
 #define DEPTH 3
 
 #define screen_bplSize (WIDTH * HEIGHT / 8)
+#define bobs_bpl_section __section(".datachip.bobs")
+#define bobs2_bpl_section __section(".datachip.bobs2")
 
 #include "data/dna3d.c"
 #include "data/bobs.c"
