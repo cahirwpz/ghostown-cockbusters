@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/cock_scene_3.c data/cock-pal.c 
+CLEAN-FILES := data/cock_scene_3.c data/cock-pal*.c 
 
 PNG2C.cock-pal   := --pixmap gradient,4x18x12
 PNG2C.cock-pal2  := --pixmap gradient2,4x18x12
@@ -13,7 +13,6 @@ PNG2C.cock-pal8  := --pixmap gradient8,4x18x12
 PNG2C.cock-pal9  := --pixmap gradient9,4x18x12
 PNG2C.cock-pal10 := --pixmap gradient10,4x18x12
 PNG2C.cock-pal11 := --pixmap gradient11,4x18x12
-
 
 include $(TOPDIR)/build/effect.mk
 

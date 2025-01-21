@@ -21,10 +21,10 @@
 #include "data/demo.c"
 
 static void ShowMemStats(void) {
-  unsigned chip_largest = MemAvail(MEMF_CHIP | MEMF_LARGEST);
-  unsigned fast_largest = MemAvail(MEMF_FAST | MEMF_LARGEST);
-  unsigned chip_total = MemAvail(MEMF_CHIP);
-  unsigned fast_total = MemAvail(MEMF_FAST);
+  __unused unsigned chip_largest = MemAvail(MEMF_CHIP | MEMF_LARGEST);
+  __unused unsigned fast_largest = MemAvail(MEMF_FAST | MEMF_LARGEST);
+  __unused unsigned chip_total = MemAvail(MEMF_CHIP);
+  __unused unsigned fast_total = MemAvail(MEMF_FAST);
 
   Log("[Memory] Max/total free: CHIP %6d/%6d  FAST %6d/%6d\n", chip_largest,
       chip_total, fast_largest, fast_total);
