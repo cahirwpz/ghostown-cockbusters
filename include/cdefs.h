@@ -14,7 +14,17 @@
 #define __noreturn __attribute__((noreturn))
 #undef __aligned
 #define __aligned(x) __attribute__((aligned(x)))
+#if __GNUC_PREREQ__(6, 5)
+#define __section(x) __attribute__((section(x)))
+#else
 #define __section(x) __attribute__((section(".section " ## x)))
+#endif
+
+#if __GNUC_PREREQ__(6, 5)
+#define __FLEX_ARRAY
+#else
+#define __FLEX_ARRAY 0
+#endif
 
 /* Annotate variable to be put into text section. This should be used only on
  * scalar variable if you want it to be accessed with PC-relative addressing.
