@@ -73,7 +73,7 @@ static __code short beam_pal[4][7] = {
 };
 
 #define pal_count 32
-static const __code u_short pal[pal_count] = {
+static __code u_short pal[pal_count] = {
   [0]  = 0x034,
   [1]  = 0x000,
   [2]  = 0xFFF,

@@ -32,6 +32,7 @@
 #define __code __section(".text")
 /* Annotate initialized variable to be put into memory section. */
 #define __data __section(".data")
+#define __rodata __section(".rodata")
 /* Annotate initialized variable to be put into memory accessible
  * by custom chipset. */
 #define __data_chip __section(".datachip")

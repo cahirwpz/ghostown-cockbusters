@@ -23,7 +23,7 @@ static __code BitmapT *scroll;
 static __code short last_line = -1;
 static __code char *line_start;
 
-extern uint8_t Text[];
+extern char Text[];
 
 #include "data/text-scroll-font.c"
 #include "data/background.c"

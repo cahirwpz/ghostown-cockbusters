@@ -69,7 +69,7 @@ static u_short *halloffame_pal[] = {
 
 
 static __code SpriteT *active_sprite;
-static __code short *active_pal;
+static __code u_short *active_pal;
 /* Reading polygon data */
 static __code short current_frame = 0;
 static __code CopInsT *colors;
