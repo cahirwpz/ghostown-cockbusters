@@ -12,7 +12,7 @@ extern void DPutChar(void *ptr, char data);
 
 #define PUTCHAR DPutChar
 #define AUXDATA ciab
-#endif 
+#endif
 
 #if LOGOUT == 2
 #include <custom.h>
@@ -23,12 +23,18 @@ extern void KPutChar(void *ptr, char data);
 #define AUXDATA custom
 #endif
 
+#if LOGOUT == 3
+extern void CrashPutChar(void *ptr, char data);
+
+#define PUTCHAR CrashPutChar
+#define AUXDATA NULL
+#endif
+
 void Log(const char *format, ...) {
   va_list args;
 
   va_start(args, format);
   kvprintf(PUTCHAR, (void *)AUXDATA, format, args);
-
   va_end(args);
 }
 
@@ -39,7 +45,6 @@ __noreturn void Panic(const char *format, ...) {
   kvprintf(PUTCHAR, (void *)AUXDATA, format, args);
   va_end(args);
 
-  PANIC();
-  for (;;);
+  Crash();
 }
 #endif

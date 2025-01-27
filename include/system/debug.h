@@ -30,4 +30,9 @@ __noreturn void Panic(const char *format, ...)
 #endif
 #endif /* !_SYSTEM */
 
+struct BootData;
+
+void CrashInit(struct BootData *bd);
+__noreturn void Crash(void);
+
 #endif /* !__SYSTEM_DEBUG_H__ */

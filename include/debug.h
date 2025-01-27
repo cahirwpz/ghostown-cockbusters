@@ -18,7 +18,7 @@
 #define Assert(e) {}
 #else
 #define Assert(e) { if (!(e))                                                  \
-   Panic("Assertion \"%s\" failed: file \"%s\", line %d, function \"%s\"!\n",  \
+   Panic("Assertion \"%s\" failed: file \"%s\", line %d, function \"%s\"!",    \
          #e, __FILE__, __LINE__, __func__); }
 #endif
 
