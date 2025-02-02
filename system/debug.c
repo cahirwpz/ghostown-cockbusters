@@ -132,8 +132,8 @@ static void DumpCrash(u_char *screen, CrashLogT *cl) {
     cl->head &= CRASHLOG_SIZE - 1;
 
     if (c == '\n') {
-      pos = MoveTo(screen, 0, y++);
-      if (y > HEIGHT / FONTH) {
+      pos = MoveTo(screen, 0, ++y);
+      if (y >= HEIGHT / FONTH) {
         while (!LeftMouseButton())
           continue;
         while (LeftMouseButton())
