@@ -98,9 +98,7 @@ static EffectT *LoadExe(int num) {
     }
     ptr -= 2;
   }
-  Log("%s: missing effect magic marker\n", exe->path);
-  PANIC();
-  return NULL;
+  Panic("[Effect] '%s' missing effect magic marker!", exe->path);
 }
 
 static void UnLoadExe(int num) {
@@ -174,7 +172,7 @@ static void BgTaskLoop(__unused void *ptr) {
   }
 }
 
-static __aligned(8) char BgTaskStack[512];
+static __aligned(8) char BgTaskStack[768];
 static TaskT BgTask;
 
 static void RunLoader(void) {
@@ -251,9 +249,9 @@ int main(void) {
     FileT *dev = NULL;
 
     if (BootDev == 0) /* floppy */ {
-        dev = FloppyOpen();
+      dev = FloppyOpen();
     } else {
-        PANIC();
+      Panic("[Demo] Only configured to run from floppy!");
     }
 
     InitFileSys(dev);
