@@ -6,7 +6,6 @@ LIBNAME := system
 SOURCES := \
 	amigaos.c \
 	autoinit.c \
-	crash.c \
 	debug.c \
 	dputchar.S \
 	kickfix.S \
