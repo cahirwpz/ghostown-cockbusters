@@ -82,6 +82,11 @@ static EffectT *LoadExe(int num) {
   file = OpenFile(exe->path);
   hunk = LoadHunkList(file);
   FileClose(file);
+
+  if (hunk == NULL) {
+    Panic("[Effect] Failed to load '%s'!", exe->path);
+  }
+
   /* Assume code section is first and effect definition is at its end.
    * That should be the case as the effect definition is always the last in
    * source file. */
