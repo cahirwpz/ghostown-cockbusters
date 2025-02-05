@@ -273,6 +273,8 @@ void CrashInit(BootDataT *bd) {
 }
 
 __noreturn void Crash(void) {
+  /* TODO fix emulator to flush stdout before HALT */
+  UaeLog("\n");
   HALT();
   for(;;);
 }
