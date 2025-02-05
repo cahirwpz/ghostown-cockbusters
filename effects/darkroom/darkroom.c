@@ -10,9 +10,10 @@
 #define HEIGHT 256 // 128
 #define DEPTH  3
 
-#define V_LINE_WIDTH  12
+#define V_LINE_WIDTH  14
 #define H_LINE_WIDTH  7
-#define NO_OF_LINES 6
+#define NO_OF_V_LINES 8
+#define NO_OF_H_LINES 6
 
 
 static CopListT *cp;
@@ -21,28 +22,37 @@ static BitmapT *screen[2];
 static short active = 0;
 
 
-static short v_lines[NO_OF_LINES] = {0, 70, 140, 166, 236, 306};
-static short h_lines[NO_OF_LINES] = {0, 60, 120, 129, 189, 249};
+static short v_lines[NO_OF_V_LINES][2] = {
+  {0, 7},
+  {70, 14},
+  {140, 9},
+  {166, 14},
+  {236, 9},
+  {306, 7},
+  {10, 9},
+  {296, 14}
+};
+static short h_lines[NO_OF_H_LINES] = {0, 60, 120, 129, 189, 249};
 
 static short __data_chip carry[2][H_LINE_WIDTH * (WIDTH/16)] = {{0}};
 
-static u_short V_LINE[3] = {
+static u_short V_LINE_14[3] = {
   13107 << 2,  // bin: 11001100110011
    3900 << 2,  // bin: 00111100111100
     192 << 2,  // bin: 00000011000000
 };
 
-// static u_short V_LINE[3] = {
-//   85 << 9,  // bin: 1010101
-//   54 << 9,  // bin: 0110110
-//    8 << 9,  // bin: 0001000
-// };
+static u_short V_LINE_9[3] = {
+  341 << 7,  // bin: 101010101
+  198 << 7,  // bin: 011000110
+   56 << 7,  // bin: 000111000
+};
 
-// static u_short V_LINE[3] = {
-//   341 << 7,  // bin: 101010101
-//   198 << 7,  // bin: 011000110
-//    56 << 7,  // bin: 000111000
-// };
+static u_short V_LINE_7[3] = {
+  85 << 9,  // bin: 1010101
+  54 << 9,  // bin: 0110110
+   8 << 9,  // bin: 0001000
+};
 
 static short __data_chip H_LINE[3][7][20] = {
   {
@@ -76,6 +86,10 @@ static short __data_chip H_LINE[3][7][20] = {
 
 
 static void DoMagic(void **planes) {
+  /*
+   * Function that draws horizontal lines.
+   * At each pixel it adds light intensity
+   */
   short i = 0;
 
   custom->bltamod = 0;
@@ -93,8 +107,9 @@ static void DoMagic(void **planes) {
 
   custom->bltcon1 = 0;
 
-  for (i = 0; i < NO_OF_LINES; ++i) {
+  for (i = 0; i < NO_OF_H_LINES; ++i) {
     short pos = h_lines[i] * 40;
+
     /* BITPLANE 0 */
     /* CARRY */
     custom->bltapt = H_LINE[0];
@@ -183,10 +198,14 @@ static void DoMagic(void **planes) {
 }
 
 static void CalculateFirstLine(void **planes) {
-  short word, offset, aux;
+  /*
+   * Calculate first line by adding light intensity of vertical lines.
+   * This line will be later stretched on full screen by Vertical Fill.
+   */
+  short word, offset, aux, thickness;
+  u_short* V_LINE;
   short *ptr;
   short i, j;
-  (void)aux;
 
   /* Set first line to 0 */
   for (i = 0; i < 3; ++i) {
@@ -197,24 +216,45 @@ static void CalculateFirstLine(void **planes) {
   }
 
   /* Calculate coordinates */
-  word = v_lines[0]/16;
-  offset = v_lines[0] - (word * 16);
+  word = v_lines[0][0]/16;
+  offset = v_lines[0][0] - (word * 16);
+  thickness = v_lines[0][1];
+
+  if (thickness == 14) {
+    V_LINE = V_LINE_14;
+  } else if (thickness == 9)
+  {
+    V_LINE = V_LINE_9;
+  } else {
+    V_LINE = V_LINE_7;
+  }
+  
 
   /* Draw first beam */
   for (i = 0; i < 3; ++i) {
     ptr = planes[i];
     ptr[word] = V_LINE[i] >> offset;
-    if (offset > 2) {
+    if (offset > (16 - thickness)) {
       ptr[word+1] = V_LINE[i] << (16 - offset);
     }
   }
 
   /* Add rest of the beams */
-  for (i = 1; i < NO_OF_LINES; ++i) {
+  for (i = 1; i < NO_OF_V_LINES; ++i) {
     u_short w1, w2, c1, c2 = 0;
 
-    word = v_lines[i]/16;
-    offset = v_lines[i] - (word * 16);
+    word = v_lines[i][0]/16;
+    offset = v_lines[i][0] - (word * 16);
+    thickness = v_lines[i][1];
+
+    if (thickness == 14) {
+      V_LINE = V_LINE_14;
+    } else if (thickness == 9)
+    {
+      V_LINE = V_LINE_9;
+    } else {
+      V_LINE = V_LINE_7;
+    }
 
     ptr = planes[0];
     w1 = V_LINE[0] >> offset;
@@ -228,7 +268,7 @@ static void CalculateFirstLine(void **planes) {
 
     ptr = planes[1];
     w1 = V_LINE[1] >> offset;
-    /* circural dependency */
+
     aux = ptr[word];
     ptr[word] = (ptr[word] ^ w1) ^ c1;
     c1 = ((aux ^ w1) & c1) ^ (aux & w1);
@@ -263,6 +303,9 @@ static void CalculateFirstLine(void **planes) {
 }
 
 static void VerticalFill(void** planes) {
+  /*
+   * Copy first line all the way down to the last line of the screen
+   */
   custom->bltamod = 0;
   custom->bltbmod = 0;
   custom->bltdmod = 0;
@@ -297,6 +340,9 @@ static void VerticalFill(void** planes) {
 }
 
 static void Move(void) {
+  /*
+   * Change position of each line.
+   */
   short i = 0;
 
   if (frameCount % 3 == 0) {
@@ -309,14 +355,17 @@ static void Move(void) {
   h_lines[4] -= 2;
   h_lines[5] -= 1;
 
-  v_lines[0] += 1;
-  v_lines[1] += 2;
-  v_lines[2] += 1;
-  v_lines[3] -= 1;
-  v_lines[4] -= 2;
-  v_lines[5] -= 1;
+  v_lines[0][0] += 1;
+  v_lines[1][0] += 2;
+  v_lines[2][0] += 1;
+  v_lines[3][0] -= 1;
+  v_lines[4][0] -= 2;
+  v_lines[5][0] -= 1;
+  v_lines[6][0] += 3;
+  v_lines[7][0] -= 3;
 
-  for (i = 0; i < NO_OF_LINES; ++i) {
+
+  for (i = 0; i < NO_OF_H_LINES; ++i) {
     if (h_lines[i] > HEIGHT - 7) {
       h_lines[i] = 0;
     }
@@ -325,12 +374,12 @@ static void Move(void) {
     }
   }
 
-  for (i = 0; i < NO_OF_LINES; ++i) {
-    if (v_lines[i] > 306) {
-      v_lines[i] = 0;
+  for (i = 0; i < NO_OF_V_LINES; ++i) {
+    if (v_lines[i][0] > 306) {
+      v_lines[i][0] = 0;
     }
-    if (v_lines[i] < 0) {
-      v_lines[i] = 306;
+    if (v_lines[i][0] < 0) {
+      v_lines[i][0] = 306;
     }
   }
 }
@@ -362,15 +411,6 @@ static void Init(void) {
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, 256);
 
-  // SetColor(0, 0x000);
-  // SetColor(1, 0x313);
-  // SetColor(2, 0x535);
-  // SetColor(3, 0x757);
-  // SetColor(4, 0x979);
-  // SetColor(5, 0xB9B);
-  // SetColor(6, 0xDBD);
-  // SetColor(7, 0xFFF);
-
   SetColor(0, 0x000);
   SetColor(1, 0x313);
   SetColor(2, 0x535);
@@ -397,9 +437,9 @@ PROFILE(Total);
 static void Render(void) {
   ProfilerStart(Total);
   {
-    CalculateFirstLine(screen[active]->planes); // 20
-    VerticalFill(screen[active]->planes); // 215
-    DoMagic(screen[active]->planes); // 149
+    CalculateFirstLine(screen[active]->planes);
+    VerticalFill(screen[active]->planes);
+    DoMagic(screen[active]->planes);
     Move();
   }
   ProfilerStop(Total);
