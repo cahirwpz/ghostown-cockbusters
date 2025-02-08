@@ -226,6 +226,9 @@ static void RunEffects(void) {
       }
       if (curr == -1)
         break;
+      if (ExeFile[curr].effect == NULL) {
+        Panic("[Effect] Effect %d did not load in time!", curr);
+      }
       EffectInit(ExeFile[curr].effect);
       VBlankHandler = ExeFile[curr].effect->VBlank;
       ShowMemStats();
