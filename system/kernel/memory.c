@@ -135,7 +135,7 @@ static inline WordT *BtPrev(WordT *bt) {
 
 static void BtCheck(WordT *bt) {
   if (BtHasChecksum(bt)) {
-#if MEMDEBUG
+#ifdef MEMDEBUG
     if (Checksum(*BtFooter(bt), BtPayload(bt), BtSize(bt) - FREEBLK_SZ)) {
       Panic("[Memory] Block %p has been corrupted!", BtPayload(bt));
     }
