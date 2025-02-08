@@ -27,11 +27,15 @@
 
 #ifdef _SYSTEM
 #ifdef MEMDEBUG
+/* Computes block checksum and stores it internally.
+ * When the block is freed the checksum will be verified. */
+void MemReadOnly(void *memoryBlock);
 void MemCheck(int verbose);
 u_int MemAvail(u_int attributes);
 #else
+#define MemReadOnly(_) { (void)0; }
 #define MemCheck(_) { (void)0; }
-#define MemAvail(_) 0
+#define MemAvail(_) { (void)0; }
 #endif
 void AddMemory(void *ptr, u_int byteSize, u_int attributes);
 #endif

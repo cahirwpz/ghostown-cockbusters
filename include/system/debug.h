@@ -42,7 +42,7 @@ void HexDump(const void *ptr, u_int len);
 #define Assume(e) Assert(e)
 #else
 #define Debug(fmt, ...) ((void)0)
-#define Assume(e) { if (!(e)) HALT(); }
+#define Assume(e) { if (!(e)) Crash(); }
 #endif
 #endif /* !_SYSTEM */
 
