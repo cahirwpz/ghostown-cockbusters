@@ -94,11 +94,11 @@ static EffectT *LoadExe(int num) {
   while ((u_char *)ptr >= hunk->data) {
     if (*(u_int *)ptr == EFFECT_MAGIC) {
       EffectT *effect = (EffectT *)ptr;
-      Log("[Effect] Found '%s'\n", effect->name);
-      exe->effect = effect;
-      exe->hunk = hunk;
       EffectLoad(effect);
       ShowMemStats();
+      exe->effect = effect;
+      exe->hunk = hunk;
+      Log("[Effect] Effect '%s' is ready\n", effect->name);
       return effect;
     }
     ptr -= 2;
@@ -134,6 +134,8 @@ typedef enum {
 } BgTaskStateT;
 
 static __code volatile BgTaskStateT BgTaskState = BG_IDLE;
+
+extern void CheckTrackmo(void);
 
 static void BgTaskLoop(__unused void *ptr) {
   Log("[BgTask] Started!\n");
@@ -224,6 +226,9 @@ static void RunEffects(void) {
       }
       if (curr == -1)
         break;
+      if (ExeFile[curr].effect == NULL) {
+        Panic("[Effect] '%s' did not load in time!", ExeFile[curr].path);
+      }
       EffectInit(ExeFile[curr].effect);
       VBlankHandler = ExeFile[curr].effect->VBlank;
       ShowMemStats();
@@ -250,18 +255,6 @@ int main(void) {
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
-  {
-    FileT *dev = NULL;
-
-    if (BootDev == 0) /* floppy */ {
-      dev = FloppyOpen();
-    } else {
-      Panic("[Demo] Only configured to run from floppy!");
-    }
-
-    InitFileSys(dev);
-  }
-
   ResetSprites();
   AddIntServer(INTB_VERTB, VBlankInterrupt);
 
@@ -272,6 +265,10 @@ int main(void) {
   TaskInit(&BgTask, "background", BgTaskStack, sizeof(BgTaskStack));
   TaskRun(&BgTask, 1, BgTaskLoop, NULL);
 
+  if (RightMouseButton()) {
+    CheckTrackmo();
+  }
+
   RunLoader();
 
   EffectInit(ExeFile[EXE_PROTRACKER].effect);
@@ -280,7 +277,6 @@ int main(void) {
   EffectKill(ExeFile[EXE_PROTRACKER].effect);
 
   RemIntServer(INTB_VERTB, VBlankInterrupt);
-  KillFileSys();
 
   /* Inspect the output to find memory leaks.
    * All memory should be released at this point! */
