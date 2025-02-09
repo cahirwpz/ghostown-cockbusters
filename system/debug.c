@@ -2,9 +2,10 @@
 #include <common.h>
 #include <custom.h>
 #include <debug.h>
+#include <system/boot.h>
 #include <system/cia.h>
 #include <system/interrupt.h>
-#include <system/boot.h>
+#include <system/mutex.h>
 
 #if !defined(UAE) && DEBUG >= 1
 #include <stdarg.h>
@@ -205,12 +206,18 @@ __noreturn void Crash(void) {
     continue;
 }
 
+static MUTEX(DebugMtx);
+
 void Log(const char *format, ...) {
   va_list args;
+
+  MutexLock(&DebugMtx);
 
   va_start(args, format);
   kvprintf(CrashPutChar, (void *)&CrashLog, format, args);
   va_end(args);
+
+  MutexUnlock(&DebugMtx);
 }
 
 __noreturn void Panic(const char *format, ...) {
@@ -236,6 +243,8 @@ static inline void PrintChar(char c) {
 void HexDump(const void *_ptr, u_int len) {
   const u_char *ptr = _ptr;
   u_int addr = 0;
+
+  MutexLock(&DebugMtx);
 
   for (addr = 0; addr < len; addr++) {
     /* print address */
@@ -266,6 +275,8 @@ void HexDump(const void *_ptr, u_int len) {
   if (addr & 15) {
     PrintChar('\n');
   }
+
+  MutexUnlock(&DebugMtx);
 }
 #else
 void CrashInit(BootDataT *bd) {
