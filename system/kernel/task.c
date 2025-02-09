@@ -173,6 +173,7 @@ u_int TaskWait(u_int eventSet) {
   TaskT *tsk = CurrentTask;
   Assume(eventSet != 0);
   IntrDisable();
+  tsk->waitpt = __builtin_return_address(0);
   tsk->eventSet = eventSet;
   tsk->state = TS_BLOCKED;
   TAILQ_REMOVE(&ReadyList, tsk, node);
@@ -180,6 +181,7 @@ u_int TaskWait(u_int eventSet) {
   Debug("Task " TI_FMT " is going to sleep.", TI_ARGS(tsk));
   TaskYield();
   eventSet = tsk->eventSet;
+  tsk->waitpt = NULL;
   tsk->eventSet = 0;
   IntrEnable();
   return eventSet;
@@ -256,8 +258,8 @@ void TaskDebug(void) {
   }
   if (!TAILQ_EMPTY(&WaitList)) {
     TAILQ_FOREACH(tsk, &WaitList, node) {
-      Log("[Task] (W) PC: $%08x SR: $%04x " TI_FMT "\n",
-          tsk->ctx->pc, tsk->ctx->sr, TI_ARGS(tsk));
+      Log("[Task] (W) waitpt: $%08x " TI_FMT "\n",
+          (u_int)tsk->waitpt, TI_ARGS(tsk));
     }
   }
 }

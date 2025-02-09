@@ -37,6 +37,7 @@ typedef struct TaskContext {
 
 struct Task {
   TaskContextT *ctx; /* Points to task context pushed on top of the stack. */
+  void *waitpt;      /* Return address from TaskWait for BLOCKED tasks. */
   TAILQ_ENTRY(Task) node; /* Ready tasks are stored on ReadyList. */
   u_char state;           /* Task state - one of TS_* constants. */
   u_char prio;    /* Task priority - 0 is the highest, 255 is the lowest. */
