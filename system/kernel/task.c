@@ -69,7 +69,7 @@ void TaskRun(TaskT *tsk, u_char prio, void (*fn)(void *), void *arg) {
   PushLong((u_int)arg);    /* A0 */
   sp -= 9 * sizeof(u_int); /* D7 to D0 and USP */
 
-  tsk->currSP = sp;
+  tsk->ctx = sp;
   tsk->prio = prio;
   TaskResume(tsk);
 }
@@ -242,21 +242,22 @@ void TaskDebug(void) {
   TaskT *curtsk = CurrentTask;
   TaskT *tsk;
 
-  Log("Current task: " TI_FMT ".\n", TI_ARGS(curtsk));
+  Log("[Task] (*) PC: $%08x SR: $%04x " TI_FMT ".\n",
+      curtsk->ctx->pc, curtsk->ctx->sr, TI_ARGS(curtsk));
   if (*(u_int *)curtsk->stkLower != STACK_CANARY) {
     Log("Stack overflow detected (size: %d)!\n",
         (int)(curtsk->stkUpper - curtsk->stkLower));
   }
   if (!TAILQ_EMPTY(&ReadyList)) {
-    Log("Ready queue:\n");
     TAILQ_FOREACH(tsk, &ReadyList, node) {
-      Log(" - " TI_FMT "\n", TI_ARGS(tsk));
+      Log("[Task] (R) PC: $%08x SR: $%04x " TI_FMT "\n",
+          tsk->ctx->pc, tsk->ctx->sr, TI_ARGS(tsk));
     }
   }
   if (!TAILQ_EMPTY(&WaitList)) {
-    Log("Wait queue:\n");
     TAILQ_FOREACH(tsk, &WaitList, node) {
-      Log(" - " TI_FMT "\n", TI_ARGS(tsk));
+      Log("[Task] (W) PC: $%08x SR: $%04x " TI_FMT "\n",
+          tsk->ctx->pc, tsk->ctx->sr, TI_ARGS(tsk));
     }
   }
 }

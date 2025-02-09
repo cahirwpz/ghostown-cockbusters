@@ -6,6 +6,7 @@
 #include <system/cia.h>
 #include <system/interrupt.h>
 #include <system/mutex.h>
+#include <system/task.h>
 
 #if !defined(UAE) && DEBUG >= 1
 #include <stdarg.h>
@@ -162,7 +163,11 @@ static void ResetHardware(CustomPtrT custom_) {
   custom_->intena_ = INTF_ALL;
   custom_->dmacon = DMAF_ALL;
 
-  Log("\n[Panic] intena: $%04x intreq: $%04x dmacon: $%04x\n", intena, intreq, dmacon);
+  Log("\n[Panic] INTENA: $%04x INTREQ: $%04x DMACON: $%04x\n", intena, intreq, dmacon);
+
+#ifdef MULTITASK
+  TaskDebug();
+#endif
 
   /* Reset sprites. */
   {
@@ -228,16 +233,6 @@ void Log(const char *format, ...) {
   va_end(args);
 
   MutexUnlock(&DebugMtx);
-}
-
-__noreturn void Panic(const char *format, ...) {
-  va_list args;
-
-  va_start(args, format);
-  kvprintf(CrashPutChar, (void *)&CrashLog, format, args);
-  va_end(args);
-
-  Crash();
 }
 
 const char hex[] = "0123456789abcdef";
