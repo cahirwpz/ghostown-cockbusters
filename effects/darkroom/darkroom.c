@@ -197,7 +197,7 @@ static void DoMagic(void **planes) {
   }
 }
 
-static void CalculateFirstLine(void **planes) {
+static void CalculateFirstLine(void **planes, short vl[NO_OF_V_LINES][2]) {
   /*
    * Calculate first line by adding light intensity of vertical lines.
    * This line will be later stretched on full screen by Vertical Fill.
@@ -216,9 +216,9 @@ static void CalculateFirstLine(void **planes) {
   }
 
   /* Calculate coordinates */
-  word = v_lines[0][0]/16;
-  offset = v_lines[0][0] - (word * 16);
-  thickness = v_lines[0][1];
+  word = vl[0][0] >> 4;
+  offset = vl[0][0] - (word << 4);
+  thickness = vl[0][1];
 
   if (thickness == 14) {
     V_LINE = V_LINE_14;
@@ -243,9 +243,9 @@ static void CalculateFirstLine(void **planes) {
   for (i = 1; i < NO_OF_V_LINES; ++i) {
     u_short w1, w2, c1, c2 = 0;
 
-    word = v_lines[i][0]/16;
-    offset = v_lines[i][0] - (word * 16);
-    thickness = v_lines[i][1];
+    word = vl[i][0] >> 4;
+    offset = vl[i][0] - (word << 4);
+    thickness = vl[i][1];
 
     if (thickness == 14) {
       V_LINE = V_LINE_14;
@@ -339,47 +339,48 @@ static void VerticalFill(void** planes) {
   WaitBlitter();
 }
 
-static void Move(void) {
+static void Move(short hl[NO_OF_H_LINES], short vl[NO_OF_V_LINES][2]) {
   /*
    * Change position of each line.
    */
   short i = 0;
 
-  if (frameCount % 3 == 0) {
-    return;
-  }
-  h_lines[0] += 1;
-  h_lines[1] += 2;
-  h_lines[2] += 1;
-  h_lines[3] -= 1;
-  h_lines[4] -= 2;
-  h_lines[5] -= 1;
+  // if (frameCount % 3 == 0) {
+  //   return;
+  // }
+  hl[i++] += 1;
+  hl[i++] += 2;
+  hl[i++] += 1;
+  hl[i++] -= 1;
+  hl[i++] -= 2;
+  hl[i++] -= 1;
 
-  v_lines[0][0] += 1;
-  v_lines[1][0] += 2;
-  v_lines[2][0] += 1;
-  v_lines[3][0] -= 1;
-  v_lines[4][0] -= 2;
-  v_lines[5][0] -= 1;
-  v_lines[6][0] += 3;
-  v_lines[7][0] -= 3;
+  i = 0;
+  vl[i++][0] += 1;
+  vl[i++][0] += 2;
+  vl[i++][0] += 1;
+  vl[i++][0] -= 1;
+  vl[i++][0] -= 2;
+  vl[i++][0] -= 1;
+  vl[i++][0] += 3;
+  vl[i++][0] -= 3;
 
 
   for (i = 0; i < NO_OF_H_LINES; ++i) {
-    if (h_lines[i] > HEIGHT - 7) {
-      h_lines[i] = 0;
+    if (hl[i] > HEIGHT - 7) {
+      hl[i] = 0;
     }
-    if (h_lines[i] < 0) {
-      h_lines[i] = HEIGHT - 7;
+    if (hl[i] < 0) {
+      hl[i] = HEIGHT - 7;
     }
   }
 
   for (i = 0; i < NO_OF_V_LINES; ++i) {
-    if (v_lines[i][0] > 306) {
-      v_lines[i][0] = 0;
+    if (vl[i][0] > 306) {
+      vl[i][0] = 0;
     }
-    if (v_lines[i][0] < 0) {
-      v_lines[i][0] = 306;
+    if (vl[i][0] < 0) {
+      vl[i][0] = 306;
     }
   }
 }
@@ -437,10 +438,10 @@ PROFILE(Total);
 static void Render(void) {
   ProfilerStart(Total);
   {
-    CalculateFirstLine(screen[active]->planes);
+    CalculateFirstLine(screen[active]->planes, v_lines);
     VerticalFill(screen[active]->planes);
     DoMagic(screen[active]->planes);
-    Move();
+    Move(h_lines, v_lines);
   }
   ProfilerStop(Total);
 
