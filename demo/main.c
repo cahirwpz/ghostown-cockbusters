@@ -94,11 +94,11 @@ static EffectT *LoadExe(int num) {
   while ((u_char *)ptr >= hunk->data) {
     if (*(u_int *)ptr == EFFECT_MAGIC) {
       EffectT *effect = (EffectT *)ptr;
-      Log("[Effect] Found '%s'\n", effect->name);
-      exe->effect = effect;
-      exe->hunk = hunk;
       EffectLoad(effect);
       ShowMemStats();
+      exe->effect = effect;
+      exe->hunk = hunk;
+      Log("[Effect] Effect '%s' is ready\n", effect->name);
       return effect;
     }
     ptr -= 2;
@@ -227,7 +227,7 @@ static void RunEffects(void) {
       if (curr == -1)
         break;
       if (ExeFile[curr].effect == NULL) {
-        Panic("[Effect] Effect %d did not load in time!", curr);
+        Panic("[Effect] '%s' did not load in time!", ExeFile[curr].path);
       }
       EffectInit(ExeFile[curr].effect);
       VBlankHandler = ExeFile[curr].effect->VBlank;

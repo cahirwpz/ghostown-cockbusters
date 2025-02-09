@@ -181,6 +181,8 @@ HunkT *LoadHunkList(FileT *fh) {
   hunkCount = last - first + 1;
   hunkArray = alloca(sizeof(HunkT *) * (hunkCount + SharedHunks.count));
 
+  Log("[Hunk] Loading %d hunks\n", hunkCount);
+
   if (SharedHunks.count)
     memcpy(&hunkArray[hunkCount],
            SharedHunks.array, sizeof(HunkT *) * SharedHunks.count);
