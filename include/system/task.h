@@ -61,6 +61,7 @@ void TaskDebug(void);
 
 #ifdef _TASK_PRIVATE
 void ReadyAdd(TaskT *tsk);
+void MaybePreempt(void);
 #endif
 
 u_int TaskWait(u_int eventSet);

@@ -124,7 +124,7 @@ void TaskResumeISR(TaskT *tsk) {
 
 /* Preemption from task context is performed by trap handler that executes
  * YieldHandler procedure. */
-static void MaybePreempt(void) {
+void MaybePreempt(void) {
   TaskT *first = TAILQ_FIRST(&ReadyList);
   if (first == NULL)
     return;
