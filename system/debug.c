@@ -14,7 +14,7 @@
 #define CRASHLOG_SIZE 4096 /* must be power of two */
 
 typedef struct CrashLog {
-  short head, tail;
+  short tail, head;
   char buffer[CRASHLOG_SIZE];
 } CrashLogT;
 
@@ -28,14 +28,17 @@ void CrashInit(BootDataT *bd) {
   ChipMem = (u_char *)0x400;
 }
 
-void CrashPutChar(void *ptr, char data) {
+static void CrashPutChar(void *ptr, char data) {
   struct CrashLog *cl = ptr;
+  short tail = cl->tail;
 
-  cl->buffer[cl->tail++] = data;
-  cl->tail &= CRASHLOG_SIZE - 1;
-  if (cl->tail == cl->head)
+  cl->buffer[tail++] = data;
+  tail &= CRASHLOG_SIZE - 1;
+  cl->tail = tail;
+  if (tail == cl->head) {
     cl->head++;
-  cl->head &= CRASHLOG_SIZE - 1;
+    cl->head &= CRASHLOG_SIZE - 1;
+  }
 }
 
 /*
