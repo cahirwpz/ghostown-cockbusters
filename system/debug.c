@@ -155,8 +155,14 @@ static void DumpCrash(u_char *screen, CrashLogT *cl) {
 }
 
 static void ResetHardware(CustomPtrT custom_) {
+  u_short intena = custom_->intenar;
+  u_short intreq = custom_->intreqr;
+  u_short dmacon = custom_->dmaconr;
+
   custom_->intena_ = INTF_ALL;
   custom_->dmacon = DMAF_ALL;
+
+  Log("\n[Panic] intena: $%04x intreq: $%04x dmacon: $%04x\n", intena, intreq, dmacon);
 
   /* Reset sprites. */
   {
