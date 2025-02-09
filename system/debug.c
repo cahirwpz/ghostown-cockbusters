@@ -168,10 +168,11 @@ static void ResetHardware(CustomPtrT custom_) {
   /* Stop floppy motor. */
   {
     u_char *ciaprb = (u_char *)&ciab->ciaprb;
+    u_char dsksel = CIAB_DSKSEL0 + BootDev;
 
-    bset(ciaprb, CIAB_DSKSEL0);
+    bset(ciaprb, dsksel);
     bset(ciaprb, CIAB_DSKMOTOR);
-    bclr(ciaprb, CIAB_DSKSEL0);
+    bclr(ciaprb, dsksel);
   }
 }
 
