@@ -26,22 +26,23 @@
 #endif
 
 #ifdef _SYSTEM
-#ifdef MEMDEBUG
-/* Computes block checksum and stores it internally.
- * When the block is freed the checksum will be verified. */
-void MemReadOnly(void *memoryBlock);
-void MemCheck(int verbose);
-u_int MemAvail(u_int attributes);
-#else
-#define MemReadOnly(_) { (void)0; }
-#define MemCheck(_) { (void)0; }
-#define MemAvail(_) { (void)0; }
-#endif
 void AddMemory(void *ptr, u_int byteSize, u_int attributes);
 #endif
 
 void *MemAlloc(u_int byteSize, u_int attributes);
 void *MemResize(void *memoryBlock, u_int byteSize);
 void MemFree(void *memoryBlock);
+
+#ifdef MEMDEBUG
+void MemCheck(int verbose);
+u_int MemAvail(u_int attributes);
+/* Computes block checksum and stores it internally.
+ * When the block is freed the checksum will be verified. */
+void MemReadOnly(void *memoryBlock);
+#else
+#define MemCheck(verbose) { (void)verbose; }
+#define MemAvail(attributes) { (void)attributes; }
+#define MemReadOnly(memoryBlock) { (void)memoryBlock; }
+#endif
 
 #endif /* !__SYSTEM_MEMORY_H__ */
