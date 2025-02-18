@@ -143,11 +143,10 @@ static void FloppyMotorOn(FileT *f) {
   u_char prb = f->prb;
 
   *cia = prb | CIAF_DSKDESEL;
-  *cia = prb;
-  prb &= ~CIAF_DSKMOTOR;
+  *cia = prb & ~CIAF_DSKMOTOR;
   *cia = prb;
 
-  f->prb = prb;
+  f->prb = prb & ~CIAF_DSKMOTOR;
 
   /* TODO Or wait 500ms? */
   WaitDiskReady();
@@ -158,12 +157,11 @@ static void FloppyMotorOff(FileT *f) {
   u_char prb = f->prb;
 
   *cia = prb | CIAF_DSKDESEL;
-  *cia = prb;
-  prb |= CIAF_DSKMOTOR;
+  *cia = prb | CIAF_DSKMOTOR;
   *cia = prb;
 
   /* TODO: Wait for motor to turn off? */
-  f->prb = prb;
+  f->prb = prb | CIAF_DSKMOTOR;
 }
 
 #define DISK_SETTLE TIMER_MS(15)
