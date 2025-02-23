@@ -28,7 +28,7 @@ case "$CMD" in
         --render-output "${SCENE%.blend}-anim/frame####.png" --render-anim -noaudio
     fi
 
-    for f in ${SCENE%.blend}-anim/frame*.png; do
+    for f in ${SCENE%.blend}-anim/frame*[02468].png; do
       echo "$f -> ${f%.png}.svg"
       convert $f ${CONVERT_OPTS} $f
       vtracer ${VTRACER_OPTS} --input $f --output ${f%.png}.svg
