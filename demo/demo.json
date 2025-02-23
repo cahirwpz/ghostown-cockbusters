@@ -33,11 +33,17 @@
   "TexObj": {
     "objects": [
       "texobj/texobj.o",
-      "texobj/mainloop.o"]
+      "texobj/mainloop.o"],
+    "sections": [
+      ".data.tex0",
+      ".data.tex1",
+      ".data.tex2",
+      ".data.tex3",
+      ".data.tex4"]
   },
   "Flower3D": {
     "objects": [
-    "flower3d/flower3d.o"]
+      "flower3d/flower3d.o"]
   },
   "Logo": {
     "objects": [
@@ -45,8 +51,8 @@
   },
   "Rotator": {
     "objects": [
-    "rotator/rotator.o",
-    "rotator/mainloop.o"]
+      "rotator/rotator.o",
+      "rotator/mainloop.o"]
   },
   "TextScroll": {
     "objects": [

@@ -13,6 +13,12 @@
 #define HEIGHT 128
 #define DEPTH 4
 
+#define texture_0_pixels_section __section(".data.tex0")
+#define texture_1_pixels_section __section(".data.tex1")
+#define texture_2_pixels_section __section(".data.tex2")
+#define texture_3_pixels_section __section(".data.tex3")
+#define texture_4_pixels_section __section(".data.tex4")
+
 #include "data/cube-bg-dark.c"
 #include "data/cube.c"
 #include "data/cube-bg.c"
