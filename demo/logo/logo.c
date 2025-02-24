@@ -2,8 +2,11 @@
 #include <copper.h>
 #include <blitter.h>
 #include <gfx.h>
+#include <sync.h>
 
 #include "data/logo.c"
+#include "data/jitter.c"
+#include "palette.h"
 
 static __code CopListT *cp;
 
@@ -48,7 +51,13 @@ static void ColorCyclingStep(ColorCyclingT *rots, short len) {
   } while (--len > 0);
 }
 
+static void Load(void) {
+  TrackInit(&JitterLogo);
+}
+
 static void Init(void) {
+  TimeWarp(jitter_logo_start);
+
   SetupPlayfield(MODE_LORES, logo_depth, X(0), Y(0), logo_width, logo_height);
   LoadColors(logo_colors, 0);
 
@@ -65,9 +74,37 @@ static void Kill(void) {
   DeleteCopList(cp);
 }
 
+static __code short jitter[14] = {
+  0, 0,
+  -1, 1,
+  -2, 2,
+  -3, 3,
+  -4, 4,
+  -5, 5,
+  -6, 6,
+};
+
 static void Render(void) {
-  ColorCyclingStep(logo_cycling, nitems(logo_cycling));
+  static bool enable = false;
+  short val = TrackValueGet(&JitterLogo, frameCount);
+
+  if (enable) {
+    LoadColors(logo_colors, 0);
+    ColorCyclingStep(logo_cycling, nitems(logo_cycling));
+  }
+
+  if (val > 0) {
+    if (!enable) {
+      short i;
+      enable = true;
+      for (i = 0; i < 32; i++) {
+        SetColor(i, 0xfff);
+      }
+    }
+    SetupDisplayWindow(MODE_LORES, X(0), Y(jitter[val]), logo_width, logo_height);
+  }
+
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Logo, Load, NULL, Init, Kill, Render, NULL);
