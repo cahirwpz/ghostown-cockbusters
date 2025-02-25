@@ -210,7 +210,7 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
-  TrackInit(&Flash);
+  TrackInit(&RotatorFlash);
 
   textureHi = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
   textureLo = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
@@ -323,7 +323,7 @@ static void VBlank(void) {
   } else if (t >= rotator_start + rotator_end - 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0, rotator_start + rotator_end - t);
   } else {
-    short val = TrackValueGet(&Flash, t);
+    short val = TrackValueGet(&RotatorFlash, t);
 
     if (val > 0) {
       short i = 0;

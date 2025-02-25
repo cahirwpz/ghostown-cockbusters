@@ -552,7 +552,7 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
-  TrackInit(&Flash);
+  TrackInit(&TexObjFlash);
 
   ScrambleBackground();
 
@@ -621,7 +621,7 @@ static void VBlank(void) {
   } else if (t >= texobj_start + texobj_end - 16) {
     FadeBlack(dark_colors, nitems(dark_colors), 0, texobj_start + texobj_end - t);
   } else {
-    short val = TrackValueGet(&Flash, t);
+    short val = TrackValueGet(&TexObjFlash, t);
 
     if (val > 0) {
       short i = 0;

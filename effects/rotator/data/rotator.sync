@@ -2,7 +2,7 @@
 @event start $1600
 @event end $1800
 
-@track Flash
+@track RotatorFlash
 $1618 32 !trigger
 $1628 32
 $1638 32

@@ -2,7 +2,7 @@
 @event start $1800
 @event end $1c00
 
-@track Flash
+@track TexObjFlash
 $1818 32 !trigger
 $1828 32
 $1838 32
