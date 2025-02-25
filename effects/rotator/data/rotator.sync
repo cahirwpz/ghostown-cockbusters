@@ -3,10 +3,12 @@
 @event end $1800
 
 @track RotatorFlash
-$1618 32 !trigger
+$1608 32 !trigger
+$1618 32
 $1628 32
 $1638 32
 $1708 32
 $1718 32
 $1728 32
+$1738 32
 @end
