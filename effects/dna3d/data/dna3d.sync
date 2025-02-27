@@ -2,6 +2,14 @@
 @event start $0c00
 @event end $1000
 
+@track DnaPhase
+$0c00 0 !step
+$0c2a 1
+$0d15 2
+$0e19 3
+$0e2a 4
+@end
+
 @track GlitchAnimFrame
 $0c18 16 !trigger
 $0c38 16 !trigger

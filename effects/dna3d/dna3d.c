@@ -134,7 +134,9 @@ static __code short envelope[envelope_length] = {
   1, 1,
 };
 
-static __code short envelope2[envelope_length-8] = {
+#define envelope2_length 32
+
+static __code short envelope2[envelope2_length] = {
   0, 0,
   1, 1,
   2, 2,
@@ -211,6 +213,7 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Load(void) {
+  TrackInit(&DnaPhase);
   TrackInit(&GlitchAnimFrame);
   TrackInit(&GlitchHPos);
 
@@ -611,22 +614,24 @@ static void SetBackgroundColor(short color) {
 }
 
 static void ChangeBackgroundColor(short n, short cols) {
-  short p = envelope[n % envelope_length];
-  u_short *data = necrochicken_cols[p];
   CopInsT **lineptr = linecol;
+  u_short *data;
   short i;
-  (void)necrochicken_cols;
-  (void)necrochicken2_cols;
 
   if (cols == 0) {
-    p = envelope2[n % (envelope_length - 8)];
+    short p = envelope2[n % envelope2_length];
     data = fadein_cols[p];
-  } else if (cols == 1) {
-    data = necrochicken_cols[p];
-  } else if (cols == 2) {
-    data = necrochicken2_cols[p];
-  } else if (n % 4 >= 2) {
-    data = necrochicken2_cols[p];
+  } else {
+    short p = envelope[n % envelope_length];
+    if (cols == 1) {
+      data = necrochicken_cols[p];
+    } else if (cols == 2) {
+      data = necrochicken2_cols[p];
+    } else if ((cols == 3) && (n & 2)) {
+      data = necrochicken2_cols[p];
+    } else {
+      data = necrochicken_cols[p];
+    }
   }
 
   for (i = 0; i < necrocoq_height; i++) {
@@ -639,15 +644,15 @@ static void ChangeBackgroundColor(short n, short cols) {
   }
 }
 
-static void ChangeBobsColor(short cols) {
+static void ChangeBobsColor(short n, short cols) {
   CopInsT **bobsptr = bobscol;
-  u_short *data = bobs_cols_pixels;
+  u_short *data;
   short i;
 
-  if (cols == 2) {
+  if (cols == 2 || ((cols == 3) && (n & 2))) {
     data = bobs_cols2_pixels;
-  } else if (cols == 3 && (frameCount >> 1) % 4 >= 2) {
-    data = bobs_cols2_pixels;
+  } else {
+    data = bobs_cols_pixels;
   }
 
   for (i = 0; i < necrocoq_height; i++) {
@@ -673,39 +678,38 @@ static void Render(void) {
   static __code bool aux = true;
   static __code bool idx = 20;
 
+  short phase = TrackValueGet(&DnaPhase, frameCount);
+  short reltime;
+
   BitmapClearI(screen[active]);
 
-  if (frameCount < dna3d_start + (dna3d_end / 6)) {
+  if (phase == 0) {
     SetBackgroundColor(0x000);
-  } else if (show_cock) {
-    ChangeBackgroundColor(idx, 0);
-    ++idx;
-    if (idx > 31) {
-      show_cock = false;
+  } else if (phase == 1) {
+    if (show_cock) {
+      ChangeBackgroundColor(idx, 0);
+      ++idx;
+      if (idx > 31) {
+        show_cock = false;
+      }
     }
-  }
- 
-  if (frameCount >  dna3d_start + (2 * (dna3d_end / 6)) &&
-      frameCount <= dna3d_start + (3 * (dna3d_end / 5))){
+  } else if (phase == 2) {
     if (aux) {
       aux = false;
       mod = ((frameCount >> 1) % envelope_length);
     }
-    ChangeBackgroundColor((frameCount >> 1) - mod, 1);
-  }
-
-  if (frameCount >  dna3d_start + (3 * (dna3d_end / 5)) &&
-      frameCount <= dna3d_start + (4 * (dna3d_end / 6))) {
+    reltime = (frameCount >> 1) - mod;
+    ChangeBackgroundColor(reltime, 1);
+  } else if (phase == 3) {
     new_bobs = true;
-    ChangeBackgroundColor((frameCount >> 1) - mod, 3);
-    ChangeBobsColor(3);
-  }
-
-  if (frameCount > dna3d_start + (4 * (dna3d_end / 6))) {
+    reltime = (frameCount >> 1) - mod;
+    ChangeBackgroundColor(reltime, 3);
+    ChangeBobsColor(frameCount >> 1, 3);
+  } else if (phase == 4) {
     new_bobs = true;
-    ChangeBackgroundColor((frameCount >> 1) - mod, 2);
-    ChangeBobsColor(2);
-    (void)ChangeBobsColor;
+    reltime = (frameCount >> 1) - mod;
+    ChangeBackgroundColor(reltime, 2);
+    ChangeBobsColor(frameCount >> 1, 2);
   }
 
   ProfilerStart(TransformObject);
@@ -742,21 +746,23 @@ static void Render(void) {
 
 // For glitches
 static void VBlank(void) {
-  short i = 0;
   short animFrame = TrackValueGet(&GlitchAnimFrame, frameCount);
   short line = TrackValueGet(&GlitchHPos, frameCount);
 
   CopInsT *ins = linecol[0];
 
-  // Please, let's make something other than 0 
+  // Please, let's make something other than 0
   // a default track value >_<
   if (line != 0) {
     hPos = line;
   }
 
-  for (i = 0; i < 31; i++) {
-    ins = linecol[hPos+i];
-    CopInsSet16(&ins[4], tears[animFrame][i]);
+  {
+    short i = 0;
+    for (i = 0; i < 31; i++) {
+      ins = linecol[hPos+i];
+      CopInsSet16(&ins[4], tears[animFrame][i]);
+    }
   }
 }
 
