@@ -3,7 +3,6 @@
 #include "copper.h"
 #include "3d.h"
 #include "fx.h"
-#include "debug.h"
 #include "sync.h"
 
 #define WIDTH  256
@@ -613,26 +612,9 @@ static void SetBackgroundColor(short color) {
   }
 }
 
-static void ChangeBackgroundColor(short n, short cols) {
+static void ChangeBackgroundColor(u_short *data) {
   CopInsT **lineptr = linecol;
-  u_short *data;
   short i;
-
-  if (cols == 0) {
-    short p = envelope2[n % envelope2_length];
-    data = fadein_cols[p];
-  } else {
-    short p = envelope[n % envelope_length];
-    if (cols == 1) {
-      data = necrochicken_cols[p];
-    } else if (cols == 2) {
-      data = necrochicken2_cols[p];
-    } else if ((cols == 3) && (n & 2)) {
-      data = necrochicken2_cols[p];
-    } else {
-      data = necrochicken_cols[p];
-    }
-  }
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
@@ -644,16 +626,9 @@ static void ChangeBackgroundColor(short n, short cols) {
   }
 }
 
-static void ChangeBobsColor(short n, short cols) {
+static void ChangeBobsColor(u_short *data) {
   CopInsT **bobsptr = bobscol;
-  u_short *data;
   short i;
-
-  if (cols == 2 || ((cols == 3) && (n & 2))) {
-    data = bobs_cols2_pixels;
-  } else {
-    data = bobs_cols_pixels;
-  }
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *bobsptr++;
@@ -668,49 +643,72 @@ static void ChangeBobsColor(short n, short cols) {
   }
 }
 
-PROFILE(TransformObject);
-PROFILE(DrawObject);
-
-static void Render(void) {
+static const BitmapT *ControlEffect(void) {
   static __code bool show_cock = true;
-  static __code bool new_bobs = false;
   static __code short mod = 0;
   static __code bool aux = true;
   static __code bool idx = 20;
 
   short phase = TrackValueGet(&DnaPhase, frameCount);
   short reltime;
-
-  BitmapClearI(screen[active]);
+  short colidx;
 
   if (phase == 0) {
     SetBackgroundColor(0x000);
-  } else if (phase == 1) {
+    return &bobs;
+  }
+
+  if (phase == 1) {
     if (show_cock) {
-      ChangeBackgroundColor(idx, 0);
+      colidx = envelope2[idx % envelope2_length];
+      ChangeBackgroundColor(fadein_cols[colidx]);
       ++idx;
       if (idx > 31) {
         show_cock = false;
       }
     }
-  } else if (phase == 2) {
+    return &bobs;
+  }
+
+  if (phase == 2) {
     if (aux) {
       aux = false;
       mod = ((frameCount >> 1) % envelope_length);
     }
     reltime = (frameCount >> 1) - mod;
-    ChangeBackgroundColor(reltime, 1);
-  } else if (phase == 3) {
-    new_bobs = true;
-    reltime = (frameCount >> 1) - mod;
-    ChangeBackgroundColor(reltime, 3);
-    ChangeBobsColor(frameCount >> 1, 3);
-  } else if (phase == 4) {
-    new_bobs = true;
-    reltime = (frameCount >> 1) - mod;
-    ChangeBackgroundColor(reltime, 2);
-    ChangeBobsColor(frameCount >> 1, 2);
+    colidx = envelope[reltime % envelope_length];
+    ChangeBackgroundColor(necrochicken_cols[colidx]);
+    return &bobs;
   }
+
+  if (phase == 3) {
+    reltime = (frameCount >> 1) - mod;
+    colidx = envelope[reltime % envelope_length];
+    ChangeBackgroundColor(((reltime & 2) ? necrochicken2_cols : necrochicken_cols)[colidx]);
+    ChangeBobsColor((frameCount & 4) ? bobs_cols2_pixels : bobs_cols_pixels);
+    return (frameCount & 4) ? &bobs2 : &bobs;
+  }
+
+  if (phase == 4) {
+    reltime = (frameCount >> 1) - mod;
+    colidx = envelope[reltime % envelope_length];
+    ChangeBackgroundColor(necrochicken2_cols[colidx]);
+    ChangeBobsColor(bobs_cols2_pixels);
+    return &bobs2;
+  }
+
+  Panic("phase (%d) out of range", phase);
+}
+
+PROFILE(TransformObject);
+PROFILE(DrawObject);
+
+static void Render(void) {
+  const BitmapT *_bobs;
+
+  BitmapClearI(screen[active]);
+
+  _bobs = ControlEffect();
 
   ProfilerStart(TransformObject);
   {
@@ -726,11 +724,7 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    if (new_bobs) {
-      DrawFlares(object, bobs2.planes[0], screen[active]->planes[0], custom);
-    } else {
-      DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
-    }
+    DrawFlares(object, _bobs->planes[0], screen[active]->planes[0], custom);
     DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);
