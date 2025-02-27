@@ -56,9 +56,6 @@
 
 #include "data/tearing-table.c"
 
-// For glitches
-static __code short hPos = 0;
-
 static __code Object3D *object;
 static __code CopListT *cp;
 static __code BitmapT *screen[2];
@@ -133,17 +130,9 @@ static __code short envelope[envelope_length] = {
   1, 1,
 };
 
-#define envelope2_length 32
+#define envelope2_length (9 * 2)
 
 static __code short envelope2[envelope2_length] = {
-  0, 0,
-  1, 1,
-  2, 2,
-  3, 3,
-  4, 4,
-  5, 5,
-  6, 6,
-  7, 7,
   8, 8,
   7, 7,
   6, 6,
@@ -152,6 +141,7 @@ static __code short envelope2[envelope2_length] = {
   3, 3,
   2, 2,
   1, 1,
+  0, 0,
 };
 
 static void BitmapClearI(BitmapT *bm) {
@@ -605,10 +595,10 @@ static void SetBackgroundColor(short color) {
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
 
-    CopInsSet16(ins++, color);
-    CopInsSet16(ins++, color);
-    CopInsSet16(ins++, color);
-    CopInsSet16(ins++, color);
+    CopInsSet16(&ins[0], color);
+    CopInsSet16(&ins[1], color);
+    CopInsSet16(&ins[2], color);
+    CopInsSet16(&ins[3], color);
   }
 }
 
@@ -616,13 +606,20 @@ static void ChangeBackgroundColor(u_short *data) {
   CopInsT **lineptr = linecol;
   short i;
 
+  {
+    static u_short *old_data = NULL;
+    if (old_data == data)
+      return;
+    old_data = data;
+  }
+
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
 
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data++);
+    CopInsSet16(&ins[0], *data++);
+    CopInsSet16(&ins[1], *data++);
+    CopInsSet16(&ins[2], *data++);
+    CopInsSet16(&ins[3], *data++);
   }
 }
 
@@ -630,25 +627,30 @@ static void ChangeBobsColor(u_short *data) {
   CopInsT **bobsptr = bobscol;
   short i;
 
+  {
+    static u_short *old_data = NULL;
+    if (old_data == data)
+      return;
+    old_data = data;
+  }
+
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *bobsptr++;
+    short c0 = *data++;
+    short c1 = *data++;
+    short c2 = *data++;
 
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data);
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data);
-    CopInsSet16(ins++, *data);
-    CopInsSet16(ins++, *data);
-    CopInsSet16(ins++, *data++);
+    CopInsSet16(&ins[0], c0);
+    CopInsSet16(&ins[1], c1);
+    CopInsSet16(&ins[2], c1);
+    CopInsSet16(&ins[3], c2);
+    CopInsSet16(&ins[4], c2);
+    CopInsSet16(&ins[5], c2);
+    CopInsSet16(&ins[6], c2);
   }
 }
 
 static const BitmapT *ControlEffect(void) {
-  static __code bool show_cock = true;
-  static __code short mod = 0;
-  static __code bool aux = true;
-  static __code bool idx = 20;
-
   short phase = TrackValueGet(&DnaPhase, frameCount);
   short reltime;
   short colidx;
@@ -659,39 +661,34 @@ static const BitmapT *ControlEffect(void) {
   }
 
   if (phase == 1) {
-    if (show_cock) {
-      colidx = envelope2[idx % envelope2_length];
-      ChangeBackgroundColor(fadein_cols[colidx]);
-      ++idx;
-      if (idx > 31) {
-        show_cock = false;
-      }
-    }
+    reltime = (frameCount - CurrKeyFrame(&DnaPhase)) >> 1;
+    reltime = min(reltime, envelope2_length - 1);
+    colidx = envelope2[reltime];
+    ChangeBackgroundColor(fadein_cols[colidx]);
     return &bobs;
   }
 
+  reltime = (frameCount - (dna3d_flashing + dna3d_start)) >> 1;
+  colidx = envelope[reltime % envelope_length];
+
   if (phase == 2) {
-    if (aux) {
-      aux = false;
-      mod = ((frameCount >> 1) % envelope_length);
-    }
-    reltime = (frameCount >> 1) - mod;
-    colidx = envelope[reltime % envelope_length];
     ChangeBackgroundColor(necrochicken_cols[colidx]);
     return &bobs;
   }
 
   if (phase == 3) {
-    reltime = (frameCount >> 1) - mod;
-    colidx = envelope[reltime % envelope_length];
-    ChangeBackgroundColor(((reltime & 2) ? necrochicken2_cols : necrochicken_cols)[colidx]);
-    ChangeBobsColor((frameCount & 4) ? bobs_cols2_pixels : bobs_cols_pixels);
-    return (frameCount & 4) ? &bobs2 : &bobs;
+    if (reltime & 2) {
+      ChangeBackgroundColor(necrochicken2_cols[colidx]);
+      ChangeBobsColor(bobs_cols_pixels);
+      return &bobs2;
+    } else {
+      ChangeBackgroundColor(necrochicken_cols[colidx]);
+      ChangeBobsColor(bobs_cols2_pixels);
+      return &bobs;
+    }
   }
 
   if (phase == 4) {
-    reltime = (frameCount >> 1) - mod;
-    colidx = envelope[reltime % envelope_length];
     ChangeBackgroundColor(necrochicken2_cols[colidx]);
     ChangeBobsColor(bobs_cols2_pixels);
     return &bobs2;
@@ -700,6 +697,7 @@ static const BitmapT *ControlEffect(void) {
   Panic("phase (%d) out of range", phase);
 }
 
+PROFILE(Control);
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
@@ -708,7 +706,11 @@ static void Render(void) {
 
   BitmapClearI(screen[active]);
 
-  _bobs = ControlEffect();
+  ProfilerStart(Control);
+  {
+    _bobs = ControlEffect();
+  }
+  ProfilerStop(Control);
 
   ProfilerStart(TransformObject);
   {
@@ -740,10 +742,10 @@ static void Render(void) {
 
 // For glitches
 static void VBlank(void) {
+  static __code short hPos = 0;
+
   short animFrame = TrackValueGet(&GlitchAnimFrame, frameCount);
   short line = TrackValueGet(&GlitchHPos, frameCount);
-
-  CopInsT *ins = linecol[0];
 
   // Please, let's make something other than 0
   // a default track value >_<
@@ -752,10 +754,13 @@ static void VBlank(void) {
   }
 
   {
+    CopInsT **line = &linecol[hPos];
+    u_short *tear = tears[animFrame];
     short i = 0;
+
     for (i = 0; i < 31; i++) {
-      ins = linecol[hPos+i];
-      CopInsSet16(&ins[4], tears[animFrame][i]);
+      CopInsT *ins = *line++;
+      CopInsSet16(&ins[4], *tear++);
     }
   }
 }

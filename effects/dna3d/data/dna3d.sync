@@ -1,5 +1,6 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
 @event start $0c00
+@event flashing $0d15
 @event end $1000
 
 @track DnaPhase
