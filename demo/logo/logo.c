@@ -89,7 +89,11 @@ static void Render(void) {
   short val = TrackValueGet(&Jitter, frameCount);
 
   if (enable) {
-    LoadColors(logo_colors, 0);
+    static bool restore = true;
+    if (restore) {
+      LoadColors(logo_colors, 0);
+      restore = false;
+    }
     ColorCyclingStep(logo_cycling, nitems(logo_cycling));
   }
 
