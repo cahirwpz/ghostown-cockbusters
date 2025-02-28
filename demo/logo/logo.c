@@ -4,8 +4,8 @@
 #include <gfx.h>
 #include <sync.h>
 
+#include "data/image.c"
 #include "data/logo.c"
-#include "data/jitter.c"
 #include "palette.h"
 
 static __code CopListT *cp;
@@ -22,7 +22,7 @@ typedef struct ColorCycling {
   u_short *colors;
 } ColorCyclingT;
 
-#include "data/logo-cycling.c"
+#include "data/image-cycling.c"
 
 /* I genuinely hate this format. Reverse engineering it is PITA! */
 #define PAL_FRAME ((1 << 16) / 50)
@@ -52,11 +52,11 @@ static void ColorCyclingStep(ColorCyclingT *rots, short len) {
 }
 
 static void Load(void) {
-  TrackInit(&JitterLogo);
+  TrackInit(&Jitter);
 }
 
 static void Init(void) {
-  TimeWarp(jitter_logo_start);
+  TimeWarp(logo_start);
 
   SetupPlayfield(MODE_LORES, logo_depth, X(0), Y(0), logo_width, logo_height);
   LoadColors(logo_colors, 0);
@@ -86,7 +86,7 @@ static __code short jitter[14] = {
 
 static void Render(void) {
   static bool enable = false;
-  short val = TrackValueGet(&JitterLogo, frameCount);
+  short val = TrackValueGet(&Jitter, frameCount);
 
   if (enable) {
     LoadColors(logo_colors, 0);

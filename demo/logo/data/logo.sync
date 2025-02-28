@@ -1,7 +1,7 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
-@event logo_start $1000
+@event start $1000
 
-@track JitterLogo
+@track Jitter
 $1031 13 !trigger
 $1108 13
 $1118 13
