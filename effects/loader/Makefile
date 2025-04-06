@@ -1,8 +1,10 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/loader.c
+CLEAN-FILES := data/loader.c data/ufo.c data/noaga.c
 
 PNG2C.loader := --bitmap loader,320x256x3 --palette loader,2
+PNG2C.ufo    := --sprite ufo,15,3 --palette ufo,2
+PNG2C.noaga  := --sprite noaga,52,4 --palette noaga,2
 
 MODULE := JazzCat-CockbustersLoader
 OBJECTS := data/$(MODULE).trk.o data/$(MODULE).smp.o
