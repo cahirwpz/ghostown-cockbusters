@@ -624,19 +624,22 @@ static void VBlank(void) {
     short val = TrackValueGet(&TexObjFlash, t);
 
     if (val > 0) {
-      short i = 0;
+      u_short *src, *dst;
+      short i;
 
       val = 32 - val;
 
-      for (i = 0; i < 16; i++) {
-        u_short col;
+      if (val < 16) {
+        src = dark_colors;
+        dst = texture_colors;
+      } else {
+        src = texture_colors;
+        dst = dark_colors;
+        val -= 16;
+      }
 
-        if (val < 16) {
-          col = ColorTransition(dark_colors[i], texture_colors[i], val);
-        } else {
-          col = ColorTransition(texture_colors[i], dark_colors[i], val - 16);
-        }
-        SetColor(i, col);
+      for (i = 0; i < 16; i++) {
+        SetColor(i, ColorTransition(*src++, *dst++, val));
       }
     }
   }
