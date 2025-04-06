@@ -61,7 +61,7 @@ static __code ExeFileT ExeFile[EXE_LAST] = {
   EXEFILE(EXE_COCK_FOLK, "cock-folk.exe"),
   EXEFILE(EXE_TEXOBJ, "texobj.exe"),
   EXEFILE(EXE_FLOWER3D, "flower3d.exe"),
-  EXEFILE(EXE_LOGO, "logo.exe"),
+  EXEFILE(EXE_LOGO, "color-cycling.exe"),
   EXEFILE(EXE_ROTATOR, "rotator.exe"),
   EXEFILE(EXE_TEXTSCROLL, "textscroll.exe"),
   EXEFILE(EXE_ABDUCTION, "abduction.exe"),

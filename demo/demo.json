@@ -47,7 +47,7 @@
   },
   "Logo": {
     "objects": [
-      "logo/logo.o"]
+      "color-cycling/color-cycling.o"]
   },
   "Rotator": {
     "objects": [
