@@ -10,7 +10,3 @@ include $(TOPDIR)/build/effect.mk
 data/ball.c: data/gen-lens.py
 	@echo "[GEN] $@"
 	$(PYTHON3) $< uvmap > $@
-
-data/%.c: data/%.csv
-	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@

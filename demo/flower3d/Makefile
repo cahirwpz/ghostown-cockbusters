@@ -1,8 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/lotus.c data/pattern-?-?.c data/lotus-anim.c \
-	data/flower3d.c data/bg-*.c data/pal-*.c \
-	
+	             data/flower3d.c data/bg-*.c data/pal-*.c
 
 LIBS := lib3d
 
@@ -26,7 +25,3 @@ include $(TOPDIR)/build/effect.mk
 %-data.png %-pal.png: %.png
 	@echo "[SPLITIMG] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(TOPDIR)/effects/carrion/data/split-img.py 4 $<
-
-data/%.c: data/%.csv
-	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@

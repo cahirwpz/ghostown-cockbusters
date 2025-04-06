@@ -16,7 +16,3 @@ OBJ2C.cube := --scale 48.0 --mesh-name cube --no-edges --textured --texture-scal
 ANIM2C.cube-anim := --name cube_anim --scale 127
 
 include $(TOPDIR)/build/effect.mk
-
-data/%.c: data/%.csv
-	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@

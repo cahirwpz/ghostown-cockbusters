@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
 CLEAN-FILES := data/kurak-head.c data/cock-anim.c data/stencil3d.c \
-	data/background-data.* data/background-pal.* data/pattern-?-?.c
+	             data/background-data.* data/background-pal.* data/pattern-?-?.c
 
 LIBS := lib3d
 
@@ -21,7 +21,3 @@ include $(TOPDIR)/build/effect.mk
 %-data.png %-pal.png: %.png
 	@echo "[SPLITIMG] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(TOPDIR)/effects/carrion/data/split-img.py 4 $<
-
-data/%.c: data/%.csv
-	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(TOPDIR)/effects/stencil3d/anim2c.py $(ANIM2C.$*) $< > $@
