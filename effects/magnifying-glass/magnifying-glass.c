@@ -4,11 +4,9 @@
 #include <fx.h>
 #include <pixmap.h>
 #include <sprite.h>
-#include <system/memory.h>
-#include <c2p_1x1_4.h>
 #include <color.h>
 #include <sync.h>
-#include "data/magnifying-glass.c"
+#include <system/memory.h>
 
 #define S_WIDTH 320
 #define S_HEIGHT 256
