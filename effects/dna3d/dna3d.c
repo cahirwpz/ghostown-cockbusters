@@ -203,6 +203,7 @@ static CopListT *MakeCopperList(void) {
 
 static void Load(void) {
   TrackInit(&DnaPhase);
+  TrackInit(&DnaMotion);
   TrackInit(&GlitchAnimFrame);
   TrackInit(&GlitchHPos);
 
@@ -701,8 +702,14 @@ PROFILE(Control);
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
+static short frameCountSkip = 0;
+
 static void Render(void) {
   const BitmapT *_bobs;
+
+  if (!TrackValueGet(&DnaMotion, frameCount)) {
+    frameCountSkip += frameCount - lastFrameCount;
+  }
 
   BitmapClearI(screen[active]);
 
@@ -714,10 +721,10 @@ static void Render(void) {
 
   ProfilerStart(TransformObject);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
+    object->rotate.x = object->rotate.y = object->rotate.z = (frameCount - frameCountSkip) * 6;
 
     UpdateObjectTransformation(object);
-    GenCircularDoubleHelix(object->objdat, frameCount * 24);
+    GenCircularDoubleHelix(object->objdat, (frameCount - frameCountSkip) * 24);
     TransformVertices(object);
   }
   ProfilerStop(TransformObject);
