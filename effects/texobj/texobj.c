@@ -6,6 +6,7 @@
 #include <pixmap.h>
 #include <3d.h>
 #include <fx.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -551,6 +552,8 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
+  TrackInit(&TexObjFlash);
+
   ScrambleBackground();
 
   ScrambleTexture(texture_0_pixels);
@@ -612,19 +615,31 @@ static void Kill(void) {
 
 static void VBlank(void) {
   short t = ReadFrameCount();
-  short i = 0;
 
   if (t < texobj_start + 16) {
     FadeBlack(dark_colors, nitems(dark_colors), 0,  t - texobj_start);
   } else if (t >= texobj_start + texobj_end - 16) {
     FadeBlack(dark_colors, nitems(dark_colors), 0, texobj_start + texobj_end - t);
-  } else  if (t > texobj_start + 0x100){
-    t = t % 31;
-    for (i = 0; i < 16; ++i) {
-      if (t < 16) {
-        SetColor(i, ColorTransition(texture_colors[i], dark_colors[i], t));
+  } else {
+    short val = TrackValueGet(&TexObjFlash, t);
+
+    if (val > 0) {
+      u_short *src, *dst;
+      short i;
+
+      val = 32 - val;
+
+      if (val < 16) {
+        src = dark_colors;
+        dst = texture_colors;
       } else {
-        SetColor(i, ColorTransition(dark_colors[i], texture_colors[i], t-15));
+        src = texture_colors;
+        dst = dark_colors;
+        val -= 16;
+      }
+
+      for (i = 0; i < 16; i++) {
+        SetColor(i, ColorTransition(*src++, *dst++, val));
       }
     }
   }

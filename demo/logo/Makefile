@@ -1,8 +1,9 @@
 TOPDIR := $(realpath ../..)
 
-CLEAN-FILES := data/logo.c
+CLEAN-FILES := data/logo.c data/image-cycling.c
 
-PNG2C.logo := --bitmap logo,320x256x5 --palette logo,32
+PNG2C.image := --bitmap logo,320x256x5 --palette logo,32
+DRNG2C.image := -name logo
 
 include $(TOPDIR)/build/effect.mk
 

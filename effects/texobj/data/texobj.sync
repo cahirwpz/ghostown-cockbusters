@@ -1,3 +1,20 @@
 @module ../../demo/playpt/data/JazzCat-XenoCoq.mod
 @event start $1800
 @event end $1c00
+
+@track TexObjFlash
+$1818 32 !trigger
+$1828 32
+$1838 32
+$1908 32
+$1918 32
+$1928 32
+$1938 32
+$1a08 32
+$1a18 32
+$1a28 32
+$1a38 32
+$1b08 32
+$1b18 32
+$1b28 32
+@end

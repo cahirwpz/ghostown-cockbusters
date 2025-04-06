@@ -4,6 +4,7 @@
 #include <color.h>
 #include <fx.h>
 #include <pixmap.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -209,6 +210,8 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
+  TrackInit(&RotatorFlash);
+
   textureHi = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
   textureLo = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
   PixmapToTexture(textureHi, textureLo);
@@ -314,19 +317,28 @@ static void Rotator(void) {
 
 static void VBlank(void) {
   short t = ReadFrameCount();
-  short i = 0;
 
   if (t < rotator_start + 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0,  t - rotator_start);
   } else if (t >= rotator_start + rotator_end - 16) {
     FadeBlack(bright_colors, nitems(bright_colors), 0, rotator_start + rotator_end - t);
   } else {
-    t = t % 31;
-    for (i = 0; i < 16; ++i) {
-      if (t < 16) {
-        SetColor(i, ColorTransition(bright_colors[i], dark_colors[i], t));
-      } else {
-        SetColor(i, ColorTransition(dark_colors[i], bright_colors[i], t-15));
+    short val = TrackValueGet(&RotatorFlash, t);
+
+    if (val > 0) {
+      short i = 0;
+
+      val = 32 - val;
+
+      for (i = 0; i < 16; i++) {
+        u_short col;
+
+        if (val < 16) {
+          col = ColorTransition(bright_colors[i], dark_colors[i], val);
+        } else {
+          col = ColorTransition(dark_colors[i], bright_colors[i], val - 16);
+        }
+        SetColor(i, col);
       }
     }
   }

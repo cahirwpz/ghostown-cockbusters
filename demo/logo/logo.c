@@ -2,8 +2,11 @@
 #include <copper.h>
 #include <blitter.h>
 #include <gfx.h>
+#include <sync.h>
 
+#include "data/image.c"
 #include "data/logo.c"
+#include "palette.h"
 
 static __code CopListT *cp;
 
@@ -19,7 +22,7 @@ typedef struct ColorCycling {
   u_short *colors;
 } ColorCyclingT;
 
-#include "data/logo-cycling.c"
+#include "data/image-cycling.c"
 
 /* I genuinely hate this format. Reverse engineering it is PITA! */
 #define PAL_FRAME ((1 << 16) / 50)
@@ -48,7 +51,13 @@ static void ColorCyclingStep(ColorCyclingT *rots, short len) {
   } while (--len > 0);
 }
 
+static void Load(void) {
+  TrackInit(&Jitter);
+}
+
 static void Init(void) {
+  TimeWarp(logo_start);
+
   SetupPlayfield(MODE_LORES, logo_depth, X(0), Y(0), logo_width, logo_height);
   LoadColors(logo_colors, 0);
 
@@ -65,9 +74,41 @@ static void Kill(void) {
   DeleteCopList(cp);
 }
 
+static __code short jitter[14] = {
+  0, 0,
+  -1, 1,
+  -2, 2,
+  -3, 3,
+  -4, 4,
+  -5, 5,
+  -6, 6,
+};
+
 static void Render(void) {
-  ColorCyclingStep(logo_cycling, nitems(logo_cycling));
+  static bool enable = false;
+  short val = TrackValueGet(&Jitter, frameCount);
+
+  if (enable) {
+    static bool restore = true;
+    if (restore) {
+      LoadColors(logo_colors, 0);
+      restore = false;
+    }
+    ColorCyclingStep(logo_cycling, nitems(logo_cycling));
+  }
+
+  if (val > 0) {
+    if (!enable) {
+      short i;
+      enable = true;
+      for (i = 0; i < 32; i++) {
+        SetColor(i, 0xfff);
+      }
+    }
+    SetupDisplayWindow(MODE_LORES, X(0), Y(jitter[val]), logo_width, logo_height);
+  }
+
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Logo, Load, NULL, Init, Kill, Render, NULL);

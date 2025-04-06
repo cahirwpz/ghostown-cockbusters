@@ -1,0 +1,10 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start $1000
+
+@track Jitter
+$1031 13 !trigger
+$1108 13
+$1118 13
+$1128 13
+$1138 13
+@end
