@@ -15,7 +15,7 @@ from fsutil import SECTOR, write_pad, sectors, Filesystem
 #  [LONG] 'DOS\0'
 #  [LONG] checksum
 #  [WORD] start of executable file, sector aligned, shifted right by 8
-#  [WORD] offset of executable file, sector aligned, shifte right by 8
+#  [WORD] offset of executable file, sector aligned, shifted right by 8
 #  ...    boot code
 #
 # sector 2..: file system image
@@ -83,7 +83,8 @@ if __name__ == '__main__':
 
     if len(img) > FLOPPY - 2 * SECTOR:
         img_len = len(img) // 1024
-        raise SystemExit(f'Image is to big to be written to a disk ({img_len} kB)!')
+        raise SystemExit(
+            f'Image is to big to be written to a disk ({img_len} kB)!')
 
     with open(args.adf, 'wb') as adf:
         if bootblock:

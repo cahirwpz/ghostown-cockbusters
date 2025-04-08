@@ -1,4 +1,5 @@
 #include <debug.h>
+#include <common.h>
 #include <string.h>
 #include <strings.h>
 #include <system/cpu.h>
@@ -49,10 +50,8 @@ void TaskInit(TaskT *tsk, const char *name, void *stkptr, u_int stksz) {
  */
 
 /* Macros for task stack initialization. */
-#define PushLong(v)                                                            \
-  { *--(u_int *)sp = (u_int)(v); }
-#define PushWord(v)                                                            \
-  { *--(u_short *)sp = (u_short)(v); }
+#define PushLong(v) stld(sp, v)
+#define PushWord(v) stwd(sp, v)
 
 void TaskRun(TaskT *tsk, u_char prio, void (*fn)(void *), void *arg) {
   void *sp = tsk->stkUpper;
@@ -70,7 +69,7 @@ void TaskRun(TaskT *tsk, u_char prio, void (*fn)(void *), void *arg) {
   PushLong((u_int)arg);    /* A0 */
   sp -= 9 * sizeof(u_int); /* D7 to D0 and USP */
 
-  tsk->currSP = sp;
+  tsk->ctx = sp;
   tsk->prio = prio;
   TaskResume(tsk);
 }
@@ -125,7 +124,7 @@ void TaskResumeISR(TaskT *tsk) {
 
 /* Preemption from task context is performed by trap handler that executes
  * YieldHandler procedure. */
-static void MaybePreempt(void) {
+void MaybePreempt(void) {
   TaskT *first = TAILQ_FIRST(&ReadyList);
   if (first == NULL)
     return;
@@ -172,8 +171,9 @@ void TaskPrioritySet(TaskT *tsk, u_char prio) {
 
 u_int TaskWait(u_int eventSet) {
   TaskT *tsk = CurrentTask;
+  Assert(GetIPL() > IPL_NONE);
   Assume(eventSet != 0);
-  IntrDisable();
+  tsk->waitpt = __builtin_return_address(0);
   tsk->eventSet = eventSet;
   tsk->state = TS_BLOCKED;
   TAILQ_REMOVE(&ReadyList, tsk, node);
@@ -181,8 +181,8 @@ u_int TaskWait(u_int eventSet) {
   Debug("Task " TI_FMT " is going to sleep.", TI_ARGS(tsk));
   TaskYield();
   eventSet = tsk->eventSet;
+  tsk->waitpt = NULL;
   tsk->eventSet = 0;
-  IntrEnable();
   return eventSet;
 }
 
@@ -233,9 +233,8 @@ void TaskSwitch(TaskT *curtsk) {
   curtsk = ReadyChoose();
   Debug("Switching to " TI_FMT ".", TI_ARGS(curtsk));
   if (*(u_int *)curtsk->stkLower != STACK_CANARY) {
-    Log("[TaskSwitch] Stack overflow detected for '%s' task (size: %d)!\n",
-        curtsk->name, (int)(curtsk->stkUpper - curtsk->stkLower));
-    PANIC();
+    Panic("[TaskSwitch] Stack overflow detected for '%s' task (size: %d)!",
+          curtsk->name, (int)(curtsk->stkUpper - curtsk->stkLower));
   }
   CurrentTask = curtsk;
 }
@@ -244,21 +243,22 @@ void TaskDebug(void) {
   TaskT *curtsk = CurrentTask;
   TaskT *tsk;
 
-  Log("Current task: " TI_FMT ".\n", TI_ARGS(curtsk));
+  Log("[Task] (*) PC: $%08x SR: $%04x " TI_FMT ".\n",
+      curtsk->ctx->pc, curtsk->ctx->sr, TI_ARGS(curtsk));
   if (*(u_int *)curtsk->stkLower != STACK_CANARY) {
     Log("Stack overflow detected (size: %d)!\n",
         (int)(curtsk->stkUpper - curtsk->stkLower));
   }
   if (!TAILQ_EMPTY(&ReadyList)) {
-    Log("Ready queue:\n")
     TAILQ_FOREACH(tsk, &ReadyList, node) {
-      Log(" - " TI_FMT "\n", TI_ARGS(tsk));
+      Log("[Task] (R) PC: $%08x SR: $%04x " TI_FMT "\n",
+          tsk->ctx->pc, tsk->ctx->sr, TI_ARGS(tsk));
     }
   }
   if (!TAILQ_EMPTY(&WaitList)) {
-    Log("Wait queue:\n")
     TAILQ_FOREACH(tsk, &WaitList, node) {
-      Log(" - " TI_FMT "\n", TI_ARGS(tsk));
+      Log("[Task] (W) waitpt: $%08x " TI_FMT "\n",
+          (u_int)tsk->waitpt, TI_ARGS(tsk));
     }
   }
 }

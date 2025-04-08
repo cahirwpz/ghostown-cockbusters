@@ -83,7 +83,10 @@ data/%.c: data/%.sync
 	@echo "[SYNC] $(DIR)$< -> $(DIR)$@"
 	$(SYNC2C) $(SYNC2C.$*) $< > $@ || (rm -f $@ && exit 1)
 
-ifeq ($(AMIGAOS), 0)
+data/%.c: data/%.csv
+	@echo "[ANIM2C] $(DIR)$< -> $(DIR)$@"
+	$(ANIM2C) $(ANIM2C.$*) $< > $@ || (rm -f $@ && exit 1)
+
 EXTRA-FILES += $(EFFECT).img
 CLEAN-FILES += $(EFFECT).img
 
@@ -94,14 +97,13 @@ CLEAN-FILES += $(EFFECT).img
 %.adf: %.img $(BOOTLOADER) 
 	@echo "[ADF] $(DIR)$< -> $(DIR)$@"
 	$(ADFUTIL) -b $(BOOTLOADER) $< $@ 
-else
-%.adf: %.exe $(BOOTBLOCK)
+
+%-dos.adf: %.exe $(BOOTBLOCK)
 	@echo "[ADF] $(DIR)$< -> $(DIR)$@"
 	echo $< > startup-sequence
 	xdftool $@ format dos + write $< + makedir s + write startup-sequence s
 	dd if=$(BOOTBLOCK) of=$@ conv=notrunc status=none
 	rm startup-sequence
-endif
 
 # Default debugger - can be changed by passing DEBUGGER=xyz to make.
 DEBUGGER ?= gdb

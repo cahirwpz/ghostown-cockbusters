@@ -1,9 +1,10 @@
+#include <config.h>
 #include <debug.h>
 #include <system/cpu.h>
 #include <system/trap.h>
 #include <system/task.h>
 
-static const char *const trapname[T_NTRAPS] = {
+static __unused const char *const trapname[T_NTRAPS] = {
   [T_UNKNOWN] = "Bad Trap",
   [T_BUSERR] = "Bus Error",
   [T_ADDRERR] = "Address Error",
@@ -18,9 +19,11 @@ static const char *const trapname[T_NTRAPS] = {
 
 void TrapHandler(TrapFrameT *frame) {
   short memflt = frame->trapnum == T_BUSERR || frame->trapnum == T_ADDRERR;
-  u_int pc, sp;
+  __unused u_int pc;
+  u_int sp;
   u_short sr;
-  short supervisor, trap;
+  short supervisor;
+  __unused short trap;
 
   if (CpuModel > CPU_68000) {
     pc = frame->m68010.pc;
@@ -53,7 +56,7 @@ void TrapHandler(TrapFrameT *frame) {
   }
 
   /* clang-format off */
-#if MULTITASK
+#ifdef MULTITASK
   TaskDebug();
 #endif
   Log("Exception at %p (in %s mode): %s!\n"
@@ -70,8 +73,8 @@ void TrapHandler(TrapFrameT *frame) {
   /* clang-format on */
 
   if (memflt) {
-    u_int addr;
-    short data, read;
+    __unused u_int addr;
+    __unused short data, read;
 
     if (CpuModel > CPU_68000) {
       addr = frame->m68010_memacc.address;
@@ -87,5 +90,5 @@ void TrapHandler(TrapFrameT *frame) {
         (read ? "read" : "write"), addr);
   }
 
-  PANIC();
+  Panic("System crashed!");
 }

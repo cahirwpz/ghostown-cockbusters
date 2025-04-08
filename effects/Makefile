@@ -12,6 +12,7 @@ SUBDIRS := \
 	butterfly-gears \
 	carrion \
 	circles \
+	color-cycling \
 	credits \
 	dna3d \
 	empty \
@@ -20,6 +21,7 @@ SUBDIRS := \
 	floor \
 	floor-old \
 	fire-rgb \
+	forest \
 	game-of-life \
 	glitch \
 	growing-tree \
@@ -28,6 +30,7 @@ SUBDIRS := \
 	kbtest \
 	layers \
 	lines \
+	loader \
 	magnifying-glass \
 	metaballs \
 	multipipe \
