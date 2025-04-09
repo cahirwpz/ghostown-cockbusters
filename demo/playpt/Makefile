@@ -1,27 +1,20 @@
 TOPDIR := $(realpath ../..)
 
 MODULE := JazzCat-XenoCoq
-OBJECTS := data/$(MODULE).trk.o
+OBJECTS := data/$(MODULE).trk.o data/$(MODULE).smp.o
+
 DELTA := 1
 
-ifeq ($(DELTA), 1)
-OBJECTS += data/$(MODULE)-Delta.smp.o
-else
-OBJECTS += data/$(MODULE).smp.o
+ifeq ($(DELTA),1)
+CPPFLAGS += -DDELTA
+PTSPLIT.$(MODULE) := --delta
 endif
-
-CPPFLAGS += -DDELTA=$(DELTA)
 
 LIBS := libpt
 
 include $(TOPDIR)/build/effect.mk
 
 CLEAN-FILES += data/$(MODULE)*.o data/$(MODULE).smp data/$(MODULE).trk
-
-data/%.trk data/%.smp: data/%.mod
-	$(PYTHON3) $(TOPDIR)/effects/playpt/data/ptsplit.py $^
-	mv data/$*.mod.trk data/$*.trk
-	mv data/$*.mod.smp data/$*.smp
 
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents
 
@@ -33,10 +26,6 @@ data/%.trk.o: data/%.trk
 	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_size=_ModuleSize \
 	  $^ $@
 
-data/%-Delta.smp: data/%.smp
-	@echo "[DELTA] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) delta.py $< $@
-
 data/%.smp.o: data/%.smp
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) $(OBJCOPY-CHIP) -I binary -O amiga \
@@ -44,4 +33,3 @@ data/%.smp.o: data/%.smp
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_end=_SamplesEnd \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_size=_SamplesSize \
 	  $^ $@
-
