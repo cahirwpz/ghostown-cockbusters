@@ -8,6 +8,9 @@ AKLANG := 1
 DELTA := 0
 
 ifeq ($(AKLANG),1)
+# XXX: Always consult this value with AmigaKlang output,
+# otherwise you'll experience a really nasty debugging session. */
+CPPFLAGS += -DAKLANG_BUFLEN=36864
 CPPFLAGS += -DAKLANG
 OBJECTS += data/$(MODULE).o
 else
