@@ -7,11 +7,11 @@
 
 extern u_char Module[];
 extern u_char Samples[];
-#if DELTA == 1
+#ifdef DELTA
 extern u_char SamplesSize[];
 #endif
 
-#if DELTA == 1
+#ifdef DELTA
 static void DecodeSamples(u_char *smp, int size) {
   u_char data = *smp++;
   short n = (size + 7) / 8 - 1;
@@ -34,7 +34,7 @@ static void DecodeSamples(u_char *smp, int size) {
 #endif
 
 static void Load(void) {
-#if DELTA == 1
+#ifdef DELTA
   Log("[Init] Decoding samples\n");
   DecodeSamples(Samples, (int)SamplesSize);
 #endif

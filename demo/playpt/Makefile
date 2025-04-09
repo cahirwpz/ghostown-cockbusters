@@ -2,11 +2,11 @@ TOPDIR := $(realpath ../..)
 
 MODULE := JazzCat-XenoCoq
 OBJECTS := data/$(MODULE).trk.o data/$(MODULE).smp.o
+
 DELTA := 1
 
-CPPFLAGS += -DDELTA=$(DELTA)
-
 ifeq ($(DELTA),1)
+CPPFLAGS += -DDELTA
 PTSPLIT.$(MODULE) := --delta
 endif
 
@@ -33,4 +33,3 @@ data/%.smp.o: data/%.smp
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_end=_SamplesEnd \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_size=_SamplesSize \
 	  $^ $@
-

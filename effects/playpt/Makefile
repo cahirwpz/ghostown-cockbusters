@@ -1,17 +1,35 @@
 TOPDIR := $(realpath ../..)
 
 MODULE := virgill-amigahub
-OBJECTS := data/$(MODULE)-trk.o data/$(MODULE).o
-CLEAN-FILES := data/lat2-08.c data/*.smp data/*.trk
+OBJECTS := data/$(MODULE).trk.o
+CLEAN-FILES := data/lat2-08.c
+
+AKLANG := 1
+DELTA := 0
+
+ifeq ($(AKLANG),1)
+CPPFLAGS += -DAKLANG
+OBJECTS += data/$(MODULE).o
+else
+OBJECTS += data/$(MODULE).smp.o
+endif
+
+ifeq ($(DELTA),1)
+CPPFLAGS += -DDELTA
+PTSPLIT.$(MODULE) := --delta
+endif
+
+PSF2C.lat2-08 := --name latin2 --type console
 
 LIBS := libpt
 
-PSF2C.lat2-08 := --name latin2 --type console
-PTSPLIT.$(MODULE) := --delta
-
 include $(TOPDIR)/build/effect.mk
 
-data/%-trk.o: data/%.trk
+CLEAN-FILES += data/$(MODULE).smp data/$(MODULE).trk
+
+OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents
+
+data/%.trk.o: data/%.trk
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) -I binary -O amiga \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_start=_Module \
@@ -19,10 +37,10 @@ data/%-trk.o: data/%.trk
 	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_size=_ModuleSize \
 	  $^ $@
 
-data/%-smp.o: data/%.smp
+data/%.smp.o: data/%.smp
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
-	$(OBJCOPY) -I binary -O amiga \
+	$(OBJCOPY) $(OBJCOPY-CHIP) -I binary -O amiga \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_start=_Samples \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_end=_SamplesEnd \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_size=_SamplesSize \
-	  --rename-section .data=.datachip,alloc,load,data,contents $^ $@
+	  $^ $@

@@ -12,7 +12,7 @@
   "Protracker": {
     "objects": [
       "playpt/data/JazzCat-XenoCoq.trk.o",
-      "playpt/data/JazzCat-XenoCoq-Delta.smp.o",
+      "playpt/data/JazzCat-XenoCoq.smp.o",
       "playpt/playpt.o"]
   },
   "Dna3D": {
