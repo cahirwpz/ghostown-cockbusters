@@ -76,7 +76,7 @@ extern const u_short LineMode[4][2];
 
 /* Common blitter macros. */
 static inline bool BlitterBusy(void) {
-  return custom->dmaconr & DMAF_BLTDONE;
+  return (custom->dmaconr & DMAF_BLTDONE) ? true : false;
 }
 
 static inline void _WaitBlitter(CustomPtrT custom_) {

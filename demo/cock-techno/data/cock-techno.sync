@@ -1,0 +1,74 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start   $1C00
+@event end     $2000
+
+
+@track spriteno !value
+$1C20    0    # Cahir
+$1C30    1    # Slayer
+$1D00    2    # Jazzcat
+$1D10    3    # slizgi
+$1D20    4    # Codi
+$1D30    5    # spook
+$1E00    6    # Zuko
+$1E10    7    # Yumi
+$1E20    8    # polprog
+@end
+
+@track spritepos
+# initial sprite pos
+$1C20    220
+# Cahir
+$1C24    180
+$1C2A    180
+$1C2F    220
+# Slayer
+$1C34    180
+$1C3A    180
+$1C3F    220
+# Jazzcat
+$1D04    180
+$1D0A    180
+$1D0F    220
+# slizgi
+$1D14    180
+$1D1A    180
+$1D1F    220
+# Codi
+$1D24    180
+$1D2A    180
+$1D2F    220
+# spook
+$1D34    180
+$1D3A    180
+$1D3F    220
+# zuko
+$1E04    180
+$1E0A    180
+$1E0F    220
+# Yumi
+$1E14    180
+$1E1A    180
+$1E1F    220
+# polprog
+$1E24    180
+$1E2A    180
+$1E2F    220
+@end
+
+
+@track techno_gradientno
+# Warning: if you set the first gradient here
+# Change the oldgradientno variable in .c, or it CopListFinish will panic.
+$1C00    0    # blue-cold
+$1C10    1
+$1C20    2
+$1C30    3
+$1D00    4
+$1D10    5
+$1D20    6
+$1D30    7
+$1E00    8
+$1E10    9
+$1E20    10
+@end

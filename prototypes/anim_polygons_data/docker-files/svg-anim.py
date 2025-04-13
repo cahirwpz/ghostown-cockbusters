@@ -68,6 +68,9 @@ def reduce_colors(colors: set[str]) -> dict:
     cs = sorted(colors)
     d = {}
 
+    if not len(cs):
+        cs = ['#000000']
+
     # take care of the first element
     last = cs[0]
     d[cs[0]] = last

@@ -3,16 +3,21 @@
 #include "copper.h"
 #include "3d.h"
 #include "fx.h"
-#include "debug.h"
+#include "sync.h"
 
 #define WIDTH  256
 #define HEIGHT 256
 #define DEPTH 3
 
 #define screen_bplSize (WIDTH * HEIGHT / 8)
+#define bobs_bpl_section __section(".datachip.bobs")
+#define bobs2_bpl_section __section(".datachip.bobs2")
 
+#include "data/dna3d.c"
 #include "data/bobs.c"
+#include "data/bobs2.c"
 #include "data/bobs_gradient.c"
+#include "data/bobs_gradient2.c"
 #include "data/dna.c"
 #include "data/necrocoq-00-data.c"
 #include "data/necrocoq-00-pal.c"
@@ -27,14 +32,39 @@
 #include "data/necrocoq-09.c"
 #include "data/necrocoq-10.c"
 
+#include "data/necrocoq2-00.c"
+#include "data/necrocoq2-01.c"
+#include "data/necrocoq2-02.c"
+#include "data/necrocoq2-03.c"
+#include "data/necrocoq2-04.c"
+#include "data/necrocoq2-05.c"
+#include "data/necrocoq2-06.c"
+#include "data/necrocoq2-07.c"
+#include "data/necrocoq2-08.c"
+#include "data/necrocoq2-09.c"
+#include "data/necrocoq2-10.c"
+
+#include "data/fadein00.c"
+#include "data/fadein01.c"
+#include "data/fadein02.c"
+#include "data/fadein03.c"
+#include "data/fadein04.c"
+#include "data/fadein05.c"
+#include "data/fadein06.c"
+#include "data/fadein07.c"
+#include "data/fadein08.c"
+
+#include "data/tearing-table.c"
+
 static __code Object3D *object;
 static __code CopListT *cp;
 static __code BitmapT *screen[2];
 static __code CopInsPairT *bplptr;
 static CopInsT *linecol[necrocoq_height];
+static CopInsT *bobscol[necrocoq_height];
 static __code int active = 0;
 
-static u_short *necrochicken_cols[11] = {
+static __code u_short *necrochicken_cols[11] = {
   necrocoq_00_cols_pixels,
   necrocoq_01_cols_pixels,
   necrocoq_02_cols_pixels,
@@ -48,9 +78,36 @@ static u_short *necrochicken_cols[11] = {
   necrocoq_10_cols_pixels,
 };
 
+static __code u_short *necrochicken2_cols[11] = {
+  necrocoq2_00_cols_pixels,
+  necrocoq2_01_cols_pixels,
+  necrocoq2_02_cols_pixels,
+  necrocoq2_03_cols_pixels,
+  necrocoq2_04_cols_pixels,
+  necrocoq2_05_cols_pixels,
+  necrocoq2_06_cols_pixels,
+  necrocoq2_07_cols_pixels,
+  necrocoq2_08_cols_pixels,
+  necrocoq2_09_cols_pixels,
+  necrocoq2_10_cols_pixels,
+};
+
+static __code u_short *fadein_cols[9] = {
+  fadein08_cols_pixels,
+  fadein07_cols_pixels,
+  fadein06_cols_pixels,
+  fadein05_cols_pixels,
+  fadein04_cols_pixels,
+  fadein03_cols_pixels,
+  fadein02_cols_pixels,
+  fadein01_cols_pixels,
+  fadein00_cols_pixels,
+};
+
+
 #define envelope_length 40
 
-static short envelope[envelope_length] = {
+static __code short envelope[envelope_length] = {
   0, 0,
   1, 1,
   2, 2,
@@ -73,13 +130,34 @@ static short envelope[envelope_length] = {
   1, 1,
 };
 
+#define envelope2_length (9 * 2)
+
+static __code short envelope2[envelope2_length] = {
+  8, 8,
+  7, 7,
+  6, 6,
+  5, 5,
+  4, 4,
+  3, 3,
+  2, 2,
+  1, 1,
+  0, 0,
+};
+
+static void BitmapClearI(BitmapT *bm) {
+  WaitBlitter();
+
+  custom->bltadat = 0;
+  custom->bltcon0 = DEST | A_TO_D;
+  custom->bltcon1 = 0;
+  custom->bltdmod = 0;
+  custom->bltdpt = bm->planes[0];
+  custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
+}
+
 static CopListT *MakeCopperList(void) {
   CopListT *cp = 
     NewCopList(100 + necrocoq_height * (necrocoq_00_cols_width + 10));
-
-  /* bitplane modulos for both playfields */
-  CopMove16(cp, bpl2mod, WIDTH / 8 * (necrocoq_depth - 1));
-  CopMove16(cp, bpl1mod, WIDTH / 8 * (DEPTH - 1));
 
   /* interleaved bitplanes setup */
   CopWait(cp, Y(-1), 0);
@@ -92,18 +170,16 @@ static CopListT *MakeCopperList(void) {
 
   {
     u_short *pf1_data = bobs_cols_pixels;
-    u_short *pf2_data = necrocoq_00_cols_pixels;
+    short k = IsAGA() ? 8 : 0;
     short i;
 
     for (i = 0; i < necrocoq_height; i++) {
-      short bgcol = *pf2_data++;
       short fgcol;
 
       /* Start exchanging palette colors at the end of previous line. */
       CopWaitSafe(cp, Y(i-1), HP(320 - 32 - 4));
-      CopMove16(cp, color[0], 0);
       fgcol = *pf1_data++;
-      CopMove16(cp, color[1], fgcol);
+      bobscol[i] = CopMove16(cp, color[1], fgcol);
       fgcol = *pf1_data++;
       CopMove16(cp, color[2], fgcol);
       CopMove16(cp, color[3], fgcol);
@@ -113,26 +189,42 @@ static CopListT *MakeCopperList(void) {
       CopMove16(cp, color[6], fgcol);
       CopMove16(cp, color[7], fgcol);
 
-      CopWaitSafe(cp, Y(i), HP(0));
-      linecol[i] = CopMove16(cp, color[9], *pf2_data++);
-      CopMove16(cp, color[10], *pf2_data++);
-      CopMove16(cp, color[11], *pf2_data++);
-      CopMove16(cp, color[0], bgcol);
+      CopWaitSafe(cp, Y(i), 0);
+      linecol[i] = CopMove16(cp, color[0], 0x000);
+      CopMove16(cp, color[9+k], 0x000);
+      CopMove16(cp, color[10+k], 0x000);
+      CopMove16(cp, color[11+k], 0x000);
+      CopMove16(cp, bplcon1, NULL);
     }
   }
 
   return CopListFinish(cp);
 }
-static void Init(void) {
+
+static void Load(void) {
+  TrackInit(&DnaPhase);
+  TrackInit(&DnaMotion);
+  TrackInit(&GlitchAnimFrame);
+  TrackInit(&GlitchHPos);
+
   object = NewObject3D(&dna_helix);
   object->translate.z = fx4i(-256);
+}
+
+static void UnLoad(void) {
+  DeleteObject3D(object);
+}
+
+static void Init(void) {
+  TimeWarp(dna3d_start);
 
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_INTERLEAVED);
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-  BitmapClear(screen[0]);
-  BitmapClear(screen[1]);
+  BitmapClearI(screen[0]);
+  BitmapClearI(screen[1]);
+  WaitBlitter();
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
@@ -141,6 +233,12 @@ static void Init(void) {
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
+  /* AGA fix */
+  custom->bplcon3 = BPLCON3_PF2OF0;
+
+  /* bitplane modulos for both playfields */
+  custom->bpl2mod = WIDTH / 8 * (necrocoq_depth - 1);
+  custom->bpl1mod = WIDTH / 8 * (DEPTH - 1);
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -154,7 +252,6 @@ static void Kill(void) {
   DeleteCopList(cp);
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
-  DeleteObject3D(object);
 }
 
 #define MULVERTEX1(D, E) {              \
@@ -492,48 +589,142 @@ static void DrawLinks(Object3D *object, void *dst,
   } while (*group);
 }
 
-static void BitmapClearI(BitmapT *bm) {
-  WaitBlitter();
-
-  custom->bltadat = 0;
-  custom->bltcon0 = DEST | A_TO_D;
-  custom->bltcon1 = 0;
-  custom->bltdmod = 0;
-  custom->bltdpt = bm->planes[0];
-  custom->bltsize = ((bm->height * bm->depth) << 6) | (bm->bytesPerRow >> 1);
-}
-
-static void ChangeBackgroundColor(short n) {
-  short p = envelope[n % envelope_length];
-  u_short *data = necrochicken_cols[p];
+static void SetBackgroundColor(short color) {
   CopInsT **lineptr = linecol;
   short i;
 
   for (i = 0; i < necrocoq_height; i++) {
     CopInsT *ins = *lineptr++;
-    short bgcol = *data++;
 
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, *data++);
-    CopInsSet16(ins++, bgcol);
+    CopInsSet16(&ins[0], color);
+    CopInsSet16(&ins[1], color);
+    CopInsSet16(&ins[2], color);
+    CopInsSet16(&ins[3], color);
   }
 }
 
+static void ChangeBackgroundColor(u_short *data) {
+  CopInsT **lineptr = linecol;
+  short i;
+
+  {
+    static u_short *old_data = NULL;
+    if (old_data == data)
+      return;
+    old_data = data;
+  }
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *lineptr++;
+
+    CopInsSet16(&ins[0], *data++);
+    CopInsSet16(&ins[1], *data++);
+    CopInsSet16(&ins[2], *data++);
+    CopInsSet16(&ins[3], *data++);
+  }
+}
+
+static void ChangeBobsColor(u_short *data) {
+  CopInsT **bobsptr = bobscol;
+  short i;
+
+  {
+    static u_short *old_data = NULL;
+    if (old_data == data)
+      return;
+    old_data = data;
+  }
+
+  for (i = 0; i < necrocoq_height; i++) {
+    CopInsT *ins = *bobsptr++;
+    short c0 = *data++;
+    short c1 = *data++;
+    short c2 = *data++;
+
+    CopInsSet16(&ins[0], c0);
+    CopInsSet16(&ins[1], c1);
+    CopInsSet16(&ins[2], c1);
+    CopInsSet16(&ins[3], c2);
+    CopInsSet16(&ins[4], c2);
+    CopInsSet16(&ins[5], c2);
+    CopInsSet16(&ins[6], c2);
+  }
+}
+
+static const BitmapT *ControlEffect(void) {
+  short phase = TrackValueGet(&DnaPhase, frameCount);
+  short reltime;
+  short colidx;
+
+  if (phase == 0) {
+    SetBackgroundColor(0x000);
+    return &bobs;
+  }
+
+  if (phase == 1) {
+    reltime = (frameCount - CurrKeyFrame(&DnaPhase)) >> 1;
+    reltime = min(reltime, envelope2_length - 1);
+    colidx = envelope2[reltime];
+    ChangeBackgroundColor(fadein_cols[colidx]);
+    return &bobs;
+  }
+
+  reltime = (frameCount - (dna3d_flashing + dna3d_start)) >> 1;
+  colidx = envelope[reltime % envelope_length];
+
+  if (phase == 2) {
+    ChangeBackgroundColor(necrochicken_cols[colidx]);
+    return &bobs;
+  }
+
+  if (phase == 3) {
+    if (reltime & 2) {
+      ChangeBackgroundColor(necrochicken2_cols[colidx]);
+      ChangeBobsColor(bobs_cols_pixels);
+      return &bobs2;
+    } else {
+      ChangeBackgroundColor(necrochicken_cols[colidx]);
+      ChangeBobsColor(bobs_cols2_pixels);
+      return &bobs;
+    }
+  }
+
+  if (phase == 4) {
+    ChangeBackgroundColor(necrochicken2_cols[colidx]);
+    ChangeBobsColor(bobs_cols2_pixels);
+    return &bobs2;
+  }
+
+  Panic("phase (%d) out of range", phase);
+}
+
+PROFILE(Control);
 PROFILE(TransformObject);
 PROFILE(DrawObject);
 
+static short frameCountSkip = 0;
+
 static void Render(void) {
+  const BitmapT *_bobs;
+
+  if (!TrackValueGet(&DnaMotion, frameCount)) {
+    frameCountSkip += frameCount - lastFrameCount;
+  }
+
   BitmapClearI(screen[active]);
 
-  ChangeBackgroundColor(frameCount >> 1);
+  ProfilerStart(Control);
+  {
+    _bobs = ControlEffect();
+  }
+  ProfilerStop(Control);
 
   ProfilerStart(TransformObject);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
+    object->rotate.x = object->rotate.y = object->rotate.z = (frameCount - frameCountSkip) * 6;
 
     UpdateObjectTransformation(object);
-    GenCircularDoubleHelix(object->objdat, frameCount * 24);
+    GenCircularDoubleHelix(object->objdat, (frameCount - frameCountSkip) * 24);
     TransformVertices(object);
   }
   ProfilerStop(TransformObject);
@@ -542,7 +733,7 @@ static void Render(void) {
 
   ProfilerStart(DrawObject);
   {
-    DrawFlares(object, bobs.planes[0], screen[active]->planes[0], custom);
+    DrawFlares(object, _bobs->planes[0], screen[active]->planes[0], custom);
     DrawLinks(object, screen[active]->planes[1], custom);
   }
   ProfilerStop(DrawObject);
@@ -552,7 +743,33 @@ static void Render(void) {
   CopInsSet32(&bplptr[0], screen[active]->planes[0]);
   CopInsSet32(&bplptr[2], screen[active]->planes[1]);
   CopInsSet32(&bplptr[4], screen[active]->planes[2]);
+
   active ^= 1;
 }
 
-EFFECT(Dna3D, NULL, NULL, Init, Kill, Render, NULL);
+// For glitches
+static void VBlank(void) {
+  static __code short hPos = 0;
+
+  short animFrame = TrackValueGet(&GlitchAnimFrame, frameCount);
+  short line = TrackValueGet(&GlitchHPos, frameCount);
+
+  // Please, let's make something other than 0
+  // a default track value >_<
+  if (line != 0) {
+    hPos = line;
+  }
+
+  {
+    CopInsT **line = &linecol[hPos];
+    u_short *tear = tears[animFrame];
+    short i = 0;
+
+    for (i = 0; i < 31; i++) {
+      CopInsT *ins = *line++;
+      CopInsSet16(&ins[4], *tear++);
+    }
+  }
+}
+
+EFFECT(Dna3D, Load, UnLoad, Init, Kill, Render, VBlank);

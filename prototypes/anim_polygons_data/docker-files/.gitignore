@@ -1,2 +1,4 @@
-anim
+*-anim/
 *.blend
+*.png
+*.svg

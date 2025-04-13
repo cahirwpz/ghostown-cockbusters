@@ -89,7 +89,7 @@ COMP_ZX0        EQU     3
         LABEL   MR_SIZE
 
  STRUCTURE SEG,0                ; Amiga Hunk
-        LONG	SEG_LEN 
+        LONG	SEG_LEN
         APTR	SEG_NEXT
         LABEL	SEG_START
         LABEL	SEG_SIZE
@@ -143,7 +143,7 @@ Entry:
 
         ; read executable file into memory
         move.l  (sp)+,a1                ; trackdisk.device IORequest
-        movem.l d2-d4,IO_LENGTH(a1)     ; length / data / start 
+        movem.l d2-d4,IO_LENGTH(a1)     ; length / data / start
         JSRLIB  DoIO
 
         ; turn off the motor
@@ -627,7 +627,7 @@ UnZX0:
                subq.l #1,d0         ; dbf will loop until d0 is -1, not 0
 .copy_lits:    move.b (a0)+,(a1)+   ; copy literal byte
                dbf d0,.copy_lits    ; loop for all literal bytes
-               
+
                add.b d1,d1          ; read 'match or rep-match' bit
                bcs.s .get_offset    ; if 1: read offset, if 0: rep-match
 

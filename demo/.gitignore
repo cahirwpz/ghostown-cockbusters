@@ -1,1 +1,3 @@
+data/*.c
+*/data/*.c
 demo.lds

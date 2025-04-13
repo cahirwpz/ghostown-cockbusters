@@ -1,0 +1,32 @@
+@module ../../demo/playpt/data/JazzCat-XenoCoq.mod
+@event start $0c00
+@event flashing $0d15
+@event end $1000
+
+@track DnaPhase
+$0c00 0 !step
+$0d00 1
+$0e00 2
+$0f00 3
+$0f20 4
+@end
+
+@track DnaMotion
+$0c00 1 !step
+$0d38 0
+$0e00 1
+@end
+
+@track GlitchAnimFrame
+$0c18 16 !trigger
+$0c38 16
+$0d18 16
+$0f14 16
+@end
+
+@track GlitchHPos
+$0c18 100 !event
+$0c38 50
+$0d18 140
+$0f14 65
+@end

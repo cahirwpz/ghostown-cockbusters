@@ -26,6 +26,7 @@ static __code int active = 0;
 
 #include "data/kurak-head.c"
 #include "data/cock-anim.c"
+#include "data/stencil3d.c"
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp =
@@ -70,6 +71,8 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
+  TimeWarp(stencil3d_start);
+
   screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
   buffer = NewBitmap(WIDTH, HEIGHT, 1, 0);
@@ -87,8 +90,8 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_DUALPF, DEPTH + background_depth);
-  LoadColors(pattern_1_colors, 0);
-  LoadColors(pattern_2_colors, 4);
+  LoadColors(pattern_1_colors, 4);
+  LoadColors(pattern_2_colors, 0);
 
   /* reverse playfield priorities */
   custom->bplcon2 = 0;
@@ -192,9 +195,9 @@ static __code void **patterns[2][3] = {
   },
 };
 
-static __code short pattern_shade[16] = {
+static __code short pattern_shade[17] = {
   0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 2, 2, 2, 2
+  0, 1, 1, 1, 2, 2, 2, 2, 2
 };
 
 static void DrawObject(Object3D *object, void **planes,
@@ -460,7 +463,7 @@ static void Render(void) {
   BitmapClearFast(screen[active]);
 
   {
-    short *frame = cock_anim[frameCount % cock_anim_frames];
+    short *frame = cock_anim[(frameCount - stencil3d_start) % cock_anim_frames];
     object->translate.x = *frame++;
     object->translate.y = *frame++;
     object->translate.z = *frame++;

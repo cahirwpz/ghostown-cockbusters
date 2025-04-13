@@ -22,23 +22,23 @@ case "$CMD" in
     if [ -z "$DISPLAY" ]; then
       xvfb-run --auto-servernum --server-args='-screen 0 1600x1024x16' \
         blender --background ${SCENE} --render-format PNG \
-          --render-output 'anim/frame####.png' --render-anim -noaudio
+          --render-output "${SCENE%.blend}-anim/frame####.png" --render-anim -noaudio
     else
       blender --background ${SCENE} --render-format PNG \
-        --render-output 'anim/frame####.png' --render-anim -noaudio
+        --render-output "${SCENE%.blend}-anim/frame####.png" --render-anim -noaudio
     fi
 
-    for f in anim/frame*.png; do
+    for f in ${SCENE%.blend}-anim/frame*[02468].png; do
       echo "$f -> ${f%.png}.svg"
       convert $f ${CONVERT_OPTS} $f
       vtracer ${VTRACER_OPTS} --input $f --output ${f%.png}.svg
     done
 
-    python3 svg-anim.py ${SVGANIM_OPTS} --output ${OUTPUT} anim/
+    python3 svg-anim.py ${SVGANIM_OPTS} --output ${OUTPUT} "${SCENE%.blend}-anim/"
     ;;
   clean)
     rm -f ${OUTPUT} ${SCENE}
-    rm -rf anim/
+    rm -rf "${SCENE%.blend}-anim/"
     ;;
   *)
     echo "error: unknown command \"$CMD\""

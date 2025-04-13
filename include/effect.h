@@ -30,6 +30,11 @@
 extern short frameCount;
 
 /*
+ * Get current frame count from VBlank() context.
+ */
+short ReadFrameCount(void);
+
+/*
  * The time when Render() was called previously.
  * Used to calculate how much did it take to render last frame.
  */
@@ -40,11 +45,6 @@ extern short lastFrameCount;
  * Normally set by LeftMouseButton routine, but can be overwritten.
  */
 extern bool exitLoop;
-
-#ifdef INTRO
-extern short frameFromStart;
-extern short frameTillEnd;
-#endif
 
 #ifndef DEMO
 void TimeWarp(u_short frame);
@@ -94,11 +94,11 @@ typedef struct Effect {
   EffectFuncT Render;
   /*
    * Called each frame during VBlank interrupt.
-   * Effect::data will be passed as the argument.
    */
   EffectFuncT VBlank;
 } EffectT;
 
+bool EffectIsRunning(EffectT *effect);
 void EffectLoad(EffectT *effect);
 void EffectInit(EffectT *effect);
 void EffectKill(EffectT *effect);

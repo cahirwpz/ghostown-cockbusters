@@ -5,6 +5,7 @@
 #include <pixmap.h>
 #include <sprite.h>
 #include <color.h>
+#include <sync.h>
 #include <system/memory.h>
 
 #define S_WIDTH 320
@@ -25,6 +26,7 @@ static __code CopListT *cp;
 #include "data/logo-gtn.c"
 #include "data/ball.c"
 #include "data/ball-anim.c"
+#include "data/magnifying-glass.c"
 
 #define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
 static __code void (*UVMapRender)(u_char *chunky asm("a0"),
@@ -80,12 +82,14 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
+  TimeWarp(magnifying_glass_start);
+
   // segment_bp and segment_p are bitmap and pixmap for the magnified segment
   segment_bp = NewBitmap(WIDTH, HEIGHT, S_DEPTH, BM_CLEAR);
   segment_p = NewPixmap(WIDTH, HEIGHT, PM_CMAP4, MEMF_CHIP);
 
-  texture_hi = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
-  texture_lo = MemAlloc(WIDTH*HEIGHT, MEMF_CHIP);
+  texture_hi = MemAlloc(WIDTH * HEIGHT, MEMF_CHIP);
+  texture_lo = MemAlloc(WIDTH * HEIGHT, MEMF_CHIP);
 
   sprdat = MemAlloc(SprDataSize(64, 2) * 8 * 2, MEMF_CHIP | MEMF_CLEAR);
 
@@ -100,9 +104,7 @@ static void Init(void) {
   }
 
   SetupPlayfield(MODE_LORES, S_DEPTH, X(0), Y(0), S_WIDTH, S_HEIGHT);
-  LoadColors(logo_pal_colors, 0);
-  FadeBlack(logo_pal_colors, 16, 0, 8);
-  LoadColors(logo_pal_colors, 16);
+  ITER(i, 0, 31, SetColor(i, 0x000));
 
   cp = MakeCopperList();
   CopListActivate(cp);
@@ -536,6 +538,18 @@ static void PlanarToSprite(const BitmapT *planar, SpriteT *sprites){
   }
 }
 
+static void VBlank(void) {
+  short t = ReadFrameCount();
+
+  if (t < magnifying_glass_start + 16) {
+    FadeBlack(logo_pal_colors, 16, 0,  t-magnifying_glass_start);
+    FadeBlack(logo_pal_colors, 16, 16, t-magnifying_glass_start);
+  } else if (t >= magnifying_glass_start + 0x80 &&
+             t <= magnifying_glass_start + 0x80 + 0x8) {
+    FadeBlack(logo_pal_colors, 16, 0,  15 - (t - (magnifying_glass_start + 0x80)));
+  }
+}
+
 PROFILE(UVMapRender);
 PROFILE(ChunkyToPlanar);
 PROFILE(CropPixmapBlitter);
@@ -546,7 +560,10 @@ static void Render(void) {
 
   {
     short *frame;
-    short pos = frameCount % ball_anim_frames;
+    short pos = (frameCount - magnifying_glass_start);
+    if (pos >= ball_anim_frames) {
+      pos = ball_anim_frames - 1;
+    }
     frame = ball_anim[pos];
     xo = S_WIDTH - *frame++ - WIDTH;
     yo = *frame++;
@@ -575,4 +592,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(MagnifyingGlass, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(MagnifyingGlass, Load, UnLoad, Init, Kill, Render, VBlank);

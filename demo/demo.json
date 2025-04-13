@@ -1,2 +1,78 @@
 {
+  "Empty": {
+    "objects" : [
+      "empty/empty.o"]
+  },
+  "Loader": {
+    "objects": [
+      "loader/data/JazzCat-CockbustersLoader.smp.o",
+      "loader/data/JazzCat-CockbustersLoader.trk.o",
+      "loader/loader.o"]
+  },
+  "Protracker": {
+    "objects": [
+      "playpt/data/JazzCat-XenoCoq.trk.o",
+      "playpt/data/JazzCat-XenoCoq.smp.o",
+      "playpt/playpt.o"]
+  },
+  "Dna3D": {
+    "objects": [
+      "dna3d/dna3d.o"],
+    "sections": [
+      ".datachip.bobs",
+      ".datachip.bobs2"]
+  },
+  "Stencil3D": {
+    "objects": [
+      "stencil3d/stencil3d.o"]
+  },
+  "CockFolk": {
+    "objects": [
+      "cock-folk/cock-folk.o"]
+  },
+  "TexObj": {
+    "objects": [
+      "texobj/texobj.o",
+      "texobj/mainloop.o"],
+    "sections": [
+      ".data.tex0",
+      ".data.tex1",
+      ".data.tex2",
+      ".data.tex3",
+      ".data.tex4"]
+  },
+  "Flower3D": {
+    "objects": [
+      "flower3d/flower3d.o"]
+  },
+  "Logo": {
+    "objects": [
+      "color-cycling/color-cycling.o"]
+  },
+  "Rotator": {
+    "objects": [
+      "rotator/rotator.o",
+      "rotator/mainloop.o"]
+  },
+  "TextScroll": {
+    "objects": [
+      "textscroll/textscroll.o",
+      "textscroll/data/text-scroll.o"]
+  },
+  "Abduction": {
+    "objects": [
+      "abduction/abduction.o"]
+  },
+  "MagnifyingGlass": {
+    "objects": [
+      "magnifying-glass/magnifying-glass.o"]
+  },
+  "CockTechno": {
+    "objects": [
+      "cock-techno/cock-techno.o"]
+  },
+  "CockFreedom": {
+    "objects": [
+      "cock-freedom/cock-freedom.o"]
+  }
 }

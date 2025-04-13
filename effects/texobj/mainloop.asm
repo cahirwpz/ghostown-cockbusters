@@ -77,7 +77,7 @@ _DrawTriPart:
 
         ; [a0] pixels = &line[xs]
         lea     (a4,d4.w),a0
-        
+
         ; [d4] n = WIDTH - (xe - xs) = WIDTH + xs - xe
         add.w   #128,d4
         sub.w   d0,d4
@@ -111,7 +111,7 @@ _DrawTriPart:
         move.b  d1,d0   ; ------UU
         clr.b   d1      ; VVvvuu--
         swap    d1      ; uu--VVvv
-        
+
 ; jump into unrolled loop
 
         jmp     .start(pc,d4.w)
@@ -126,11 +126,11 @@ _DrawTriPart:
         addx.b  d2,d0           ;   [4] ------UU
         move.b  (a1,d4.w),(a0)+ ;  [18]
         endr                    ; [=38]
-        
+
 .skip:  ; l->x += l->dxdy
         move.w  DXDY(a2),d4
         add.w   d4,X(a2)
-        
+
         ; l->u += l->dudy
         add.w   DUDY(a2),d5
 
@@ -140,7 +140,7 @@ _DrawTriPart:
         ; r->x += r->dxdy
         move.w  DXDY(a3),d4
         add.w   d4,X(a3)
-        
+
         ; line += WIDTH
         lea     WIDTH(a4),a4
         dbf     d7,.loop

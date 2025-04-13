@@ -1,11 +1,12 @@
                                   COCKBUSTERS
                                       BY
                                    GHOSTOWN
+                              (FINAL VERSION '25)
 
 
                              AMIGA 500 OCS TRACKMO
                             RELEASED AT XENIUM 2024
-                                            
+
                                   MAIN CODING:
                                      CAHIR
 
@@ -38,7 +39,7 @@
 
    BINARY                      BOOM!      NAH-KOLOR                 NUKLEUS
    COSMIC ORBS             CRAP TEAM      ONSLAUGHT                     RNO
-   DESIRE                  EPHIDRENA      SKARLA                 SPACEBALLS     
+   DESIRE                  EPHIDRENA      SKARLA                 SPACEBALLS
    FLEX                       FLOPPY      SPECCY.PL                  OXYRON
    FOCUS DESIGN              FUTURIS      TRACTION                    TULOU
    HAUJOBB                    INSANE      TEK                          TRSI
@@ -50,9 +51,9 @@
                              CAHIR ON THE KEYBOARD
 
 I'M STILL SURPRISED THAT THIS DEMO WORKS AT ALL. ONLY A WEEK BEFORE THE PARTY
-I MANAGED TO FIX ALL REMAINING BUGS IN THE SMALL OPERATING SYSTEM THAT RUNS 
+I MANAGED TO FIX ALL REMAINING BUGS IN THE SMALL OPERATING SYSTEM THAT RUNS
 THIS TRACKMO. THERE ARE TWO IMPORTANT THREADS. BOTH RUN CONCURRENTLY SO THE NEW
-EFFECT IS BEING LOADED INTO MEMORY, DECOMPRESSED AND RELOCATED, WHILE THE MAIN 
+EFFECT IS BEING LOADED INTO MEMORY, DECOMPRESSED AND RELOCATED, WHILE THE MAIN
 THREAD RENDERS THE PREVIOUS EFFECT.
 
 WE HAVEN'T MADE FULL USE OF THIS "TECHNOLOGY" - SO EXPECT MORE TO FOLLOW ;)
@@ -66,20 +67,21 @@ IMAGES THAT MADE OUR BACKGROUNDS WAY MORE INTERESTING.
                 AS ALWAYS, I SEND LOTS OF HUGS & KISSES TO ALICE,
        FOR HER SUPPORT THROUGHOUT WHOLE DEMO-MAKING PROCESS. THANK YOU <3
 
+    FOR COUNTLESS HOURS OF TESTING ON REAL HW THANKS GO TO TROLLO AND MiCv2!
 
                       JAZZCAT & SLAYER ON THE KEYBOARD
 
-       WE'D LIKE TO WELCOME OUR NEW MEMBERS: POLPROG, ZUKO,  AND SLIZGI!
-                            YOU ARE ALL AWESOME!! 
+       WE'D LIKE TO WELCOME OUR NEW MEMBERS: POLPROG, ZUKO, AND SLIZGI!
+                            YOU ARE ALL AWESOME!!
 
              AND REMEMBER - THE EARTH IS FLAT, BECAUSE YOU ARE FAT!
 
-                SEE YOU ALL AT BOOM PARTY IN TUCHOLA NEXT YEAR. 
+                SEE YOU ALL AT BOOM PARTY IN TUCHOLA THIS YEAR.
 
 
                     A FEW WORDS FROM POLPROG, SPOOK & YUMI
 
                 FAREWELL AOJIRU, YOU LEFT THE PARTY WAY TOO SOON.
-                            WE MISS YOU EVERY DAY. 
+                            WE MISS YOU EVERY DAY.
 
                       KYA, GET WELL SOON! WE LOVE YOU!

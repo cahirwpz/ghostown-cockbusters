@@ -1,8 +1,10 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <color.h>
 #include <fx.h>
 #include <pixmap.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -19,7 +21,9 @@ static __code short c2p_active;
 static __code void **c2p_bpl;
 static __code u_short *textureHi, *textureLo;
 
-#include "data/rork-128.c"
+#include "data/texture-bright.c"
+#include "data/texture-dark.c"
+#include "data/rotator.c"
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] x 2 */
 static u_short PixelHi[16] = {
@@ -206,6 +210,8 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
+  TrackInit(&RotatorFlash);
+
   textureHi = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
   textureLo = MemAlloc(texture_width * texture_height * 4, MEMF_PUBLIC);
   PixmapToTexture(textureHi, textureLo);
@@ -217,6 +223,8 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
+  TimeWarp(rotator_start);
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
 
@@ -226,7 +234,7 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(28), WIDTH * 2, HEIGHT * 2);
-  LoadColors(texture_colors, 0);
+  LoadColors(bright_colors, 0);
 
   cp[0] = MakeCopperList(0);
   cp[1] = MakeCopperList(1);
@@ -279,7 +287,7 @@ PROFILE(Rotator);
 static void Rotator(void) {
   short radius = 128 + 32 + (COS(frameCount * 17) >> 7);
   short alfa = frameCount * 11;
-  short beta = alfa + SIN_HALF_PI + (SIN(frameCount * 13) >> 3);
+  short beta = alfa + SIN_HALF_PI + (SIN(frameCount * 13) >> 5);
 
   int px = mul16(SIN(alfa), radius);
   int py = mul16(COS(alfa), radius);
@@ -307,6 +315,35 @@ static void Rotator(void) {
   }
 }
 
+static void VBlank(void) {
+  short t = ReadFrameCount();
+
+  if (t < rotator_start + 16) {
+    FadeBlack(bright_colors, nitems(bright_colors), 0,  t - rotator_start);
+  } else if (t >= rotator_start + rotator_end - 16) {
+    FadeBlack(bright_colors, nitems(bright_colors), 0, rotator_start + rotator_end - t);
+  } else {
+    short val = TrackValueGet(&RotatorFlash, t);
+
+    if (val > 0) {
+      short i = 0;
+
+      val = 32 - val;
+
+      for (i = 0; i < 16; i++) {
+        u_short col;
+
+        if (val < 16) {
+          col = ColorTransition(bright_colors[i], dark_colors[i], val);
+        } else {
+          col = ColorTransition(dark_colors[i], bright_colors[i], val - 16);
+        }
+        SetColor(i, col);
+      }
+    }
+  }
+}
+
 static void Render(void) {
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(Rotator);
@@ -318,4 +355,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(Rotator, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(Rotator, Load, UnLoad, Init, Kill, Render, VBlank);

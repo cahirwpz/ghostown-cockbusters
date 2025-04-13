@@ -1,8 +1,9 @@
 TOPDIR := $(realpath ../..)
 
 SOURCES := rotator.c mainloop.asm
-CLEAN-FILES := data/rork-128.c
+CLEAN-FILES := data/texture-bright.c data/texture-dark.c
 
-PNG2C.rork-128 := --pixmap texture,128x128x8,+onlydata --palette texture,16
+PNG2C.texture-bright := --pixmap texture,128x128x8,+onlydata --palette bright,16
+PNG2C.texture-dark := --palette dark,16
 
 include $(TOPDIR)/build/effect.mk

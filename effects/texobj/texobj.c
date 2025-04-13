@@ -1,10 +1,12 @@
 #include <effect.h>
+#include <color.h>
 #include <blitter.h>
 #include <copper.h>
 #include <fx.h>
 #include <pixmap.h>
 #include <3d.h>
 #include <fx.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -12,6 +14,13 @@
 #define HEIGHT 128
 #define DEPTH 4
 
+#define texture_0_pixels_section __section(".data.tex0")
+#define texture_1_pixels_section __section(".data.tex1")
+#define texture_2_pixels_section __section(".data.tex2")
+#define texture_3_pixels_section __section(".data.tex3")
+#define texture_4_pixels_section __section(".data.tex4")
+
+#include "data/cube-bg-dark.c"
 #include "data/cube.c"
 #include "data/cube-bg.c"
 #include "data/cube-tex0.c"
@@ -19,6 +28,9 @@
 #include "data/cube-tex2.c"
 #include "data/cube-tex3.c"
 #include "data/cube-tex4.c"
+#include "data/cube-anim.c"
+
+#include "data/texobj.c"
 
 static __code BitmapT *screen[2];
 static __code CopListT *cp[2];
@@ -29,7 +41,14 @@ static __code volatile short c2p_phase;
 static __code short c2p_active;
 static __code void **c2p_bpl;
 static __code Object3D *object;
-static __code short *texture[5];
+
+static __code short *texture[5] = {
+  (short *)texture_0_pixels,
+  (short *)texture_1_pixels,
+  (short *)texture_2_pixels,
+  (short *)texture_3_pixels,
+  (short *)texture_4_pixels,
+};
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] */
 static const short Pixel[16] = {
@@ -42,7 +61,6 @@ static const short texture_light[16] = {
   3, 3, 3,
   2, 2, 2,
   1, 1, 1,
-  0, 0, 0,
 };
 
 static void ScrambleBackground(void) {
@@ -55,16 +73,21 @@ static void ScrambleBackground(void) {
   }
 }
 
-static short *ScrambleTexture(u_char *src) {
-  short *tex = MemAlloc(texture_0_width * texture_0_height * 2, MEMF_PUBLIC);
-  short n = texture_0_width * texture_0_height;
-  short *dst = tex;
+static void ScrambleTexture(u_char *tex) {
+  u_char *src = &tex[texture_0_height * texture_0_width];
+  short *dst = (short *)src;
+  short n = texture_0_height;
 
   while (--n >= 0) {
-    *dst++ = Pixel[*src++];
+    short m = texture_0_width / 2 / 4;
+    src -= texture_0_width / 2;
+    while (--m >= 0) {
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+      *--dst = Pixel[*--src];
+    }
   }
-
-  return tex;
 }
 
 typedef struct Corner {
@@ -529,13 +552,15 @@ static CopListT *MakeCopperList(short active) {
 }
 
 static void Load(void) {
+  TrackInit(&TexObjFlash);
+
   ScrambleBackground();
 
-  texture[0] = ScrambleTexture(texture_0_pixels);
-  texture[1] = ScrambleTexture(texture_1_pixels);
-  texture[2] = ScrambleTexture(texture_2_pixels);
-  texture[3] = ScrambleTexture(texture_3_pixels);
-  texture[4] = ScrambleTexture(texture_4_pixels);
+  ScrambleTexture(texture_0_pixels);
+  ScrambleTexture(texture_1_pixels);
+  ScrambleTexture(texture_2_pixels);
+  ScrambleTexture(texture_3_pixels);
+  ScrambleTexture(texture_4_pixels);
 
   object = NewObject3D(&cube);
   object->translate.z = fx4i(-256);
@@ -543,15 +568,11 @@ static void Load(void) {
 
 static void UnLoad(void) {
   DeleteObject3D(object);
-
-  MemFree(texture[0]);
-  MemFree(texture[1]);
-  MemFree(texture[2]);
-  MemFree(texture[3]);
-  MemFree(texture[4]);
 }
 
 static void Init(void) {
+  TimeWarp(texobj_start);
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, 0);
 
@@ -561,7 +582,7 @@ static void Init(void) {
   WaitBlitter();
 
   SetupPlayfield(MODE_LORES, DEPTH, X(32), Y(0), WIDTH * 2, HEIGHT * 2);
-  LoadColors(texture_colors, 0);
+  LoadColors(dark_colors, 0);
 
   cp[0] = MakeCopperList(0);
   cp[1] = MakeCopperList(1);
@@ -592,16 +613,64 @@ static void Kill(void) {
   DeleteBitmap(screen[1]);
 }
 
+static void VBlank(void) {
+  short t = ReadFrameCount();
+
+  if (t < texobj_start + 16) {
+    FadeBlack(dark_colors, nitems(dark_colors), 0,  t - texobj_start);
+  } else if (t >= texobj_start + texobj_end - 16) {
+    FadeBlack(dark_colors, nitems(dark_colors), 0, texobj_start + texobj_end - t);
+  } else {
+    short val = TrackValueGet(&TexObjFlash, t);
+
+    if (val > 0) {
+      u_short *src, *dst;
+      short i;
+
+      val = 32 - val;
+
+      if (val < 16) {
+        src = dark_colors;
+        dst = texture_colors;
+      } else {
+        src = texture_colors;
+        dst = dark_colors;
+        val -= 16;
+      }
+
+      for (i = 0; i < 16; i++) {
+        SetColor(i, ColorTransition(*src++, *dst++, val));
+      }
+    }
+  }
+}
+
 PROFILE(UpdateGeometry);
 PROFILE(DrawObject);
 
 static void Render(void) {
   chunky = screen[active]->planes[0];
 
+  {
+    short *frame = cube_anim[(frameCount - texobj_start) % cube_anim_frames];
+    object->translate.x = *frame++;
+    object->translate.y = *frame++;
+    object->translate.z = *frame++;
+    object->translate.z += fx4i(-256);
+    object->rotate.x = *frame++;
+    object->rotate.y = *frame++;
+    object->rotate.z = *frame++;
+    /* XXX if scale is too low the effect may crash */
+    object->scale.x = *frame++;
+    object->scale.y = *frame++;
+    object->scale.z = *frame++;
+    Assert(object->scale.x >= 45);
+    Assert(object->scale.y >= 45);
+    Assert(object->scale.z >= 45);
+  }
+
   ProfilerStart(UpdateGeometry);
   {
-    object->rotate.x = object->rotate.y = object->rotate.z = frameCount * 6;
-
     UpdateObjectTransformation(object);
     UpdateFaceVisibility(object);
     TransformVertices(object);
@@ -619,4 +688,4 @@ static void Render(void) {
   ChunkyToPlanarStart();
 }
 
-EFFECT(TexTri, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(TexObj, Load, UnLoad, Init, Kill, Render, VBlank);
